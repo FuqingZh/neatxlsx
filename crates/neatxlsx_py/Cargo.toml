@@ -1,0 +1,18 @@
+[package]
+name = "neatxlsx-py"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+authors.workspace = true
+publish = false
+
+[lib]
+name = "_native"
+crate-type = ["cdylib", "rlib"]
+
+[dependencies]
+neatxlsx-core = { path = "../neatxlsx_core" }
+arrow = { package = "polars-arrow", version = "0.51.0", default-features = false }
+polars = { version = "0.51.0", default-features = false }
+pyo3 = { version = "0.23.4", features = ["abi3-py311"] }

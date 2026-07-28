@@ -1,0 +1,25 @@
+# OS
+.DS_Store
+
+# Python
+*.egg-info/
+*.py[cod]
+.mypy_cache/
+.pdm-build/
+.pdm-python
+.pytest_cache/
+.ruff_cache/
+.venv/
+.cargo-ci/
+__pycache__/
+__pypackages__/
+build/
+dist/
+.python-version
+
+# Rust
+target/
+target/cibuildwheel-*/
+
+# In-place Rust extension artifact built under `python/`
+python/neatxlsx/_native*.so

@@ -1,0 +1,13 @@
+[package]
+name = "neatxlsx-core"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+authors.workspace = true
+publish = false
+
+[dependencies]
+arrow = { package = "polars-arrow", version = "0.51.0", default-features = false }
+polars = { version = "0.51.0", default-features = false, features = ["ipc"] }
+rust_xlsxwriter = { version = "0.90.2", features = ["constant_memory"] }

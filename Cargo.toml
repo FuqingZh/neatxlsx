@@ -1,0 +1,14 @@
+[workspace]
+members = [
+  "crates/neatxlsx_core",
+  "crates/neatxlsx_py",
+]
+resolver = "2"
+
+[workspace.package]
+version = "0.1.0"
+edition = "2024"
+rust-version = "1.96.0"
+license = "MIT"
+authors = ["Fuqing Zhang <fu.qing.zhang.work@gmail.com>"]
+
