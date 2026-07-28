@@ -160,11 +160,16 @@ impl XlsxWriter {
         fmt_scientific: CellFormatPatch,
         fmt_header: CellFormatPatch,
         options_write: XlsxWriteOptions,
-    ) -> Self {
+    ) -> Result<Self, String> {
         let mut workbook = Workbook::new();
         workbook.use_zip_large_file(options_write.should_use_zip64);
+        if let Some(parent) = path_file_out.parent() {
+            workbook
+                .set_tempdir(parent)
+                .map_err(format_xlsx_error_text)?;
+        }
 
-        Self {
+        Ok(Self {
             path_file_out,
             workbook,
             fmt_text,
@@ -176,7 +181,7 @@ impl XlsxWriter {
             existing_sheet_names: BTreeSet::new(),
             reports: Vec::new(),
             is_closed: false,
-        }
+        })
     }
 
     /// Return output file path as string.
@@ -627,13 +632,8 @@ impl XlsxWriter {
             None => vec![col_names.clone()],
         };
 
-        let cols_idx_numeric = if self.options_write.should_infer_numeric_cols {
+        let mut cols_idx_numeric = if self.options_write.should_infer_numeric_cols {
             select_numeric_column_indices_from_arrow_schema(schema)
-        } else {
-            vec![]
-        };
-        let cols_idx_integer_inferred = if self.options_write.should_infer_integer_cols {
-            select_integer_column_indices_from_arrow_schema(schema, &cols_idx_numeric)
         } else {
             vec![]
         };
@@ -641,11 +641,19 @@ impl XlsxWriter {
             select_sorted_indices_from_refs(&col_names_ref, options.cols_integer.as_deref())?;
         let cols_idx_decimal_specified =
             select_sorted_indices_from_refs(&col_names_ref, options.cols_decimal.as_deref())?;
-        let cols_idx_integer = if cols_idx_integer_specified.is_empty() {
-            cols_idx_integer_inferred
+        cols_idx_numeric.extend(cols_idx_integer_specified.iter().copied());
+        cols_idx_numeric.extend(cols_idx_decimal_specified.iter().copied());
+        cols_idx_numeric.sort_unstable();
+        cols_idx_numeric.dedup();
+        let mut cols_idx_integer = if self.options_write.should_infer_integer_cols {
+            select_integer_column_indices_from_arrow_schema(schema, &cols_idx_numeric)
         } else {
-            cols_idx_integer_specified
+            vec![]
         };
+        cols_idx_integer.retain(|idx| !cols_idx_decimal_specified.contains(idx));
+        cols_idx_integer.extend(cols_idx_integer_specified);
+        cols_idx_integer.sort_unstable();
+        cols_idx_integer.dedup();
 
         let rows_chunk = calculate_row_chunk_size(width_body, &self.options_write.row_chunk_policy);
         if rows_chunk == 0 {
@@ -933,28 +941,28 @@ impl XlsxWriter {
             header_grid = extract_string_grid_from_dataframe(df_header_custom)?;
         }
 
-        let cols_idx_numeric = if self.options_write.should_infer_numeric_cols {
+        let mut cols_idx_numeric = if self.options_write.should_infer_numeric_cols {
             select_numeric_column_indices(body)
         } else {
             vec![]
         };
-
-        let cols_idx_integer_inferred = if self.options_write.should_infer_integer_cols {
-            select_integer_column_indices(body, &cols_idx_numeric)
-        } else {
-            vec![]
-        };
-
         let cols_idx_integer_specified =
             select_sorted_indices_from_refs(&col_names, options.cols_integer.as_deref())?;
         let cols_idx_decimal_specified =
             select_sorted_indices_from_refs(&col_names, options.cols_decimal.as_deref())?;
-
-        let cols_idx_integer = if cols_idx_integer_specified.is_empty() {
-            cols_idx_integer_inferred
+        cols_idx_numeric.extend(cols_idx_integer_specified.iter().copied());
+        cols_idx_numeric.extend(cols_idx_decimal_specified.iter().copied());
+        cols_idx_numeric.sort_unstable();
+        cols_idx_numeric.dedup();
+        let mut cols_idx_integer = if self.options_write.should_infer_integer_cols {
+            select_integer_column_indices(body, &cols_idx_numeric)
         } else {
-            cols_idx_integer_specified
+            vec![]
         };
+        cols_idx_integer.retain(|idx| !cols_idx_decimal_specified.contains(idx));
+        cols_idx_integer.extend(cols_idx_integer_specified);
+        cols_idx_integer.sort_unstable();
+        cols_idx_integer.dedup();
         let header_row_count = header_grid.len();
 
         let mut report = XlsxReport {
@@ -1333,17 +1341,16 @@ impl<'a> XlsxSheetPlanBuilder<'a> {
         } else {
             vec![]
         };
-
-        let cols_idx_integer_inferred = if self.options_write.should_infer_integer_cols {
-            select_integer_column_indices(df_batch, &self.cols_idx_numeric)
-        } else {
-            vec![]
-        };
-
         let cols_idx_integer_specified =
             select_sorted_indices_from_refs(&col_names_ref, self.options.cols_integer.as_deref())?;
         self.cols_idx_decimal_specified =
             select_sorted_indices_from_refs(&col_names_ref, self.options.cols_decimal.as_deref())?;
+        self.cols_idx_numeric
+            .extend(cols_idx_integer_specified.iter().copied());
+        self.cols_idx_numeric
+            .extend(self.cols_idx_decimal_specified.iter().copied());
+        self.cols_idx_numeric.sort_unstable();
+        self.cols_idx_numeric.dedup();
 
         let rows_chunk =
             calculate_row_chunk_size(self.width_body, &self.options_write.row_chunk_policy);
@@ -1351,11 +1358,16 @@ impl<'a> XlsxSheetPlanBuilder<'a> {
             return Err("row_chunk_policy resolved to 0 rows; expected >= 1.".to_string());
         }
 
-        self.cols_idx_integer = if cols_idx_integer_specified.is_empty() {
-            cols_idx_integer_inferred
+        self.cols_idx_integer = if self.options_write.should_infer_integer_cols {
+            select_integer_column_indices(df_batch, &self.cols_idx_numeric)
         } else {
-            cols_idx_integer_specified
+            vec![]
         };
+        self.cols_idx_integer
+            .retain(|idx| !self.cols_idx_decimal_specified.contains(idx));
+        self.cols_idx_integer.extend(cols_idx_integer_specified);
+        self.cols_idx_integer.sort_unstable();
+        self.cols_idx_integer.dedup();
 
         self.header_widths_by_col = vec![0usize; self.width_body];
         self.body_widths_by_col = vec![0usize; self.width_body];

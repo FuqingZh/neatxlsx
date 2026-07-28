@@ -10,6 +10,7 @@
 .pytest_cache/
 .ruff_cache/
 .venv/
+uv.lock
 .cargo-ci/
 __pycache__/
 __pypackages__/

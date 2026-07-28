@@ -1,286 +1,495 @@
+"""Transactional Python facade for the Rust XLSX writer."""
+
+from __future__ import annotations
+
 import os
+import stat
+import tempfile
+import threading
 import warnings
 from collections.abc import Mapping, Sequence
+from dataclasses import fields
 from pathlib import Path
 from types import TracebackType
-from typing import Any, ClassVar, Literal, Protocol, Self, cast
+from typing import Any, Literal, Protocol, Self, cast
 
 import polars as pl
+import polars.selectors as cs
 
+from ._polars import collect_batches
 from ._rs_bridge import create_xlsx_writer_via_rs, is_rs_backend_available
-from .constant import (
-    DEFAULT_XLSX_FORMATS,
-    DEFAULT_XLSX_WRITE_OPTIONS,
-    LIT_FMT_KEYS,
-    ColumnIdentifier,
-)
+from .constant import DEFAULT_FORMATS
+from .errors import CommitError, StateError, WriteError
 from .spec import (
-    AutofitPolicy,
-    CellFormatPatch,
-    ScientificPolicy,
+    Autofit,
+    Format,
+    ScientificNotation,
+    SheetReport,
+    WorksheetPart,
     XlsxReport,
-    XlsxWriteOptions,
+    _RowChunkPolicy,
+    _ValuePolicy,
+    _WriteOptions,
 )
 
+ColumnSelection = str | int | Sequence[str | int] | cs.Selector | None
+_UMASK_LOCK = threading.Lock()
 
-class ProtocolXlsxWriterBackend(Protocol):
+
+class _Backend(Protocol):
     def close(self) -> None: ...
 
     def report(self) -> tuple[XlsxReport, ...]: ...
-
-    def write_sheet(
-        self,
-        body: Any,
-        sheet_name: str,
-        *,
-        header: Any | None = None,
-        cols_integer: Sequence[ColumnIdentifier] | None = None,
-        cols_decimal: Sequence[ColumnIdentifier] | None | Literal[False] = None,
-        num_frozen_cols: int = 0,
-        num_frozen_rows: int | None = None,
-        should_merge_header: bool = False,
-        should_keep_missing_values: bool | None = None,
-        policy_autofit: AutofitPolicy | None = None,
-        policy_scientific: ScientificPolicy | None = None,
-    ) -> Any: ...
 
     def write_sheet_batches(
         self,
         batches_scan: Any,
         batches_write: Any,
         sheet_name: str,
-        *,
-        header: Any | None = None,
-        cols_integer: Sequence[ColumnIdentifier] | None = None,
-        cols_decimal: Sequence[ColumnIdentifier] | None | Literal[False] = None,
-        num_frozen_cols: int = 0,
-        num_frozen_rows: int | None = None,
-        should_merge_header: bool = False,
-        should_keep_missing_values: bool | None = None,
-        policy_autofit: AutofitPolicy | None = None,
-        policy_scientific: ScientificPolicy | None = None,
-        schema_body: Any | None = None,
+        **kwargs: Any,
     ) -> Any: ...
 
     def write_sheet_batches_single_pass(
         self,
         batches_write: Any,
         sheet_name: str,
-        *,
-        header: Any | None = None,
-        cols_integer: Sequence[ColumnIdentifier] | None = None,
-        cols_decimal: Sequence[ColumnIdentifier] | None | Literal[False] = None,
-        num_frozen_cols: int = 0,
-        num_frozen_rows: int | None = None,
-        should_merge_header: bool = False,
-        should_keep_missing_values: bool | None = None,
-        policy_autofit: AutofitPolicy | None = None,
-        policy_scientific: ScientificPolicy | None = None,
-        schema_body: Any | None = None,
+        **kwargs: Any,
     ) -> Any: ...
 
 
-class XlsxWriter:
-    """Rust-backed XLSX writer.
+class Workbook:
+    """Write Polars tables to one XLSX file with transactional replacement.
 
-    Public API is kept aligned with the previous Python implementation.
-    The execution backend is always Rust (``neatxlsx._native``) and this class is a
-    thin Python facade that preserves call signatures and return types.
+    The target is changed only by a successful :meth:`close`. ZIP64 is enabled
+    by default for large-workbook reliability; pass ``use_zip64=False`` only
+    for readers that don't support ZIP64.
+
+    Args:
+        path: Local or mounted-filesystem output path. Its parent must exist.
+        text_format: Partial override for text cells.
+        integer_format: Partial override for integer cells.
+        decimal_format: Partial override for decimal cells.
+        scientific_format: Partial override for scientific-number cells.
+        header_format: Partial override for header cells.
+        keep_missing_values: Write missing and non-finite values as tokens
+            instead of blank cells.
+        infer_numeric_columns: Infer numeric formatting from Polars dtypes.
+        infer_integer_columns: Infer integer formatting from Polars dtypes.
+        use_zip64: Use ZIP64 container extensions.
+        integer_coerce: Preserve non-integral values as text (``"strict"``) or
+            truncate them to integers (``"coerce"``).
+        missing_value: Token for null values when missing values are retained.
+        nan_value: Token for NaN.
+        positive_infinity: Token for positive infinity.
+        negative_infinity: Token for negative infinity.
+        chunk_size: Fixed number of LazyFrame rows per Arrow batch.
+
+    Examples:
+        >>> import neatxlsx as nx
+        >>> import polars as pl
+        >>> with nx.Workbook("report.xlsx") as workbook:
+        ...     workbook.write_sheet(pl.DataFrame({"value": [1, 2]}), "Data")
     """
-
-    DEFAULT_XLSX_FORMATS: ClassVar[Mapping[LIT_FMT_KEYS, CellFormatPatch]] = (
-        DEFAULT_XLSX_FORMATS
-    )
-    DEFAULT_XLSX_WRITE_OPTIONS: ClassVar[XlsxWriteOptions] = DEFAULT_XLSX_WRITE_OPTIONS
 
     def __init__(
         self,
-        file_out: os.PathLike[str] | str,
+        path: str | os.PathLike[str],
         *,
-        fmt_text: CellFormatPatch | None = None,
-        fmt_integer: CellFormatPatch | None = None,
-        fmt_decimal: CellFormatPatch | None = None,
-        fmt_scientific: CellFormatPatch | None = None,
-        fmt_header: CellFormatPatch | None = None,
-        options_write: XlsxWriteOptions | None = None,
-    ):
+        text_format: Format | None = None,
+        integer_format: Format | None = None,
+        decimal_format: Format | None = None,
+        scientific_format: Format | None = None,
+        header_format: Format | None = None,
+        keep_missing_values: bool = False,
+        infer_numeric_columns: bool = True,
+        infer_integer_columns: bool = True,
+        use_zip64: bool = True,
+        integer_coerce: Literal["strict", "coerce"] = "strict",
+        missing_value: str = "NA",
+        nan_value: str = "NaN",
+        positive_infinity: str = "Inf",
+        negative_infinity: str = "-Inf",
+        chunk_size: int | None = None,
+    ) -> None:
+        if isinstance(path, bool) or not isinstance(path, (str, os.PathLike)):
+            raise TypeError("path must be str or os.PathLike[str].")
+        if integer_coerce not in {"strict", "coerce"}:
+            raise ValueError("integer_coerce must be 'strict' or 'coerce'.")
+        if chunk_size is not None and chunk_size < 1:
+            raise ValueError("chunk_size must be >= 1 or None.")
+        for name, value in (
+            ("keep_missing_values", keep_missing_values),
+            ("infer_numeric_columns", infer_numeric_columns),
+            ("infer_integer_columns", infer_integer_columns),
+            ("use_zip64", use_zip64),
+        ):
+            if not isinstance(value, bool):
+                raise TypeError(f"{name} must be bool.")
+
+        target = Path(path)
+        if target.is_symlink():
+            raise ValueError("path must not be a symbolic link.")
+        if target.exists() and not target.is_file():
+            raise ValueError("path must name a file, not a directory.")
+        parent = target.parent if target.parent != Path("") else Path(".")
+        if not parent.exists():
+            raise FileNotFoundError(f"Output parent does not exist: {parent}")
+        if not parent.is_dir():
+            raise NotADirectoryError(f"Output parent is not a directory: {parent}")
         if not is_rs_backend_available():
             raise RuntimeError(
-                "Rust xlsx backend is unavailable. Build/install `neatxlsx._native` first."
+                "Rust XLSX backend is unavailable; reinstall a platform wheel."
             )
 
-        self.file_out = Path(file_out)
-        self._options_write = (
-            options_write if options_write is not None else DEFAULT_XLSX_WRITE_OPTIONS
+        self.path = target
+        self._target_mode = (
+            stat.S_IMODE(target.stat().st_mode)
+            if target.exists()
+            else 0o666 & ~_read_umask()
         )
-        self._writer: ProtocolXlsxWriterBackend = cast(
-            ProtocolXlsxWriterBackend,
-            create_xlsx_writer_via_rs(
-                str(self.file_out),
-                fmt_text=fmt_text,
-                fmt_integer=fmt_integer,
-                fmt_decimal=fmt_decimal,
-                fmt_scientific=fmt_scientific,
-                fmt_header=fmt_header,
-                options_write=self._options_write,
-            ),
+        descriptor, temp_name = tempfile.mkstemp(
+            prefix=f".{target.name}.neatxlsx-",
+            suffix=".xlsx",
+            dir=parent,
         )
+        os.close(descriptor)
+        self._temp_path = Path(temp_name)
+        self._state: Literal["open", "prepared", "closed", "aborted"] = "open"
+        self._requested_names: list[str] = []
+        self._reports_cache: tuple[SheetReport, ...] = ()
+        self._infer_numeric_columns = infer_numeric_columns
+        self._infer_integer_columns = infer_integer_columns
 
-    def __enter__(self) -> "XlsxWriter":
+        options = _WriteOptions(
+            value_policy=_ValuePolicy(
+                missing_value_str=missing_value,
+                nan_str=nan_value,
+                posinf_str=positive_infinity,
+                neginf_str=negative_infinity,
+                integer_coerce=integer_coerce,
+            ),
+            should_keep_missing_values=keep_missing_values,
+            # Python resolves dtype inference per write, including overrides.
+            should_infer_numeric_cols=False,
+            should_infer_integer_cols=False,
+            row_chunk_policy=_RowChunkPolicy(fixed_size=chunk_size),
+            base_format_patch=Format(
+                border=0,
+                top=0,
+                bottom=0,
+                left=0,
+                right=0,
+            ),
+            should_use_zip64=use_zip64,
+        )
+        self._options = options
+        try:
+            self._backend: _Backend | None = cast(
+                _Backend,
+                create_xlsx_writer_via_rs(
+                    str(self._temp_path),
+                    fmt_text=_merge_format(DEFAULT_FORMATS["text"], text_format),
+                    fmt_integer=_merge_format(
+                        DEFAULT_FORMATS["integer"], integer_format
+                    ),
+                    fmt_decimal=_merge_format(
+                        DEFAULT_FORMATS["decimal"], decimal_format
+                    ),
+                    fmt_scientific=_merge_format(
+                        DEFAULT_FORMATS["scientific"], scientific_format
+                    ),
+                    fmt_header=_merge_format(DEFAULT_FORMATS["header"], header_format),
+                    options_write=options,
+                ),
+            )
+        except Exception:
+            self._state = "aborted"
+            self._temp_path.unlink(missing_ok=True)
+            raise
+
+    def __enter__(self) -> Self:
         return self
 
     def __exit__(
-        self, exc_type: type | None, exc: BaseException | None, tb: TracebackType | None
+        self,
+        exc_type: type[BaseException] | None,
+        exc: BaseException | None,
+        traceback: TracebackType | None,
     ) -> None:
-        self.close()
+        if exc_type is None:
+            self.close()
+        else:
+            self.abort()
 
-    def close(self) -> None:
-        self._writer.close()
-
-    def report(self) -> tuple[XlsxReport, ...]:
-        return self._writer.report()
+    def __del__(self) -> None:
+        if getattr(self, "_state", None) in {"open", "prepared"}:
+            warnings.warn(
+                "Unclosed neatxlsx.Workbook was discarded; call close() or use a context manager.",
+                ResourceWarning,
+                stacklevel=2,
+            )
+            try:
+                self.abort()
+            except Exception:
+                pass
 
     def write_sheet(
         self,
-        body: pl.DataFrame | pl.LazyFrame,
+        data: pl.DataFrame | pl.LazyFrame,
         sheet_name: str,
         *,
         header: pl.DataFrame | None = None,
-        cols_integer: Sequence[ColumnIdentifier] | None = None,
-        cols_decimal: Sequence[ColumnIdentifier] | None | Literal[False] = None,
-        num_frozen_cols: int = 0,
-        num_frozen_rows: int | None = None,
-        should_merge_header: bool = False,
-        should_keep_missing_values: bool | None = None,
-        policy_autofit: AutofitPolicy | None = None,
-        policy_scientific: ScientificPolicy | None = None,
+        integer_columns: ColumnSelection = None,
+        decimal_columns: ColumnSelection = None,
+        freeze_columns: int = 0,
+        freeze_rows: int | None = None,
+        merge_header: bool = False,
+        keep_missing_values: bool | None = None,
+        autofit: Autofit | None = None,
+        scientific_notation: ScientificNotation | None = None,
+        infer_numeric_columns: bool | None = None,
+        infer_integer_columns: bool | None = None,
     ) -> Self:
-        """Write one worksheet to the workbook.
+        """Write one logical table, splitting it at Excel limits when needed.
+
+        Explicit integer or decimal selectors override inferred formatting for
+        those columns. Other columns continue to use dtype inference. Selectors
+        may be a column name, zero-based index, ordered sequence, or Polars
+        selector. Empty and unordered collections are rejected.
 
         Args:
-            body: Polars DataFrame or LazyFrame to write. DataFrame inputs are
-                converted to LazyFrame internally and use the same streaming
-                writer path as LazyFrame inputs.
-            sheet_name: Requested worksheet name before Excel sanitization and
-                uniqueness adjustments.
-            header: Optional custom header grid as a Polars DataFrame. When
-                provided, it must have the same width as ``body`` and at least
-                one row.
-            cols_integer:
-                Optional column identifiers that should use integer formatting and
-                integer conversion rules. Use ``str`` for literal column names and
-                ``int`` for zero-based column indices. Pure numeric strings such as
-                ``"0"`` are treated as column names, not indices.
-            cols_decimal:
-                Optional column identifiers that should use decimal formatting.
-                Use ``str`` for literal column names and ``int`` for zero-based
-                column indices. Pure numeric strings such as ``"0"`` are treated as
-                column names, not indices.
-                Pass ``False`` to disable explicit decimal-column selection.
-            num_frozen_cols: Number of leftmost columns to freeze.
-            num_frozen_rows: Number of top rows to freeze. When ``None``, the
-                backend uses the resolved header height.
-            should_merge_header:
-                - ``True``: Merge all adjacent header labels that are identical.
-                - ``False``: Don't merge any header labels.
-            should_keep_missing_values:
-                - ``True``: Write missing, NaN, and Inf values as text tokens.
-                - ``False``: Write missing, NaN, and Inf values as blank cells.
-                - ``None``: Use the writer-level option for missing value handling.
-            policy_autofit: Column autofit policy applied to the sheet.
-            policy_scientific: Scientific-number formatting policy applied per
-                cell. If ``None``, scientific formatting is disabled by default.
-                Only numeric values that fall within the policy scope and
-                trigger thresholds use the scientific format; other cells keep
-                the column base format.
+            data: Polars DataFrame or LazyFrame.
+            sheet_name: Requested name before Excel sanitization and uniqueness.
+            header: Optional multi-row header DataFrame with the same width.
+            integer_columns: Columns forced to integer handling.
+            decimal_columns: Columns forced to decimal handling.
+            freeze_columns: Number of leading columns to freeze.
+            freeze_rows: Number of leading rows to freeze; ``None`` uses header
+                height.
+            merge_header: Merge adjacent equal multi-row header labels.
+            keep_missing_values: Per-sheet override; ``None`` inherits the
+                workbook setting.
+            autofit: Width inference policy.
+            scientific_notation: Scientific-number policy.
+            infer_numeric_columns: Per-sheet inference override.
+            infer_integer_columns: Per-sheet integer-inference override.
 
         Returns:
-            Self: The current writer instance for fluent chaining.
+            The same workbook for fluent chaining.
 
         Examples:
-            ```python
-            with XlsxWriter("output.xlsx") as writer:
-                writer.write_sheet(
-                    my_dataframe,
-                    "Data",
-                    cols_integer=["id", "age"],
-                    cols_decimal=["score"],
-                    num_frozen_cols=1,
-                    should_merge_header=True,
-                )
-
-            with XlsxWriter("output.xlsx") as writer:
-                writer.write_sheet(
-                    my_dataframe,
-                    "Data",
-                    cols_integer=[0, 1],  # using column indices instead of names
-                    cols_decimal=[2],
-                    num_frozen_rows=2,
-                    should_keep_missing_values=True,
-                    policy_autofit=AutofitPolicy(
-                        mode="all",
-                        height_body_inferred_max=20_000,
-                        width_cell_min=8,
-                        width_cell_max=60,
-                        width_cell_padding=2
-                    ),
-                    policy_scientific=ScientificPolicy(
-                        scope="decimal",
-                        thr_min=0.0001,
-                        thr_max=1_000_000_000_000.0
-                    ),
-                )
-            ```
+            >>> import polars as pl
+            >>> import polars.selectors as cs
+            >>> with Workbook("report.xlsx") as workbook:
+            ...     workbook.write_sheet(
+            ...         pl.DataFrame({"id": [1], "score": [1.25]}),
+            ...         "Data",
+            ...         integer_columns="id",
+            ...         decimal_columns=cs.float(),
+            ...         freeze_columns=1,
+            ...     )
         """
-        _warn_numeric_string_column_selectors(cols_integer, arg_name="cols_integer")
-        _warn_numeric_string_column_selectors(cols_decimal, arg_name="cols_decimal")
-        body_lazy = _normalize_body(body)
-        header_normalized = _normalize_header(header)
-        schema_body = _derive_schema_body(body_lazy)
+        self._require_open()
+        lazy = _normalize_data(data)
+        normalized_header = _normalize_header(header)
+        schema = lazy.collect_schema()
+        if normalized_header is not None:
+            if normalized_header.height == 0:
+                raise ValueError("header must contain at least one row.")
+            if normalized_header.width != len(schema):
+                raise ValueError("header width must equal data width.")
+        resolved_autofit = autofit or Autofit()
+        resolved_scientific = scientific_notation or ScientificNotation()
+        _validate_nonnegative_int(freeze_columns, "freeze_columns")
+        if freeze_rows is not None:
+            _validate_nonnegative_int(freeze_rows, "freeze_rows")
+        if not isinstance(sheet_name, str):
+            raise TypeError("sheet_name must be str.")
+        if keep_missing_values is not None and not isinstance(
+            keep_missing_values, bool
+        ):
+            raise TypeError("keep_missing_values must be bool or None.")
+        if not isinstance(merge_header, bool):
+            raise TypeError("merge_header must be bool.")
 
-        chunk_size = _derive_collect_batches_chunk_size(
-            body_lazy, options_write=self._options_write
+        infer_numeric = _resolve_inherit_bool(
+            infer_numeric_columns,
+            self._infer_numeric_columns,
+            "infer_numeric_columns",
         )
-        if _can_write_lazy_single_pass(policy_autofit):
-            self._writer.write_sheet_batches_single_pass(
-                batches_write=_collect_batches(body_lazy, chunk_size=chunk_size),
-                sheet_name=sheet_name,
-                header=header_normalized,
-                cols_integer=cols_integer,
-                cols_decimal=cols_decimal,
-                num_frozen_cols=num_frozen_cols,
-                num_frozen_rows=num_frozen_rows,
-                should_merge_header=should_merge_header,
-                should_keep_missing_values=should_keep_missing_values,
-                policy_autofit=policy_autofit,
-                policy_scientific=policy_scientific,
-                schema_body=schema_body,
-            )
-        else:
-            self._writer.write_sheet_batches(
-                batches_scan=_collect_batches(body_lazy, chunk_size=chunk_size),
-                batches_write=_collect_batches(body_lazy, chunk_size=chunk_size),
-                sheet_name=sheet_name,
-                header=header_normalized,
-                cols_integer=cols_integer,
-                cols_decimal=cols_decimal,
-                num_frozen_cols=num_frozen_cols,
-                num_frozen_rows=num_frozen_rows,
-                should_merge_header=should_merge_header,
-                should_keep_missing_values=should_keep_missing_values,
-                policy_autofit=policy_autofit,
-                policy_scientific=policy_scientific,
-                schema_body=schema_body,
-            )
+        infer_integer = _resolve_inherit_bool(
+            infer_integer_columns,
+            self._infer_integer_columns,
+            "infer_integer_columns",
+        )
+        integer_names, decimal_names = _resolve_numeric_roles(
+            schema,
+            integer_columns=integer_columns,
+            decimal_columns=decimal_columns,
+            infer_numeric=infer_numeric,
+            infer_integer=infer_integer,
+        )
+        chunk_size = _derive_chunk_size(
+            len(schema), self._options.row_chunk_policy.fixed_size
+        )
+        schema_frame = pl.DataFrame(schema=schema)
+        kwargs = {
+            "header": normalized_header,
+            "cols_integer": integer_names,
+            "cols_decimal": decimal_names,
+            "num_frozen_cols": freeze_columns,
+            "num_frozen_rows": freeze_rows,
+            "should_merge_header": merge_header,
+            "should_keep_missing_values": keep_missing_values,
+            "policy_autofit": resolved_autofit,
+            "policy_scientific": resolved_scientific,
+            "schema_body": schema_frame,
+        }
+        backend = cast(_Backend, self._backend)
+        try:
+            if resolved_autofit.mode in {"none", "header"}:
+                backend.write_sheet_batches_single_pass(
+                    collect_batches(lazy, chunk_size=chunk_size),
+                    sheet_name,
+                    **kwargs,
+                )
+            else:
+                backend.write_sheet_batches(
+                    collect_batches(lazy, chunk_size=chunk_size),
+                    collect_batches(lazy, chunk_size=chunk_size),
+                    sheet_name,
+                    **kwargs,
+                )
+        except Exception as exc:
+            self.abort()
+            raise WriteError(f"Could not write sheet {sheet_name!r}: {exc}") from exc
+        self._requested_names.append(sheet_name)
         return self
 
+    def report(self) -> tuple[SheetReport, ...]:
+        """Return immutable metadata for successful logical writes.
 
-def _normalize_body(value: pl.DataFrame | pl.LazyFrame) -> pl.LazyFrame:
+        Examples:
+            >>> workbook = Workbook("report.xlsx")
+            >>> workbook.write_sheet(pl.DataFrame({"a": [1]}), "Data")
+            Workbook(...)
+            >>> workbook.report()[0].requested_name
+            'Data'
+            >>> workbook.abort()
+        """
+        backend = self._backend
+        if backend is None:
+            return self._reports_cache
+        return self._convert_reports(backend.report())
+
+    def _convert_reports(
+        self, reports: tuple[XlsxReport, ...]
+    ) -> tuple[SheetReport, ...]:
+        return tuple(
+            SheetReport(
+                requested_name=requested_name,
+                worksheets=tuple(
+                    WorksheetPart(
+                        name=part.sheet_name,
+                        row_start=part.row_start_inclusive,
+                        row_stop=part.row_end_exclusive,
+                        column_start=part.col_start_inclusive,
+                        column_stop=part.col_end_exclusive,
+                    )
+                    for part in report.sheets
+                ),
+                warnings=tuple(report.warnings),
+            )
+            for requested_name, report in zip(
+                self._requested_names, reports, strict=True
+            )
+        )
+
+    def close(self) -> None:
+        """Commit the completed workbook to its target.
+
+        Repeated calls after success are harmless. If final replacement raises
+        :class:`CommitError`, the completed temporary file is retained and the
+        same method may be retried.
+
+        Examples:
+            >>> workbook = Workbook("report.xlsx")
+            >>> workbook.write_sheet(pl.DataFrame({"a": [1]}), "Data")
+            Workbook(...)
+            >>> workbook.close()
+            >>> workbook.close()
+        """
+        if self._state == "closed":
+            return
+        if self._state == "aborted":
+            raise StateError("Cannot close an aborted workbook.")
+        if self._state == "open":
+            backend = cast(_Backend, self._backend)
+            try:
+                backend.close()
+            except Exception as exc:
+                self.abort()
+                raise WriteError(f"Could not finalize XLSX content: {exc}") from exc
+            self._reports_cache = self._convert_reports(backend.report())
+            self._state = "prepared"
+            self._backend = None
+        try:
+            os.chmod(self._temp_path, self._target_mode)
+        except OSError as exc:
+            raise CommitError(str(self.path), str(exc)) from exc
+        try:
+            os.replace(self._temp_path, self.path)
+        except OSError as exc:
+            raise CommitError(str(self.path), str(exc)) from exc
+        self._state = "closed"
+
+    def abort(self) -> None:
+        """Discard the in-progress or prepared workbook.
+
+        Repeated calls after abort are harmless.
+
+        Examples:
+            >>> workbook = Workbook("report.xlsx")
+            >>> workbook.abort()
+            >>> workbook.abort()
+        """
+        if self._state == "aborted":
+            return
+        if self._state == "closed":
+            raise StateError("Cannot abort a committed workbook.")
+        if self._backend is not None:
+            self._reports_cache = self._convert_reports(self._backend.report())
+        self._backend = None
+        self._temp_path.unlink(missing_ok=True)
+        self._state = "aborted"
+
+    def _require_open(self) -> None:
+        if self._state != "open":
+            raise StateError(f"Cannot write when workbook state is {self._state!r}.")
+
+    def __repr__(self) -> str:
+        return f"Workbook(path={str(self.path)!r}, state={self._state!r})"
+
+
+def _merge_format(default: Format, override: Format | None) -> Format:
+    if override is None:
+        return default
+    if not isinstance(override, Format):
+        raise TypeError("format overrides must be neatxlsx.Format or None.")
+    changes = {
+        field.name: value
+        for field in fields(override)
+        if (value := getattr(override, field.name)) is not None
+    }
+    return default.replace(**changes)
+
+
+def _normalize_data(value: pl.DataFrame | pl.LazyFrame) -> pl.LazyFrame:
     if isinstance(value, pl.LazyFrame):
         return value
     if isinstance(value, pl.DataFrame):
         return value.lazy()
-    raise TypeError("body must be a polars DataFrame or LazyFrame.")
+    raise TypeError("data must be a polars DataFrame or LazyFrame.")
 
 
 def _normalize_header(value: pl.DataFrame | None) -> pl.DataFrame | None:
@@ -289,81 +498,113 @@ def _normalize_header(value: pl.DataFrame | None) -> pl.DataFrame | None:
     raise TypeError("header must be a polars DataFrame or None.")
 
 
-def _derive_schema_body(value: pl.LazyFrame) -> pl.DataFrame:
-    return pl.DataFrame(schema=value.collect_schema())
-
-
-def _can_write_lazy_single_pass(policy_autofit: AutofitPolicy | None) -> bool:
-    if policy_autofit is None:
-        return True
-    return policy_autofit.mode in {"header", "none"}
-
-
-def _collect_batches(value: Any, *, chunk_size: int) -> Any:
-    try:
-        return value.collect_batches(chunk_size=chunk_size)
-    except TypeError:
-        return value.collect_batches()
-
-
-def _derive_collect_batches_chunk_size(
-    value: Any, *, options_write: XlsxWriteOptions
-) -> int:
-    width = _derive_lazy_width(value)
-    policy = options_write.row_chunk_policy
-
-    if policy.fixed_size is not None:
-        chunk_size = policy.fixed_size
-    elif width >= policy.width_large:
-        chunk_size = policy.size_large
-    elif width >= policy.width_medium:
-        chunk_size = policy.size_medium
-    else:
-        chunk_size = policy.size_default
-
-    if chunk_size < 1:
-        raise ValueError("row_chunk_policy resolved to 0 rows; expected >= 1.")
-    return chunk_size
-
-
-def _derive_lazy_width(value: Any) -> int:
-    collect_schema = getattr(value, "collect_schema", None)
-    if callable(collect_schema):
-        return len(cast(Any, collect_schema()))
-
-    schema = getattr(value, "schema", None)
-    if schema is not None:
-        try:
-            return len(cast(Any, schema))
-        except TypeError:
-            return 0
-
-    return 0
-
-
-def _warn_numeric_string_column_selectors(
-    value: Sequence[ColumnIdentifier] | None | Literal[False] | object,
+def _resolve_numeric_roles(
+    schema: pl.Schema,
     *,
-    arg_name: str,
-) -> None:
-    match value:
-        case None | False:
-            return
-        case str() | int():
-            items = (value,)
-        case Sequence():
-            items = value
-        case _:
-            return
+    integer_columns: ColumnSelection,
+    decimal_columns: ColumnSelection,
+    infer_numeric: bool,
+    infer_integer: bool,
+) -> tuple[tuple[str, ...], tuple[str, ...]]:
+    names = tuple(schema.names())
+    explicit_integer = set(_resolve_columns(integer_columns, schema, "integer_columns"))
+    explicit_decimal = set(_resolve_columns(decimal_columns, schema, "decimal_columns"))
+    overlap = explicit_integer & explicit_decimal
+    if overlap:
+        raise ValueError(
+            "integer_columns and decimal_columns overlap: " + ", ".join(sorted(overlap))
+        )
 
-    for _item in items:
-        if isinstance(_item, str) and _item.isascii() and _item.isdigit():
-            warnings.warn(
-                (
-                    f"{arg_name} contains numeric string selector {_item!r}; "
-                    "string selectors are treated as literal column names. "
-                    "Pass an int to select a zero-based column index."
-                ),
-                category=UserWarning,
-                stacklevel=2,
-            )
+    numeric = {
+        name for name, dtype in schema.items() if infer_numeric and dtype.is_numeric()
+    }
+    integer = {
+        name for name, dtype in schema.items() if infer_integer and dtype.is_integer()
+    }
+    numeric.update(integer)
+    numeric.update(explicit_decimal)
+    numeric.update(explicit_integer)
+    integer.difference_update(explicit_decimal)
+    integer.update(explicit_integer)
+    return (
+        tuple(name for name in names if name in integer),
+        tuple(name for name in names if name in numeric and name not in integer),
+    )
+
+
+def _resolve_columns(
+    value: ColumnSelection,
+    schema: pl.Schema,
+    argument: str,
+) -> tuple[str, ...]:
+    if value is None:
+        return ()
+    if isinstance(value, bool):
+        raise TypeError(f"{argument} must not be bool.")
+    if isinstance(value, cs.Selector):
+        return tuple(cs.expand_selector(schema, value))
+    if isinstance(value, (str, int)):
+        items: Sequence[str | int] = (value,)
+    elif isinstance(value, (set, frozenset, Mapping)):
+        raise TypeError(
+            f"{argument} must be an ordered sequence, not {type(value).__name__}."
+        )
+    elif isinstance(value, Sequence) and not isinstance(value, (bytes, bytearray)):
+        if not value:
+            raise ValueError(f"{argument} must not be empty; use None.")
+        items = value
+    else:
+        raise TypeError(
+            f"{argument} must be a name, index, ordered sequence, Polars selector, or None."
+        )
+
+    names = schema.names()
+    resolved: list[str] = []
+    for item in items:
+        if isinstance(item, bool):
+            raise TypeError(f"{argument} contains bool, which isn't a column index.")
+        if isinstance(item, str):
+            if item not in schema:
+                raise ValueError(f"{argument} contains unknown column {item!r}.")
+            name = item
+        elif isinstance(item, int):
+            if item < 0 or item >= len(names):
+                raise ValueError(f"{argument} index {item} is out of range.")
+            name = names[item]
+        else:
+            raise TypeError(f"{argument} items must be str or int.")
+        if name not in resolved:
+            resolved.append(name)
+    return tuple(resolved)
+
+
+def _resolve_inherit_bool(value: bool | None, default: bool, name: str) -> bool:
+    if value is None:
+        return default
+    if not isinstance(value, bool):
+        raise TypeError(f"{name} must be bool or None.")
+    return value
+
+
+def _validate_nonnegative_int(value: int, name: str) -> None:
+    if isinstance(value, bool) or not isinstance(value, int):
+        raise TypeError(f"{name} must be int.")
+    if value < 0:
+        raise ValueError(f"{name} must be >= 0.")
+
+
+def _derive_chunk_size(width: int, fixed_size: int | None) -> int:
+    if fixed_size is not None:
+        return fixed_size
+    if width >= 8_000:
+        return 1_000
+    if width >= 2_000:
+        return 2_000
+    return 10_000
+
+
+def _read_umask() -> int:
+    with _UMASK_LOCK:
+        value = os.umask(0)
+        os.umask(value)
+        return value

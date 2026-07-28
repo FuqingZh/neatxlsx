@@ -1,0 +1,34 @@
+name: nightly
+
+on:
+  schedule:
+    - cron: "23 3 * * 1"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  polars:
+    strategy:
+      fail-fast: false
+      matrix:
+        lane: [minimum, latest, prerelease]
+    continue-on-error: ${{ matrix.lane == 'prerelease' }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+      - run: python -m pip install -U pdm
+      - run: pdm sync -G dev
+      - if: matrix.lane == 'minimum'
+        run: pdm run uv pip install "polars==1.38.1"
+      - if: matrix.lane == 'latest'
+        run: pdm run uv pip install -U polars
+      - if: matrix.lane == 'prerelease'
+        run: pdm run uv pip install -U --prerelease allow polars
+      - run: pdm run maturin develop
+      - run: pdm run pytest tests/unit tests/contract tests/integration -q
+

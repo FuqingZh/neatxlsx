@@ -10,11 +10,11 @@ import sys
 import tempfile
 import zipfile
 from dataclasses import asdict, dataclass
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from importlib import metadata
 from pathlib import Path
 from time import perf_counter
-from typing import Any
+from typing import Any, Literal, cast
 
 import polars as pl
 
@@ -23,8 +23,7 @@ SRC_DIR = PROJECT_ROOT / "python"
 if str(SRC_DIR) not in sys.path:
     sys.path.insert(0, str(SRC_DIR))
 
-from neatxlsx import XlsxWriter  # noqa: E402
-from neatxlsx.spec import AutofitPolicy  # noqa: E402
+from neatxlsx import Autofit, Workbook  # noqa: E402
 
 
 @dataclass(frozen=True)
@@ -55,7 +54,7 @@ class XlsxBenchmarkStats:
 
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(
-        description="Run XLSX write performance benchmarks for neatxlsx.XlsxWriter.",
+        description="Run XLSX write performance benchmarks for neatxlsx.Workbook.",
     )
     parser.add_argument(
         "--repeat",
@@ -186,9 +185,7 @@ def derive_excel_col_idx_1based_from_name(c_col_name: str) -> int:
 def derive_expected_dimension_ref(*, n_rows_total: int, n_cols_total: int) -> str:
     n_rows_final = max(1, n_rows_total)
     n_cols_final = max(1, n_cols_total)
-    c_cell_end = (
-        f"{derive_excel_col_name_from_idx_1based(n_cols_final)}{n_rows_final}"
-    )
+    c_cell_end = f"{derive_excel_col_name_from_idx_1based(n_cols_final)}{n_rows_final}"
     if c_cell_end == "A1":
         return "A1"
     return f"A1:{c_cell_end}"
@@ -292,13 +289,15 @@ def run_one_write(
 ) -> float:
     n_t_start = perf_counter()
     with writer_cls(path_xlsx_out) as inst_writer:
-        policy_autofit = AutofitPolicy(
-            mode=rule_autofit_columns if should_autofit_columns else "none"
+        mode = cast(
+            Literal["none", "header", "body", "all"],
+            rule_autofit_columns if should_autofit_columns else "none",
         )
+        autofit = Autofit(mode=mode)
         inst_writer.write_sheet(
-            df=df,
+            data=df,
             sheet_name="benchmark",
-            policy_autofit=policy_autofit,
+            autofit=autofit,
         )
     return perf_counter() - n_t_start
 
@@ -375,7 +374,7 @@ def benchmark_scenario(
     )
 
 
-def render_markdown_summary(payload: dict[str, object]) -> str:
+def render_markdown_summary(payload: dict[str, Any]) -> str:
     l_scenarios = payload["scenarios"]
     assert isinstance(l_scenarios, list)
 
@@ -438,11 +437,11 @@ def main() -> int:
         raise ValueError("--warmup must be >= 0")
 
     l_scenarios = build_scenarios(args.profile)
-    l_backends: list[tuple[str, Any]] = [("rust", XlsxWriter)]
+    l_backends: list[tuple[str, Any]] = [("rust", Workbook)]
     path_file_backend_rs = enforce_release_rust_backend()
 
     args.out_dir.mkdir(parents=True, exist_ok=True)
-    ts = datetime.now(timezone.utc)
+    ts = datetime.now(UTC)
     c_timestamp_compact = ts.strftime("%Y%m%dT%H%M%SZ")
 
     with tempfile.TemporaryDirectory(prefix="neatxlsx_bench_") as c_dir_tmp:

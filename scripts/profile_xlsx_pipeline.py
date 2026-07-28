@@ -17,9 +17,8 @@ SRC_DIR = PROJECT_ROOT / "python"
 if str(SRC_DIR) not in sys.path:
     sys.path.insert(0, str(SRC_DIR))
 
-from neatxlsx import AutofitPolicy, XlsxWriter  # noqa: E402
+from neatxlsx import Autofit, Workbook  # noqa: E402
 from neatxlsx._rs_bridge import _mod_rs  # noqa: E402
-from neatxlsx.spec import XlsxRowChunkPolicy, XlsxWriteOptions  # noqa: E402
 
 ProfileMode = Literal["collect-only", "arrow-drain", "xlsx-write"]
 AutofitMode = Literal["none", "header", "body", "all"]
@@ -133,18 +132,12 @@ def profile_xlsx_write(
     if out.exists():
         out.unlink()
 
-    options_write = (
-        XlsxWriteOptions(row_chunk_policy=XlsxRowChunkPolicy(fixed_size=chunk_size))
-        if chunk_size is not None
-        else None
-    )
-
-    with XlsxWriter(out, options_write=options_write) as writer:
+    with Workbook(out, chunk_size=chunk_size) as writer:
         for sheet_idx in range(sheets):
             writer.write_sheet(
                 lf,
                 f"S{sheet_idx + 1}",
-                policy_autofit=AutofitPolicy(mode=autofit),
+                autofit=Autofit(mode=autofit),
             )
 
     has_shared_strings = validate_xlsx(out, rows=rows, sheets=sheets)

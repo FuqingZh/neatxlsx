@@ -122,7 +122,8 @@ impl PyXlsxWriter {
             c_fmt_scientific,
             c_fmt_header,
             cfg_options_write,
-        );
+        )
+        .map_err(PyValueError::new_err)?;
 
         Ok(Self { file_out, inner })
     }
@@ -829,21 +830,21 @@ fn parse_autofit_policy(obj: Option<&Bound<'_, PyAny>>) -> PyResult<Option<Autof
     if let Some(v) = extract_optional_attr::<String>(obj, "mode")? {
         policy.mode = parse_autofit_mode(&v)?;
     }
-    if obj.hasattr("height_body_inferred_max")? {
-        let val = obj.getattr("height_body_inferred_max")?;
+    if obj.hasattr("max_rows")? {
+        let val = obj.getattr("max_rows")?;
         if val.is_none() {
             policy.height_body_inferred_max = None;
         } else {
             policy.height_body_inferred_max = Some(val.extract::<usize>()?);
         }
     }
-    if let Some(v) = extract_optional_attr::<usize>(obj, "width_cell_min")? {
+    if let Some(v) = extract_optional_attr::<usize>(obj, "min_width")? {
         policy.width_cell_min = v;
     }
-    if let Some(v) = extract_optional_attr::<usize>(obj, "width_cell_max")? {
+    if let Some(v) = extract_optional_attr::<usize>(obj, "max_width")? {
         policy.width_cell_max = v;
     }
-    if let Some(v) = extract_optional_attr::<usize>(obj, "width_cell_padding")? {
+    if let Some(v) = extract_optional_attr::<usize>(obj, "padding")? {
         policy.width_cell_padding = v;
     }
 
@@ -863,10 +864,10 @@ fn parse_scientific_policy(obj: Option<&Bound<'_, PyAny>>) -> PyResult<Option<Sc
     if let Some(v) = extract_optional_attr::<String>(obj, "scope")? {
         policy.scope = parse_rule_scientific_scope(&v)?;
     }
-    if let Some(v) = extract_optional_attr::<f64>(obj, "thr_min")? {
+    if let Some(v) = extract_optional_attr::<f64>(obj, "min_absolute")? {
         policy.thr_min = v;
     }
-    if let Some(v) = extract_optional_attr::<f64>(obj, "thr_max")? {
+    if let Some(v) = extract_optional_attr::<f64>(obj, "max_absolute")? {
         policy.thr_max = v;
     }
     Ok(Some(policy))

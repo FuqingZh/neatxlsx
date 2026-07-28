@@ -33,6 +33,18 @@ format = ["sdist", "wheel"]
 distribution = true
 use_uv = true
 
+[tool.pdm.scripts]
+lint = "ruff check python tests scripts"
+format-check = "ruff format --check python tests scripts"
+typecheck = "pyright python tests scripts"
+rust-format = "cargo fmt --all --check"
+rust-lint = "cargo clippy --workspace --all-targets -- -D warnings"
+rust-test = "cargo test --workspace --all-targets"
+test = "pytest -q"
+package = {composite = ["maturin build --release --out dist", "python scripts/validate_dist.py --dist-dir dist"]}
+select-checks = "python scripts/select_checks.py"
+check = {composite = ["lint", "format-check", "typecheck", "rust-format", "rust-lint", "rust-test", "test", "package"]}
+
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 addopts = "-ra"
@@ -43,3 +55,4 @@ line-length = 88
 
 [tool.ruff.lint]
 select = ["E", "F", "I", "B", "UP", "RUF"]
+ignore = ["E501"]

@@ -1,0 +1,79 @@
+name: publish
+
+on:
+  workflow_dispatch:
+    inputs:
+      run_id:
+        description: Successful build-release workflow run id
+        required: true
+      tag:
+        description: Existing plain PEP 440 tag
+        required: true
+      target:
+        type: choice
+        options: [testpypi, pypi]
+        required: true
+
+permissions:
+  actions: read
+  contents: write
+  id-token: write
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    environment: ${{ inputs.target }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.tag }}
+          fetch-depth: 0
+      - uses: actions/download-artifact@v4
+        with:
+          name: release-bundle
+          path: release
+          run-id: ${{ inputs.run_id }}
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+      - name: Verify tag, commit, and hashes
+        env:
+          RELEASE_TAG: ${{ inputs.tag }}
+        run: |
+          python - <<'PY'
+          import hashlib
+          import json
+          import os
+          import subprocess
+          from pathlib import Path
+          if os.environ["RELEASE_TAG"].startswith("v"):
+              raise SystemExit("Tag must be plain PEP 440 without a v prefix")
+          manifest = json.loads(Path("release/release-manifest.json").read_text())
+          head = subprocess.check_output(["git", "rev-parse", "HEAD"], text=True).strip()
+          if manifest["commit"] != head:
+              raise SystemExit(f"Manifest commit {manifest['commit']} != tag commit {head}")
+          if manifest["version"] != os.environ["RELEASE_TAG"]:
+              raise SystemExit(
+                  f"Manifest version {manifest['version']} != tag {os.environ['RELEASE_TAG']}"
+              )
+          for item in manifest["files"]:
+              path = Path("release", item["name"])
+              if hashlib.sha256(path.read_bytes()).hexdigest() != item["sha256"]:
+                  raise SystemExit(f"Hash mismatch: {path}")
+          PY
+      - name: Stage distributions
+        run: |
+          mkdir packages
+          find release -maxdepth 1 -type f \( -name '*.whl' -o -name '*.tar.gz' \) -exec cp {} packages/ \;
+      - if: inputs.target == 'testpypi'
+        uses: pypa/gh-action-pypi-publish@v1.13.0
+        with:
+          repository-url: https://test.pypi.org/legacy/
+          packages-dir: packages
+          attestations: false
+      - if: inputs.target == 'pypi'
+        uses: pypa/gh-action-pypi-publish@v1.13.0
+        with:
+          packages-dir: packages
+      - if: inputs.target == 'pypi'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: gh release create "${{ inputs.tag }}" packages/* --verify-tag --generate-notes

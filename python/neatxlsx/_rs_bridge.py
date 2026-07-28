@@ -60,7 +60,9 @@ def is_rs_backend_available() -> bool:
 
 def _raise_unavailable() -> None:
     if _error_contract is not None:
-        raise RuntimeError("Rust xlsx backend contract validation failed.") from _error_contract
+        raise RuntimeError(
+            "Rust xlsx backend contract validation failed."
+        ) from _error_contract
     if _error_import is not None:
         raise RuntimeError("Rust xlsx backend import failed.") from _error_import
     raise RuntimeError("Rust xlsx backend is unavailable")

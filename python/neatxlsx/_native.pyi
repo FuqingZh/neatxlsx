@@ -3,7 +3,9 @@ from __future__ import annotations
 from collections.abc import Sequence
 from typing import Any, Literal
 
-from .spec import AutofitPolicy, ScientificPolicy, XlsxReport
+from .spec import Autofit as AutofitPolicy
+from .spec import ScientificNotation as ScientificPolicy
+from .spec import XlsxReport
 
 __bridge_abi__: int
 __bridge_contract__: str

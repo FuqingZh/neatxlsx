@@ -1,11 +1,18 @@
 """Consistent XLSX report-table writing for Polars."""
 
-from .spec import AutofitPolicy, CellFormatPatch, ScientificPolicy
-from .writer import XlsxWriter
+from .errors import CommitError, Error, StateError, WriteError
+from .spec import Autofit, Format, ScientificNotation, SheetReport, WorksheetPart
+from .writer import Workbook
 
 __all__ = [
-    "AutofitPolicy",
-    "CellFormatPatch",
-    "ScientificPolicy",
-    "XlsxWriter",
+    "Autofit",
+    "CommitError",
+    "Error",
+    "Format",
+    "ScientificNotation",
+    "SheetReport",
+    "StateError",
+    "Workbook",
+    "WorksheetPart",
+    "WriteError",
 ]
