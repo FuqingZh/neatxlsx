@@ -1,11 +1,11 @@
 //! `neatxlsx-core` v1:
 //! Rust-side XLSX helper kernel.
 //!
-//! Architecture mirrors Python `io/xlsx` modules:
-//! - `conf`   : constants and default presets
-//! - `spec`   : specs/models/options
-//! - `util`   : pure helper functions
-//! - `writer` : pure-Rust writer kernel
+//! Internal ownership:
+//! - `constant`: Excel limits and default presets
+//! - `spec`: writer policies, formats, reports, and value models
+//! - `util`: pure worksheet-planning helpers
+//! - `writer`: lifecycle facade over private plan, stream, value, and render modules
 pub mod constant;
 pub mod spec;
 pub mod util;
