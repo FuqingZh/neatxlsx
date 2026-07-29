@@ -27,7 +27,7 @@ jobs:
           cache: pip
       - run: python -m pip install -U pdm
       - run: pdm sync -G dev
-      - run: pdm run maturin develop
+      - run: pdm run develop
       - run: pdm run test
 
   quality:
@@ -44,11 +44,10 @@ jobs:
       - uses: Swatinem/rust-cache@v2
       - run: python -m pip install -U pdm
       - run: pdm sync -G dev
-      - run: pdm run maturin develop
+      - run: pdm run develop
       - run: pdm run lint
       - run: pdm run typecheck
       - run: pdm run rust-format
       - run: pdm run rust-lint
       - run: pdm run rust-test
       - run: pdm run package
-

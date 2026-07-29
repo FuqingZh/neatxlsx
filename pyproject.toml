@@ -34,6 +34,7 @@ distribution = true
 use_uv = true
 
 [tool.pdm.scripts]
+develop = "maturin develop --uv"
 lint = "ruff check python tests scripts"
 format-check = "ruff format --check python tests scripts"
 typecheck = "pyright python tests scripts"

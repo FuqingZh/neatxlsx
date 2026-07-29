@@ -29,6 +29,5 @@ jobs:
         run: pdm run uv pip install -U polars
       - if: matrix.lane == 'prerelease'
         run: pdm run uv pip install -U --prerelease allow polars
-      - run: pdm run maturin develop
+      - run: pdm run develop
       - run: pdm run pytest tests/unit tests/contract tests/integration -q
-
