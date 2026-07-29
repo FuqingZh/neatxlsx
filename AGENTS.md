@@ -13,7 +13,7 @@
 - Use Python 3.13 locally and support Python 3.11+.
 - Install development dependencies with `pdm sync -G dev`; PDM uses its uv
   backend and `pdm.lock` is the only committed Python lock file.
-- Build the local extension with `pdm run maturin develop`.
+- Build the local extension with `pdm run develop`.
 
 ## Validation
 
@@ -31,4 +31,3 @@
   repository without explicit authorization.
 - Preserve transactional replacement, literal string writes, ZIP64 defaults,
   and the Python/PyO3 bridge contract when changing public behavior.
-
