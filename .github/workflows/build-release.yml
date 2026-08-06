@@ -92,6 +92,7 @@ jobs:
             --dist-dir release \
             --expected-version "${version}" \
             --expected-wheel-count 5 \
+            --require-release-platforms \
             --require-sdist
           python -m twine check release/*
       - name: Write immutable release manifest
