@@ -48,7 +48,7 @@ jobs:
           CIBW_ENVIRONMENT_LINUX: RUSTUP_TOOLCHAIN=1.96.1
           MACOSX_DEPLOYMENT_TARGET: "10.12"
           CIBW_TEST_COMMAND: >-
-            python -c "from neatxlsx import _native; assert _native.__bridge_abi__ == 2"
+            python -c "from neatxlsx._rs_bridge import is_rs_backend_available; assert is_rs_backend_available()"
         run: python -m cibuildwheel --output-dir dist .
       - uses: actions/upload-artifact@v4
         with:
@@ -96,7 +96,7 @@ jobs:
             --require-sdist
           python -m twine check release/*
           python -m pip install --force-reinstall release/*.tar.gz
-          python -c "from neatxlsx import _native; assert _native.__bridge_abi__ == 2"
+          python -c "from neatxlsx._rs_bridge import is_rs_backend_available; assert is_rs_backend_available()"
       - name: Write immutable release manifest
         run: |
           python - <<'PY'
