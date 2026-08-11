@@ -4,12 +4,11 @@ use std::sync::Arc;
 use arrow::array::StructArray;
 use arrow::datatypes::{ArrowDataType, ArrowSchema, Field as ArrowField};
 use arrow::record_batch::RecordBatchT;
-use neatxlsx_core::constant::{
-    ColumnIdentifier, create_default_xlsx_formats, create_default_xlsx_write_options,
-};
+use neatxlsx_core::constant::{ColumnIdentifier, create_default_xlsx_write_options};
 use neatxlsx_core::spec::{
-    AutofitMode, AutofitPolicy, CellFormatPatch, IntegerCoerceMode, ScientificPolicy,
-    ScientificScope, SheetSlice, XlsxValuePolicy, XlsxWriteOptions,
+    AutofitMode, AutofitPolicy, CellFormatPatch, ColumnValueKind, ColumnValuePlan,
+    IntegerCoerceMode, ScientificPolicy, ScientificScope, SheetSlice, XlsxValuePolicy,
+    XlsxWriteOptions,
 };
 use neatxlsx_core::{
     XlsxRecordBatch, XlsxRecordBatchResult, XlsxSheetWriteOptions, XlsxWriter as RsXlsxWriter,
@@ -20,9 +19,10 @@ use pyo3::ffi as pyffi;
 use pyo3::prelude::*;
 use pyo3::types::{PyAny, PyIterator, PyList, PyTuple};
 
-pub const BRIDGE_ABI_VERSION: u64 = 2;
-pub const BRIDGE_CONTRACT_VERSION: &str = "neatxlsx.xlsx.writer.v2";
+pub const BRIDGE_ABI_VERSION: u64 = 3;
+pub const BRIDGE_CONTRACT_VERSION: &str = "neatxlsx.xlsx.writer.v3";
 pub const BRIDGE_TRANSPORT: &str = "arrow_c_data";
+pub const BUILD_PROFILE: &str = env!("NEATXLSX_BUILD_PROFILE");
 const C_ARROW_ARRAY_STREAM_CAPSULE_NAME: &[u8] = b"arrow_array_stream\0";
 const PY_CLASS_SHEET_SLICE: &str = "SheetSlice";
 const PY_CLASS_XLSX_REPORT: &str = "XlsxReport";
@@ -82,34 +82,11 @@ impl PyXlsxWriter {
     ) -> PyResult<Self> {
         let path_file_out = PathBuf::from(&file_out);
 
-        let dict_default_fmts = create_default_xlsx_formats();
-        let cfg_fmt_text_default = dict_default_fmts
-            .get("text")
-            .cloned()
-            .ok_or_else(|| PyValueError::new_err("Missing default format: text"))?;
-        let cfg_fmt_int_default = dict_default_fmts
-            .get("integer")
-            .cloned()
-            .ok_or_else(|| PyValueError::new_err("Missing default format: integer"))?;
-        let cfg_fmt_dec_default = dict_default_fmts
-            .get("decimal")
-            .cloned()
-            .ok_or_else(|| PyValueError::new_err("Missing default format: decimal"))?;
-        let cfg_fmt_sci_default = dict_default_fmts
-            .get("scientific")
-            .cloned()
-            .ok_or_else(|| PyValueError::new_err("Missing default format: scientific"))?;
-        let cfg_fmt_header_default = dict_default_fmts
-            .get("header")
-            .cloned()
-            .ok_or_else(|| PyValueError::new_err("Missing default format: header"))?;
-
-        let c_fmt_text = parse_cell_format_patch(fmt_text)?.unwrap_or(cfg_fmt_text_default);
-        let c_fmt_integer = parse_cell_format_patch(fmt_integer)?.unwrap_or(cfg_fmt_int_default);
-        let c_fmt_decimal = parse_cell_format_patch(fmt_decimal)?.unwrap_or(cfg_fmt_dec_default);
-        let c_fmt_scientific =
-            parse_cell_format_patch(fmt_scientific)?.unwrap_or(cfg_fmt_sci_default);
-        let c_fmt_header = parse_cell_format_patch(fmt_header)?.unwrap_or(cfg_fmt_header_default);
+        let c_fmt_text = parse_cell_format_patch(fmt_text)?.unwrap_or_default();
+        let c_fmt_integer = parse_cell_format_patch(fmt_integer)?.unwrap_or_default();
+        let c_fmt_decimal = parse_cell_format_patch(fmt_decimal)?.unwrap_or_default();
+        let c_fmt_scientific = parse_cell_format_patch(fmt_scientific)?.unwrap_or_default();
+        let c_fmt_header = parse_cell_format_patch(fmt_header)?.unwrap_or_default();
 
         let cfg_options_write = parse_xlsx_write_options(options_write)?
             .unwrap_or_else(create_default_xlsx_write_options);
@@ -180,7 +157,8 @@ impl PyXlsxWriter {
         should_merge_header = false,
         should_keep_missing_values = None,
         policy_autofit = None,
-        policy_scientific = None
+        policy_scientific = None,
+        value_plans = None
     ))]
     #[allow(clippy::too_many_arguments)]
     fn write_sheet<'py>(
@@ -197,6 +175,7 @@ impl PyXlsxWriter {
         should_keep_missing_values: Option<bool>,
         policy_autofit: Option<&Bound<'py, PyAny>>,
         policy_scientific: Option<&Bound<'py, PyAny>>,
+        value_plans: Option<&Bound<'py, PyAny>>,
     ) -> PyResult<PyRefMut<'py, Self>> {
         let cfg_sheet_write_options = XlsxSheetWriteOptions {
             cols_integer: parse_column_refs(cols_integer)?,
@@ -209,6 +188,7 @@ impl PyXlsxWriter {
                 .unwrap_or_else(AutofitPolicy::default),
             policy_scientific: parse_scientific_policy(policy_scientific)?
                 .unwrap_or_else(ScientificPolicy::default),
+            value_plans: parse_column_value_plans(value_plans)?,
         };
 
         let header_grid = derive_optional_header_grid(py, header)?;
@@ -245,7 +225,8 @@ impl PyXlsxWriter {
         should_keep_missing_values = None,
         policy_autofit = None,
         policy_scientific = None,
-        schema_body = None
+        schema_body = None,
+        value_plans = None
     ))]
     #[allow(clippy::too_many_arguments)]
     fn write_sheet_batches<'py>(
@@ -264,6 +245,7 @@ impl PyXlsxWriter {
         policy_autofit: Option<&Bound<'py, PyAny>>,
         policy_scientific: Option<&Bound<'py, PyAny>>,
         schema_body: Option<&Bound<'py, PyAny>>,
+        value_plans: Option<&Bound<'py, PyAny>>,
     ) -> PyResult<PyRefMut<'py, Self>> {
         let cfg_sheet_write_options = XlsxSheetWriteOptions {
             cols_integer: parse_column_refs(cols_integer)?,
@@ -276,6 +258,7 @@ impl PyXlsxWriter {
                 .unwrap_or_else(AutofitPolicy::default),
             policy_scientific: parse_scientific_policy(policy_scientific)?
                 .unwrap_or_else(ScientificPolicy::default),
+            value_plans: parse_column_value_plans(value_plans)?,
         };
 
         let header_grid = derive_optional_header_grid(py, header)?;
@@ -317,7 +300,8 @@ impl PyXlsxWriter {
         should_keep_missing_values = None,
         policy_autofit = None,
         policy_scientific = None,
-        schema_body = None
+        schema_body = None,
+        value_plans = None
     ))]
     #[allow(clippy::too_many_arguments)]
     fn write_sheet_batches_single_pass<'py>(
@@ -335,6 +319,7 @@ impl PyXlsxWriter {
         policy_autofit: Option<&Bound<'py, PyAny>>,
         policy_scientific: Option<&Bound<'py, PyAny>>,
         schema_body: Option<&Bound<'py, PyAny>>,
+        value_plans: Option<&Bound<'py, PyAny>>,
     ) -> PyResult<PyRefMut<'py, Self>> {
         let cfg_sheet_write_options = XlsxSheetWriteOptions {
             cols_integer: parse_column_refs(cols_integer)?,
@@ -347,6 +332,7 @@ impl PyXlsxWriter {
                 .unwrap_or_else(AutofitPolicy::default),
             policy_scientific: parse_scientific_policy(policy_scientific)?
                 .unwrap_or_else(ScientificPolicy::default),
+            value_plans: parse_column_value_plans(value_plans)?,
         };
 
         let header_grid = derive_optional_header_grid(py, header)?;
@@ -378,6 +364,69 @@ fn create_sheet_slice_object(
         sheet.col_end_exclusive,
     ))?;
     Ok(inst_sheet.into_any().unbind())
+}
+
+fn parse_column_value_plans(value: Option<&Bound<'_, PyAny>>) -> PyResult<Vec<ColumnValuePlan>> {
+    let Some(value) = value else {
+        return Ok(Vec::new());
+    };
+    if value.is_none() {
+        return Ok(Vec::new());
+    }
+    let mut plans = Vec::new();
+    for item in value.try_iter()? {
+        let item = item?;
+        let tuple = item.downcast::<PyTuple>()?;
+        if tuple.len() != 6 {
+            return Err(PyValueError::new_err(
+                "value_plans entries must contain six fields.",
+            ));
+        }
+        let name = tuple.get_item(0)?.extract::<String>()?;
+        let kind_name = tuple.get_item(1)?.extract::<String>()?;
+        let kind = match kind_name.as_str() {
+            "null" => ColumnValueKind::Null,
+            "boolean" => ColumnValueKind::Boolean,
+            "integer" => ColumnValueKind::Integer,
+            "float" => ColumnValueKind::Float,
+            "decimal" => ColumnValueKind::Decimal,
+            "string" => ColumnValueKind::String,
+            "date" => ColumnValueKind::Date,
+            "datetime" => ColumnValueKind::Datetime,
+            "time" => ColumnValueKind::Time,
+            "duration" => ColumnValueKind::Duration,
+            _ => {
+                return Err(PyValueError::new_err(format!(
+                    "unknown value plan kind: {kind_name}"
+                )));
+            }
+        };
+        let optional_string = |index: usize| -> PyResult<Option<String>> {
+            let item = tuple.get_item(index)?;
+            if item.is_none() {
+                Ok(None)
+            } else {
+                Ok(Some(item.extract::<String>()?))
+            }
+        };
+        let optional_usize = |index: usize| -> PyResult<Option<usize>> {
+            let item = tuple.get_item(index)?;
+            if item.is_none() {
+                Ok(None)
+            } else {
+                Ok(Some(item.extract::<usize>()?))
+            }
+        };
+        plans.push(ColumnValuePlan {
+            name,
+            kind,
+            unit: optional_string(2)?,
+            timezone: optional_string(3)?,
+            decimal_precision: optional_usize(4)?,
+            decimal_scale: optional_usize(5)?,
+        });
+    }
+    Ok(plans)
 }
 
 struct PyRecordBatchIter<'py> {
@@ -784,12 +833,6 @@ fn parse_xlsx_write_options(obj: Option<&Bound<'_, PyAny>>) -> PyResult<Option<X
         }
     }
 
-    if let Some(base_format_patch_obj) = extract_optional_attr_bound(obj, "base_format_patch")?
-        && let Some(fmt_patch) = parse_cell_format_patch(Some(&base_format_patch_obj))?
-    {
-        cfg_options_write.base_format_patch = fmt_patch;
-    }
-
     Ok(Some(cfg_options_write))
 }
 
@@ -1019,5 +1062,6 @@ fn _native(_py: Python<'_>, module: &Bound<'_, PyModule>) -> PyResult<()> {
     module.add("__bridge_abi__", BRIDGE_ABI_VERSION)?;
     module.add("__bridge_contract__", BRIDGE_CONTRACT_VERSION)?;
     module.add("__bridge_transport__", BRIDGE_TRANSPORT)?;
+    module.add("__build_profile__", BUILD_PROFILE)?;
     Ok(())
 }

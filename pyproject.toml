@@ -42,6 +42,7 @@ rust-format = "cargo fmt --all --check"
 rust-lint = "cargo clippy --workspace --all-targets -- -D warnings"
 rust-test = "cargo test --workspace --all-targets"
 test = "pytest -q"
+report-reference = "python scripts/generate_report_reference.py"
 package = {composite = ["maturin build --release --out dist", "python scripts/validate_dist.py --dist-dir dist"]}
 select-checks = "python scripts/select_checks.py"
 check = {composite = ["lint", "format-check", "typecheck", "rust-format", "rust-lint", "rust-test", "test", "package"]}

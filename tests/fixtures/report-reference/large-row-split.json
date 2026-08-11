@@ -1,0 +1,59 @@
+{
+  "kind": "workbook",
+  "known_gaps": [],
+  "reports": [
+    {
+      "requested_name": "Large Rows",
+      "warnings": [],
+      "worksheets": [
+        {
+          "columns": [
+            0,
+            1
+          ],
+          "name": "Large Rows",
+          "rows": [
+            0,
+            1048575
+          ]
+        },
+        {
+          "columns": [
+            0,
+            1
+          ],
+          "name": "Large Rows__2",
+          "rows": [
+            1048575,
+            1048576
+          ]
+        }
+      ]
+    }
+  ],
+  "scenario": "large-row-split",
+  "schema_version": 1,
+  "sentinels": {},
+  "worksheets": [
+    {
+      "dimensions": [
+        1048576,
+        1
+      ],
+      "freeze_panes": null,
+      "merges": [],
+      "name": "Large Rows",
+      "widths": {}
+    },
+    {
+      "dimensions": [
+        2,
+        1
+      ],
+      "freeze_panes": null,
+      "merges": [],
+      "name": "Large Rows__2",
+      "widths": {}
+    }
+  ]
+}

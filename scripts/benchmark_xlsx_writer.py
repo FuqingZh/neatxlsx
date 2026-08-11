@@ -137,25 +137,32 @@ def detect_neatxlsx_version() -> str:
         return "local-src"
 
 
-def resolve_rust_backend_binary_path() -> Path:
+def resolve_rust_backend_build() -> tuple[Path, str]:
     module_rs = importlib.import_module("neatxlsx._native")
     path_file_module = getattr(module_rs, "__file__", None)
     if not path_file_module:
         raise RuntimeError("Cannot resolve Rust backend shared library path.")
-    return Path(path_file_module).resolve()
+    c_profile_build = getattr(module_rs, "__build_profile__", None)
+    if not isinstance(c_profile_build, str) or not c_profile_build:
+        raise RuntimeError(
+            "Rust backend does not report its Cargo build profile. "
+            "Rebuild with `pdm run develop --release`."
+        )
+    return Path(path_file_module).resolve(), c_profile_build
+
+
+def resolve_rust_backend_binary_path() -> Path:
+    path_file_backend, _ = resolve_rust_backend_build()
+    return path_file_backend
 
 
 def enforce_release_rust_backend() -> Path:
-    path_file_backend = resolve_rust_backend_binary_path()
-    c_path_backend = path_file_backend.as_posix()
-
-    # Local development backend path typically includes `/target/<profile>/...`.
-    # If that pattern is present, enforce release profile for stable benchmarks.
-    if "/target/" in c_path_backend and "/target/release/" not in c_path_backend:
+    path_file_backend, c_profile_build = resolve_rust_backend_build()
+    if c_profile_build != "release":
         raise RuntimeError(
-            "Benchmark requires release Rust backend, but current module points to "
-            f"{path_file_backend}. "
-            "Rebuild with `./scripts/rebuild_py_extension.sh --release`."
+            "Benchmark requires Cargo release profile, but current Rust backend "
+            f"at {path_file_backend} reports {c_profile_build!r}. "
+            "Rebuild with `pdm run develop --release`."
         )
 
     return path_file_backend

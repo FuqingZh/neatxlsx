@@ -13,8 +13,8 @@ use rust_xlsxwriter::{Format, Workbook};
 
 use crate::constant::{ColumnIdentifier, LEN_SHEET_NAME_MAX};
 use crate::spec::{
-    AutofitMode, AutofitPolicy, CellFormatPatch, CellValue, ScientificPolicy, SheetSlice,
-    XlsxReport, XlsxWriteOptions,
+    AutofitMode, AutofitPolicy, CellFormatPatch, CellValue, ColumnValuePlan, ScientificPolicy,
+    SheetSlice, XlsxReport, XlsxWriteOptions,
 };
 use crate::util::{
     calculate_row_chunk_size, convert_cell_value, generate_row_chunks, plan_sheet_slices,
@@ -24,7 +24,8 @@ pub use plan::XlsxSheetPlan;
 use plan::calculate_slice_indices;
 use render::{
     ColumnFormatPlanOptions, cast_col_num, cast_row_num, create_rust_xlsx_format,
-    format_xlsx_error_text, plan_column_formats, write_cell_with_format, write_header,
+    format_xlsx_error_text, inferred_num_formats, plan_column_formats, write_cell_with_format,
+    write_header,
 };
 pub use stream::{XlsxRecordBatch, XlsxRecordBatchResult};
 use value::{
@@ -53,6 +54,8 @@ pub struct XlsxSheetWriteOptions {
     pub policy_autofit: AutofitPolicy,
     /// Scientific-format trigger policy.
     pub policy_scientific: ScientificPolicy,
+    /// Ordered source-column dtype metadata from Python preflight.
+    pub value_plans: Vec<ColumnValuePlan>,
 }
 
 /// Stateful workbook writer.
@@ -60,8 +63,11 @@ pub struct XlsxWriter {
     path_file_out: PathBuf,
     workbook: Workbook,
     fmt_text: CellFormatPatch,
+    fmt_text_override: CellFormatPatch,
     fmt_integer: CellFormatPatch,
+    fmt_integer_override: CellFormatPatch,
     fmt_decimal: CellFormatPatch,
+    fmt_decimal_override: CellFormatPatch,
     fmt_scientific: CellFormatPatch,
     fmt_header: CellFormatPatch,
     options_write: XlsxWriteOptions,
@@ -92,14 +98,39 @@ impl XlsxWriter {
                 .map_err(format_xlsx_error_text)?;
         }
 
+        let defaults = crate::constant::create_default_xlsx_formats();
+        let fmt_text_default = defaults
+            .get("text")
+            .cloned()
+            .ok_or_else(|| "Missing default format: text".to_string())?;
+        let fmt_integer_default = defaults
+            .get("integer")
+            .cloned()
+            .ok_or_else(|| "Missing default format: integer".to_string())?;
+        let fmt_decimal_default = defaults
+            .get("decimal")
+            .cloned()
+            .ok_or_else(|| "Missing default format: decimal".to_string())?;
+        let fmt_scientific_default = defaults
+            .get("scientific")
+            .cloned()
+            .ok_or_else(|| "Missing default format: scientific".to_string())?;
+        let fmt_header_default = defaults
+            .get("header")
+            .cloned()
+            .ok_or_else(|| "Missing default format: header".to_string())?;
+
         Ok(Self {
             path_file_out,
             workbook,
-            fmt_text,
-            fmt_integer,
-            fmt_decimal,
-            fmt_scientific,
-            fmt_header,
+            fmt_text: fmt_text_default.merge(&fmt_text),
+            fmt_text_override: fmt_text,
+            fmt_integer: fmt_integer_default.merge(&fmt_integer),
+            fmt_integer_override: fmt_integer,
+            fmt_decimal: fmt_decimal_default.merge(&fmt_decimal),
+            fmt_decimal_override: fmt_decimal,
+            fmt_scientific: fmt_scientific_default.merge(&fmt_scientific),
+            fmt_header: fmt_header_default.merge(&fmt_header),
             options_write,
             existing_sheet_names: BTreeSet::new(),
             reports: Vec::new(),
@@ -270,6 +301,15 @@ impl XlsxWriter {
                 sheet_slice.col_start_inclusive,
                 sheet_slice.col_end_exclusive,
             );
+            let inferred_num_formats_all = inferred_num_formats(&options.value_plans);
+            let inferred_num_formats_slice =
+                if inferred_num_formats_all.len() >= sheet_slice.col_end_exclusive {
+                    inferred_num_formats_all
+                        [sheet_slice.col_start_inclusive..sheet_slice.col_end_exclusive]
+                        .to_vec()
+                } else {
+                    vec![None; sheet_slice.col_end_exclusive - sheet_slice.col_start_inclusive]
+                };
             let column_format_plan = plan_column_formats(ColumnFormatPlanOptions {
                 width_data: sheet_slice.col_end_exclusive - sheet_slice.col_start_inclusive,
                 cols_idx_numeric: &cols_idx_numeric_slice,
@@ -283,7 +323,10 @@ impl XlsxWriter {
                 fmt_text: &self.fmt_text,
                 fmt_integer: &self.fmt_integer,
                 fmt_decimal: &self.fmt_decimal,
-                options_write: &self.options_write,
+                fmt_text_override: &self.fmt_text_override,
+                fmt_integer_override: &self.fmt_integer_override,
+                fmt_decimal_override: &self.fmt_decimal_override,
+                inferred_num_formats: Some(&inferred_num_formats_slice),
             });
 
             let data_formats_by_col: Vec<Format> = column_format_plan
@@ -291,10 +334,7 @@ impl XlsxWriter {
                 .iter()
                 .map(create_rust_xlsx_format)
                 .collect();
-            let fmt_scientific_patch = self
-                .fmt_scientific
-                .merge(&self.options_write.base_format_patch);
-            let fmt_scientific = create_rust_xlsx_format(&fmt_scientific_patch);
+            let fmt_scientific = create_rust_xlsx_format(&self.fmt_scientific);
             let fmt_header = create_rust_xlsx_format(&self.fmt_header);
 
             let header_grid_slice = header_grid

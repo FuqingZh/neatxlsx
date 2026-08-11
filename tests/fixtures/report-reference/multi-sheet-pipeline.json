@@ -1,0 +1,100 @@
+{
+  "kind": "workbook",
+  "known_gaps": [],
+  "reports": [
+    {
+      "requested_name": "Overview",
+      "warnings": [],
+      "worksheets": [
+        {
+          "columns": [
+            0,
+            2
+          ],
+          "name": "Overview",
+          "rows": [
+            0,
+            2
+          ]
+        }
+      ]
+    },
+    {
+      "requested_name": "Results",
+      "warnings": [],
+      "worksheets": [
+        {
+          "columns": [
+            0,
+            2
+          ],
+          "name": "Results",
+          "rows": [
+            0,
+            3
+          ]
+        }
+      ]
+    }
+  ],
+  "scenario": "multi-sheet-pipeline",
+  "schema_version": 1,
+  "sentinels": {
+    "Overview": [
+      {
+        "address": "A1",
+        "kind": "string",
+        "number_format": "General",
+        "value": "metric"
+      },
+      {
+        "address": "B2",
+        "kind": "number",
+        "number_format": "0",
+        "value": 3
+      }
+    ],
+    "Results": [
+      {
+        "address": "A1",
+        "kind": "string",
+        "number_format": "General",
+        "value": "sample"
+      },
+      {
+        "address": "B2",
+        "kind": "number",
+        "number_format": "0.0000",
+        "value": 0.25
+      }
+    ]
+  },
+  "worksheets": [
+    {
+      "dimensions": [
+        3,
+        2
+      ],
+      "freeze_panes": "B2",
+      "merges": [],
+      "name": "Overview",
+      "widths": {
+        "A": 8.7109,
+        "B": 13.0
+      }
+    },
+    {
+      "dimensions": [
+        4,
+        2
+      ],
+      "freeze_panes": "A2",
+      "merges": [],
+      "name": "Results",
+      "widths": {
+        "A": 8.7109,
+        "B": 9.7109
+      }
+    }
+  ]
+}

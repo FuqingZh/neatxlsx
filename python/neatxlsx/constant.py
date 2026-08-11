@@ -14,14 +14,14 @@ FormatRole = Literal["text", "integer", "decimal", "scientific", "header"]
 _BASE_FORMAT = Format(
     font_name="Times New Roman",
     font_size=11,
-    border=1,
+    border=0,
     align="left",
     valign="vcenter",
 )
 DEFAULT_FORMATS: Mapping[FormatRole, Format] = MappingProxyType(
     {
         "text": _BASE_FORMAT,
-        "header": _BASE_FORMAT.replace(bold=True, align="center"),
+        "header": _BASE_FORMAT.replace(bold=True, border=1, align="center"),
         "integer": _BASE_FORMAT.replace(num_format="0"),
         "decimal": _BASE_FORMAT.replace(num_format="0.0000"),
         "scientific": _BASE_FORMAT.replace(num_format="0.00E+0"),

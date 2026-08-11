@@ -58,11 +58,64 @@ pub enum CellFormatValue {
 #[derive(Debug, Clone, PartialEq)]
 pub enum CellValue {
     /// Missing/blank value.
-    None,
+    Blank,
     /// Text value.
     String(String),
     /// Numeric value.
     Number(f64),
+    /// Native boolean value.
+    Boolean(bool),
+}
+
+/// Logical value kind selected by the Python Polars preflight.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum ColumnValueKind {
+    /// Null-only column.
+    Null,
+    /// Native boolean column.
+    Boolean,
+    /// Signed or unsigned integer column.
+    Integer,
+    /// Floating-point column.
+    Float,
+    /// Fixed-scale decimal column.
+    Decimal,
+    /// Literal string column.
+    String,
+    /// Excel date column.
+    Date,
+    /// Timezone-naive datetime column.
+    Datetime,
+    /// Time-of-day column.
+    Time,
+    /// Duration column.
+    Duration,
+}
+
+/// Ordered source-column metadata transported over the private bridge.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct ColumnValuePlan {
+    /// Source column name.
+    pub name: String,
+    /// Logical value kind.
+    pub kind: ColumnValueKind,
+    /// Source temporal unit (`day`, `s`, `ms`, `us`, or `ns`).
+    pub unit: Option<String>,
+    /// Source timezone, when present.
+    pub timezone: Option<String>,
+    /// Decimal precision, when applicable.
+    pub decimal_precision: Option<usize>,
+    /// Decimal scale, when applicable.
+    pub decimal_scale: Option<usize>,
+}
+
+/// Non-fatal conversion warning category used for logical-sheet aggregation.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum WarningCode {
+    /// Exact text was required to avoid numeric precision loss.
+    PrecisionAsText,
+    /// Exact text was required because Excel's temporal serial is lossy.
+    TemporalAsText,
 }
 
 impl CellFormatPatch {
@@ -349,8 +402,6 @@ pub struct XlsxWriteOptions {
     pub should_infer_integer_cols: bool,
     /// Row chunking policy.
     pub row_chunk_policy: XlsxRowChunkPolicy,
-    /// Base patch merged into all per-column formats.
-    pub base_format_patch: CellFormatPatch,
 }
 
 impl Default for XlsxWriteOptions {
@@ -362,14 +413,6 @@ impl Default for XlsxWriteOptions {
             should_infer_numeric_cols: true,
             should_infer_integer_cols: true,
             row_chunk_policy: XlsxRowChunkPolicy::default(),
-            base_format_patch: CellFormatPatch {
-                border: Some(0),
-                top: Some(0),
-                bottom: Some(0),
-                left: Some(0),
-                right: Some(0),
-                ..Default::default()
-            },
         }
     }
 }
