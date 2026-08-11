@@ -42,7 +42,7 @@ pub fn create_default_xlsx_formats() -> BTreeMap<String, CellFormatPatch> {
     let base_format_spec = CellFormatPatch {
         font_name: Some("Times New Roman".to_string()),
         font_size: Some(11),
-        border: Some(1),
+        border: Some(0),
         align: Some("left".to_string()),
         valign: Some("vcenter".to_string()),
         ..Default::default()
@@ -55,6 +55,7 @@ pub fn create_default_xlsx_formats() -> BTreeMap<String, CellFormatPatch> {
         base_format_spec.with_(CellFormatPatch {
             bold: Some(true),
             align: Some("center".to_string()),
+            border: Some(1),
             ..Default::default()
         }),
     );

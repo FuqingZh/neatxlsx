@@ -10,6 +10,7 @@ from .spec import XlsxReport
 __bridge_abi__: int
 __bridge_contract__: str
 __bridge_transport__: str
+__build_profile__: str
 
 class XlsxArrowDrainProfile:
     batches: int
@@ -54,6 +55,7 @@ class XlsxWriter:
         should_keep_missing_values: bool | None = ...,
         policy_autofit: AutofitPolicy | None = ...,
         policy_scientific: ScientificPolicy | None = ...,
+        value_plans: Any | None = ...,
     ) -> XlsxWriter: ...
     def write_sheet_batches(
         self,
@@ -71,6 +73,7 @@ class XlsxWriter:
         policy_autofit: AutofitPolicy | None = ...,
         policy_scientific: ScientificPolicy | None = ...,
         schema_body: Any | None = ...,
+        value_plans: Any | None = ...,
     ) -> XlsxWriter: ...
     def write_sheet_batches_single_pass(
         self,
@@ -87,6 +90,7 @@ class XlsxWriter:
         policy_autofit: AutofitPolicy | None = ...,
         policy_scientific: ScientificPolicy | None = ...,
         schema_body: Any | None = ...,
+        value_plans: Any | None = ...,
     ) -> XlsxWriter: ...
 
 def _profile_arrow_drain(source: Any) -> XlsxArrowDrainProfile: ...

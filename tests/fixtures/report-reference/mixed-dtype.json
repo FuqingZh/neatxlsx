@@ -1,0 +1,75 @@
+{
+  "kind": "workbook",
+  "known_gaps": [],
+  "reports": [
+    {
+      "requested_name": "Mixed",
+      "warnings": [
+        "[temporal-as-text] column \"datetime\" contains values outside Excel's lossless temporal serial range; affected cells were written as exact text. (source column 1)",
+        "[temporal-as-text] column \"time\" contains values outside Excel's lossless temporal serial range; affected cells were written as exact text. (source column 2)",
+        "[temporal-as-text] column \"duration\" contains values outside Excel's lossless temporal serial range; affected cells were written as exact text. (source column 3)",
+        "[precision-as-text] column \"decimal\" contains values beyond Excel's 15-digit numeric precision; affected cells were written as exact text. (source column 4)"
+      ],
+      "worksheets": [
+        {
+          "columns": [
+            0,
+            10
+          ],
+          "name": "Mixed",
+          "rows": [
+            0,
+            2
+          ]
+        }
+      ]
+    }
+  ],
+  "scenario": "mixed-dtype",
+  "schema_version": 1,
+  "sentinels": {
+    "Mixed": [
+      {
+        "address": "A2",
+        "kind": "string",
+        "number_format": "yyyy-mm-dd",
+        "value": "2024-01-02T00:00:00"
+      },
+      {
+        "address": "F2",
+        "kind": "boolean",
+        "number_format": "General",
+        "value": true
+      },
+      {
+        "address": "I2",
+        "kind": "string",
+        "number_format": "General",
+        "value": "=1+1"
+      },
+      {
+        "address": "J2",
+        "kind": "string",
+        "number_format": "General",
+        "value": "2024-01-02 03:04:05.000000+00:00"
+      }
+    ]
+  },
+  "worksheets": [
+    {
+      "dimensions": [
+        3,
+        10
+      ],
+      "freeze_panes": "A2",
+      "merges": [],
+      "name": "Mixed",
+      "widths": {
+        "A": 8.7109,
+        "B": 10.7109,
+        "C": 8.7109,
+        "D": 10.7109
+      }
+    }
+  ]
+}

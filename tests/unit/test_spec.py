@@ -18,6 +18,19 @@ def test_format_replace_distinguishes_false_and_zero_from_unspecified() -> None:
     assert original.border == 1
 
 
+def test_format_normalizes_rgb_and_rejects_invalid_values() -> None:
+    assert nx.Format(font_color="aa00ff").font_color == "#AA00FF"
+
+    with pytest.raises(TypeError, match="font_size"):
+        nx.Format(font_size=True)
+    with pytest.raises(ValueError, match="between 1 and 409"):
+        nx.Format(font_size=410)
+    with pytest.raises(ValueError, match="unsupported"):
+        nx.Format(align="diagonal")
+    with pytest.raises(ValueError, match="six-digit"):
+        nx.Format(bg_color="#fff")
+
+
 @pytest.mark.parametrize(
     ("factory", "message"),
     [

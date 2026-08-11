@@ -9,5 +9,6 @@ publish = false
 
 [dependencies]
 arrow = { package = "polars-arrow", version = "0.51.0", default-features = false }
-polars = { version = "0.51.0", default-features = false, features = ["ipc"] }
+chrono = { version = "0.4.43", default-features = false }
+polars = { version = "0.51.0", default-features = false, features = ["ipc", "dtype-full"] }
 rust_xlsxwriter = { version = "0.90.2", features = ["constant_memory"] }

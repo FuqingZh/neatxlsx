@@ -42,6 +42,88 @@ class Format:
     bg_color: str | None = None
     font_color: str | None = None
 
+    def __post_init__(self) -> None:
+        for name in ("bold", "italic", "text_wrap"):
+            value = getattr(self, name)
+            if value is not None and type(value) is not bool:
+                raise TypeError(f"{name} must be bool or None.")
+
+        if self.font_name is not None:
+            if not isinstance(self.font_name, str):
+                raise TypeError("font_name must be str or None.")
+            if not self.font_name:
+                raise ValueError("font_name must be nonempty.")
+        if self.num_format is not None:
+            if not isinstance(self.num_format, str):
+                raise TypeError("num_format must be str or None.")
+            if not self.num_format:
+                raise ValueError("num_format must be nonempty.")
+
+        if self.font_size is not None:
+            if isinstance(self.font_size, bool) or not isinstance(self.font_size, int):
+                raise TypeError("font_size must be an integer or None.")
+            if not 1 <= self.font_size <= 409:
+                raise ValueError("font_size must be between 1 and 409.")
+
+        for name in ("border", "top", "bottom", "left", "right"):
+            value = getattr(self, name)
+            if value is None:
+                continue
+            if isinstance(value, bool) or not isinstance(value, int):
+                raise TypeError(f"{name} must be an integer or None.")
+            if not 0 <= value <= 13:
+                raise ValueError(f"{name} must be between 0 and 13.")
+
+        horizontal = {
+            "general",
+            "left",
+            "center",
+            "right",
+            "fill",
+            "justify",
+            "center_across",
+            "distributed",
+        }
+        vertical = {
+            "top",
+            "bottom",
+            "vcenter",
+            "vertical_center",
+            "vjustify",
+            "vertical_justify",
+            "vdistributed",
+            "vertical_distributed",
+        }
+        if self.align is not None:
+            if not isinstance(self.align, str):
+                raise TypeError("align must be str or None.")
+            align = self.align.strip().lower()
+            if align not in horizontal:
+                raise ValueError("align has an unsupported value.")
+            object.__setattr__(self, "align", align)
+        if self.valign is not None:
+            if not isinstance(self.valign, str):
+                raise TypeError("valign must be str or None.")
+            valign = self.valign.strip().lower()
+            if valign not in vertical:
+                raise ValueError("valign has an unsupported value.")
+            object.__setattr__(self, "valign", valign)
+
+        for name in ("bg_color", "font_color"):
+            value = getattr(self, name)
+            if value is None:
+                continue
+            if not isinstance(value, str):
+                raise TypeError(f"{name} must be str or None.")
+            normalized = value.strip().upper()
+            if normalized.startswith("#"):
+                normalized = normalized[1:]
+            if len(normalized) != 6 or any(
+                char not in "0123456789ABCDEF" for char in normalized
+            ):
+                raise ValueError(f"{name} must be a six-digit hexadecimal RGB color.")
+            object.__setattr__(self, name, f"#{normalized}")
+
     def replace(
         self,
         *,
@@ -178,6 +260,37 @@ class XlsxReport:
 
 
 @dataclass(frozen=True, slots=True)
+class _ColumnValuePlan:
+    """Private source-column value contract transported to the Rust writer."""
+
+    name: str
+    kind: str
+    unit: str | None = None
+    timezone: str | None = None
+    decimal_precision: int | None = None
+    decimal_scale: int | None = None
+
+    def to_bridge(
+        self,
+    ) -> tuple[
+        str,
+        str,
+        str | None,
+        str | None,
+        int | None,
+        int | None,
+    ]:
+        return (
+            self.name,
+            self.kind,
+            self.unit,
+            self.timezone,
+            self.decimal_precision,
+            self.decimal_scale,
+        )
+
+
+@dataclass(frozen=True, slots=True)
 class _ValuePolicy:
     missing_value_str: str = "NA"
     nan_str: str = "NaN"
@@ -203,5 +316,4 @@ class _WriteOptions:
     should_infer_numeric_cols: bool
     should_infer_integer_cols: bool
     row_chunk_policy: _RowChunkPolicy
-    base_format_patch: Format
     should_use_zip64: bool

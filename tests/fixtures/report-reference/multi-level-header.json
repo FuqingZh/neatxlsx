@@ -1,0 +1,77 @@
+{
+  "kind": "workbook",
+  "known_gaps": [],
+  "reports": [
+    {
+      "requested_name": "Header Report",
+      "warnings": [],
+      "worksheets": [
+        {
+          "columns": [
+            0,
+            3
+          ],
+          "name": "Header Report",
+          "rows": [
+            0,
+            2
+          ]
+        }
+      ]
+    }
+  ],
+  "scenario": "multi-level-header",
+  "schema_version": 1,
+  "sentinels": {
+    "Header Report": [
+      {
+        "address": "A1",
+        "kind": "string",
+        "number_format": "General",
+        "value": "Results"
+      },
+      {
+        "address": "B1",
+        "kind": "blank",
+        "number_format": "General",
+        "value": null
+      },
+      {
+        "address": "A2",
+        "kind": "string",
+        "number_format": "General",
+        "value": "ID"
+      },
+      {
+        "address": "B2",
+        "kind": "string",
+        "number_format": "General",
+        "value": "Value"
+      },
+      {
+        "address": "C3",
+        "kind": "string",
+        "number_format": "General",
+        "value": "first"
+      }
+    ]
+  },
+  "worksheets": [
+    {
+      "dimensions": [
+        4,
+        3
+      ],
+      "freeze_panes": "B3",
+      "merges": [
+        "A1:B1"
+      ],
+      "name": "Header Report",
+      "widths": {
+        "A": 9.7109,
+        "B": 13.0,
+        "C": 10.7109
+      }
+    }
+  ]
+}

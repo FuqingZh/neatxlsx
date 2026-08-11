@@ -5,7 +5,8 @@ use std::collections::BTreeSet;
 use polars::prelude::DataFrame;
 
 use crate::spec::{
-    AutofitMode, CellValue, SheetSlice, XlsxReport, XlsxValuePolicy, XlsxWriteOptions,
+    AutofitMode, CellValue, ColumnValueKind, SheetSlice, XlsxReport, XlsxValuePolicy,
+    XlsxWriteOptions,
 };
 use crate::util::{
     calculate_row_chunk_size, convert_cell_value, plan_sheet_slices, sanitize_sheet_name,
@@ -13,7 +14,7 @@ use crate::util::{
 };
 
 use super::value::{
-    convert_any_value_to_cell_value, dataframe_from_record_batch, estimate_width_len,
+    convert_arrow_value_with_plan, dataframe_from_record_batch, estimate_width_len,
     is_scientific_candidate_col, select_integer_column_indices, select_numeric_column_indices,
 };
 use super::{XlsxRecordBatch, XlsxSheetWriteOptions};
@@ -82,7 +83,7 @@ impl<'a> XlsxSheetPlanBuilder<'a> {
     }
 
     pub(super) fn scan_batch(&mut self, batch: XlsxRecordBatch) -> Result<(), String> {
-        let df_batch = dataframe_from_record_batch(batch)?;
+        let df_batch = dataframe_from_record_batch(batch.clone())?;
         self.ensure_initialized(&df_batch)?;
 
         let should_scan_body_width = matches!(
@@ -90,7 +91,7 @@ impl<'a> XlsxSheetPlanBuilder<'a> {
             AutofitMode::Body | AutofitMode::All
         );
         if should_scan_body_width && df_batch.width() > 0 {
-            self.scan_body_widths(&df_batch)?;
+            self.scan_body_widths(&batch)?;
         }
         self.height_body += df_batch.height();
         Ok(())
@@ -195,21 +196,21 @@ impl<'a> XlsxSheetPlanBuilder<'a> {
         Ok(())
     }
 
-    fn scan_body_widths(&mut self, df_batch: &DataFrame) -> Result<(), String> {
+    fn scan_body_widths(&mut self, batch: &XlsxRecordBatch) -> Result<(), String> {
         let Some(max_rows) = self.options.policy_autofit.height_body_inferred_max else {
-            return self.scan_body_width_rows(df_batch, df_batch.height());
+            return self.scan_body_width_rows(batch, batch.len());
         };
         if self.rows_seen_for_autofit >= max_rows {
             return Ok(());
         }
         let remaining = max_rows - self.rows_seen_for_autofit;
-        let rows_to_scan = usize::min(remaining, df_batch.height());
-        self.scan_body_width_rows(df_batch, rows_to_scan)
+        let rows_to_scan = usize::min(remaining, batch.len());
+        self.scan_body_width_rows(batch, rows_to_scan)
     }
 
     fn scan_body_width_rows(
         &mut self,
-        df_batch: &DataFrame,
+        batch: &XlsxRecordBatch,
         rows_to_scan: usize,
     ) -> Result<(), String> {
         let numeric_cols_idx: BTreeSet<usize> = self.cols_idx_numeric.iter().copied().collect();
@@ -219,7 +220,7 @@ impl<'a> XlsxSheetPlanBuilder<'a> {
         let is_decimal_explicit = !decimal_cols_idx.is_empty();
 
         for row_local in 0..rows_to_scan {
-            for (col_idx, col) in df_batch.get_columns().iter().enumerate() {
+            for (col_idx, col) in batch.arrays().iter().enumerate() {
                 let is_numeric_col = numeric_cols_idx.contains(&col_idx);
                 let is_integer_col = integer_cols_idx.contains(&col_idx);
                 let is_decimal_specified = decimal_cols_idx.contains(&col_idx);
@@ -229,17 +230,31 @@ impl<'a> XlsxSheetPlanBuilder<'a> {
                     is_decimal_explicit,
                     is_decimal_specified,
                 );
-                let value_raw = convert_any_value_to_cell_value(
-                    col.get(row_local)
-                        .map_err(|err| format!("Failed to access cell value: {err}"))?,
-                );
-                let value = convert_cell_value(
-                    &value_raw,
-                    is_numeric_col,
-                    is_integer_col,
-                    self.should_keep_missing_values,
-                    &self.value_policy,
-                );
+                let value_raw = convert_arrow_value_with_plan(
+                    col.as_ref(),
+                    row_local,
+                    self.options.value_plans.get(col_idx),
+                )?;
+                let value = if value_raw.warning.is_some() {
+                    value_raw.value
+                } else {
+                    match self.options.value_plans.get(col_idx).map(|plan| plan.kind) {
+                        Some(
+                            ColumnValueKind::Boolean
+                            | ColumnValueKind::Date
+                            | ColumnValueKind::Datetime
+                            | ColumnValueKind::Time
+                            | ColumnValueKind::Duration,
+                        ) => value_raw.value,
+                        _ => convert_cell_value(
+                            &value_raw.value,
+                            is_numeric_col,
+                            is_integer_col,
+                            self.should_keep_missing_values,
+                            &self.value_policy,
+                        ),
+                    }
+                };
                 self.body_widths_by_col[col_idx] = usize::max(
                     self.body_widths_by_col[col_idx],
                     estimate_width_len(

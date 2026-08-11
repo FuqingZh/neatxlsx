@@ -2,8 +2,8 @@ from __future__ import annotations
 
 from typing import Any
 
-EXPECTED_BRIDGE_ABI = 2
-EXPECTED_BRIDGE_CONTRACT = "neatxlsx.xlsx.writer.v2"
+EXPECTED_BRIDGE_ABI = 3
+EXPECTED_BRIDGE_CONTRACT = "neatxlsx.xlsx.writer.v3"
 EXPECTED_BRIDGE_TRANSPORT = "arrow_c_data"
 
 _mod_rs: Any | None = None

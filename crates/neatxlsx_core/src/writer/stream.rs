@@ -4,12 +4,12 @@ use std::collections::{BTreeMap, BTreeSet};
 
 use arrow::array::Array as ArrowArray;
 use arrow::record_batch::RecordBatchT;
-use polars::prelude::DataFrame;
 use rust_xlsxwriter::{Format, Workbook};
 
 use crate::constant::{LEN_SHEET_NAME_MAX, NCOLS_SHEET_MAX, NROWS_SHEET_MAX};
 use crate::spec::{
-    AutofitMode, CellValue, ScientificPolicy, SheetSlice, XlsxReport, XlsxValuePolicy,
+    AutofitMode, CellValue, ColumnValueKind, ScientificPolicy, SheetSlice, WarningCode, XlsxReport,
+    XlsxValuePolicy,
 };
 use crate::util::{
     calculate_row_chunk_size, convert_cell_value, sanitize_sheet_name,
@@ -19,12 +19,11 @@ use crate::util::{
 use super::plan::{XlsxSheetPlan, XlsxSheetPlanBuilder, calculate_slice_indices};
 use super::render::{
     ColumnFormatPlanOptions, apply_column_widths, cast_col_num, cast_row_num,
-    create_rust_xlsx_format, format_xlsx_error_text, plan_column_formats, write_cell_with_format,
-    write_header,
+    create_rust_xlsx_format, format_xlsx_error_text, inferred_num_formats, plan_column_formats,
+    write_cell_with_format, write_header,
 };
 use super::value::{
-    convert_any_value_to_cell_value, convert_arrow_value_to_cell_value,
-    dataframe_from_record_batch, estimate_width_len, is_scientific_candidate_col,
+    convert_arrow_value_with_plan, estimate_width_len, is_scientific_candidate_col,
     select_integer_column_indices_from_arrow_schema,
     select_numeric_column_indices_from_arrow_schema, should_use_scientific_value,
     validate_policy_autofit, validate_policy_scientific,
@@ -214,6 +213,15 @@ impl XlsxWriter {
                 sheet_slice.col_start_inclusive,
                 sheet_slice.col_end_exclusive,
             );
+            let inferred_num_formats_all = inferred_num_formats(&options.value_plans);
+            let inferred_num_formats_slice =
+                if inferred_num_formats_all.len() >= sheet_slice.col_end_exclusive {
+                    inferred_num_formats_all
+                        [sheet_slice.col_start_inclusive..sheet_slice.col_end_exclusive]
+                        .to_vec()
+                } else {
+                    vec![None; sheet_slice.col_end_exclusive - sheet_slice.col_start_inclusive]
+                };
 
             let column_format_plan = plan_column_formats(ColumnFormatPlanOptions {
                 width_data: sheet_slice.col_end_exclusive - sheet_slice.col_start_inclusive,
@@ -228,7 +236,10 @@ impl XlsxWriter {
                 fmt_text: &self.fmt_text,
                 fmt_integer: &self.fmt_integer,
                 fmt_decimal: &self.fmt_decimal,
-                options_write: &self.options_write,
+                fmt_text_override: &self.fmt_text_override,
+                fmt_integer_override: &self.fmt_integer_override,
+                fmt_decimal_override: &self.fmt_decimal_override,
+                inferred_num_formats: Some(&inferred_num_formats_slice),
             });
 
             let data_formats_by_col: Vec<Format> = column_format_plan
@@ -236,10 +247,7 @@ impl XlsxWriter {
                 .iter()
                 .map(create_rust_xlsx_format)
                 .collect();
-            let fmt_scientific_patch = self
-                .fmt_scientific
-                .merge(&self.options_write.base_format_patch);
-            let fmt_scientific = create_rust_xlsx_format(&fmt_scientific_patch);
+            let fmt_scientific = create_rust_xlsx_format(&self.fmt_scientific);
             let fmt_header = create_rust_xlsx_format(&self.fmt_header);
 
             let header_grid_slice = plan
@@ -296,25 +304,30 @@ impl XlsxWriter {
         let mut row_offset = 0usize;
         for batch in batches {
             let batch = batch?;
-            let df_batch = dataframe_from_record_batch(batch)?;
-            let batch_col_names = df_batch.get_column_names_str();
+            let batch_col_names = batch
+                .schema()
+                .iter_names()
+                .map(|name| name.as_str())
+                .collect::<Vec<_>>();
             if batch_col_names != col_names_ref {
                 return Err("All record batches must have identical column names.".to_string());
             }
 
             for runtime in &runtime_sheets {
-                write_record_batch_to_runtime_sheet(
+                write_arrow_record_batch_to_runtime_sheet(
                     &mut self.workbook,
                     runtime,
-                    &df_batch,
+                    &batch,
                     row_offset,
                     header_row_count,
                     plan.should_keep_missing_values,
                     &value_policy,
                     &options.policy_scientific,
+                    &options.value_plans,
+                    &mut report,
                 )?;
             }
-            row_offset += df_batch.height();
+            row_offset += batch.len();
         }
 
         if row_offset != plan.height_body {
@@ -324,6 +337,7 @@ impl XlsxWriter {
             ));
         }
 
+        sort_conversion_warnings(&mut report);
         self.reports.push(report);
         Ok(())
     }
@@ -385,6 +399,7 @@ impl XlsxWriter {
             &mut next_part_idx,
             &mut runtime_sheets,
             &mut report,
+            &options.value_plans,
         )?;
         rows_written += first_batch.len();
 
@@ -402,6 +417,7 @@ impl XlsxWriter {
                 &mut next_part_idx,
                 &mut runtime_sheets,
                 &mut report,
+                &options.value_plans,
             )?;
             rows_written += batch.len();
         }
@@ -420,6 +436,7 @@ impl XlsxWriter {
             )?;
         }
 
+        sort_conversion_warnings(&mut report);
         self.reports.push(report);
         Ok(())
     }
@@ -539,6 +556,7 @@ impl XlsxWriter {
         next_part_idx: &mut usize,
         runtime_sheets: &mut Vec<XlsxSinglePassRuntimeSheet>,
         report: &mut XlsxReport,
+        value_plans: &[crate::spec::ColumnValuePlan],
     ) -> Result<(), String> {
         let batch_col_names = batch
             .schema()
@@ -576,6 +594,8 @@ impl XlsxWriter {
                     plan.should_keep_missing_values,
                     &self.options_write.value_policy,
                     &options.policy_scientific,
+                    value_plans,
+                    report,
                 )?;
                 let report_sheet = &mut report.sheets[runtime.report_index];
                 let overlap_end =
@@ -637,6 +657,12 @@ impl XlsxWriter {
                 calculate_slice_indices(&plan.cols_idx_integer, col_start, col_end);
             let cols_idx_decimal_slice =
                 calculate_slice_indices(&plan.cols_idx_decimal_specified, col_start, col_end);
+            let inferred_num_formats_all = inferred_num_formats(&options.value_plans);
+            let inferred_num_formats_slice = if inferred_num_formats_all.len() >= col_end {
+                inferred_num_formats_all[col_start..col_end].to_vec()
+            } else {
+                vec![None; col_end - col_start]
+            };
             let column_format_plan = plan_column_formats(ColumnFormatPlanOptions {
                 width_data: col_end - col_start,
                 cols_idx_numeric: &cols_idx_numeric_slice,
@@ -650,17 +676,17 @@ impl XlsxWriter {
                 fmt_text: &self.fmt_text,
                 fmt_integer: &self.fmt_integer,
                 fmt_decimal: &self.fmt_decimal,
-                options_write: &self.options_write,
+                fmt_text_override: &self.fmt_text_override,
+                fmt_integer_override: &self.fmt_integer_override,
+                fmt_decimal_override: &self.fmt_decimal_override,
+                inferred_num_formats: Some(&inferred_num_formats_slice),
             });
             let data_formats_by_col = column_format_plan
                 .fmts_by_col
                 .iter()
                 .map(create_rust_xlsx_format)
                 .collect::<Vec<_>>();
-            let fmt_scientific_patch = self
-                .fmt_scientific
-                .merge(&self.options_write.base_format_patch);
-            let fmt_scientific = create_rust_xlsx_format(&fmt_scientific_patch);
+            let fmt_scientific = create_rust_xlsx_format(&self.fmt_scientific);
             let fmt_header = create_rust_xlsx_format(&self.fmt_header);
             let header_grid_slice = plan
                 .header_grid
@@ -723,83 +749,6 @@ impl XlsxWriter {
 }
 
 #[allow(clippy::too_many_arguments)]
-fn write_record_batch_to_runtime_sheet(
-    workbook: &mut Workbook,
-    runtime: &XlsxSheetRuntime,
-    df_batch: &DataFrame,
-    row_offset: usize,
-    header_row_count: usize,
-    should_keep_missing_values: bool,
-    value_policy: &XlsxValuePolicy,
-    policy_scientific: &ScientificPolicy,
-) -> Result<(), String> {
-    let batch_start = row_offset;
-    let batch_end = row_offset + df_batch.height();
-    let sheet_start = runtime.sheet_slice.row_start_inclusive;
-    let sheet_end = runtime.sheet_slice.row_end_exclusive;
-    let overlap_start = usize::max(batch_start, sheet_start);
-    let overlap_end = usize::min(batch_end, sheet_end);
-    if overlap_start >= overlap_end {
-        return Ok(());
-    }
-
-    let worksheet = workbook
-        .worksheet_from_index(runtime.worksheet_index)
-        .map_err(format_xlsx_error_text)?;
-
-    for row_abs in overlap_start..overlap_end {
-        let row_local_in_batch = row_abs - batch_start;
-        let row_local_in_sheet = row_abs - sheet_start;
-        for col_abs in
-            runtime.sheet_slice.col_start_inclusive..runtime.sheet_slice.col_end_exclusive
-        {
-            let col_idx = col_abs - runtime.sheet_slice.col_start_inclusive;
-            let col = &df_batch.get_columns()[col_abs];
-            let is_numeric_col = runtime.numeric_cols_idx.contains(&col_idx);
-            let is_integer_col = runtime.integer_cols_idx.contains(&col_idx);
-            let is_decimal_specified = runtime.decimal_cols_idx.contains(&col_idx);
-            let is_scientific_candidate = is_scientific_candidate_col(
-                policy_scientific,
-                is_integer_col,
-                runtime.is_decimal_explicit,
-                is_decimal_specified,
-            );
-            let value_raw = convert_any_value_to_cell_value(
-                col.get(row_local_in_batch)
-                    .map_err(|err| format!("Failed to access cell value: {err}"))?,
-            );
-            let value = convert_cell_value(
-                &value_raw,
-                is_numeric_col,
-                is_integer_col,
-                should_keep_missing_values,
-                value_policy,
-            );
-            let should_use_scientific = should_use_scientific_value(
-                &value,
-                is_numeric_col,
-                is_scientific_candidate,
-                policy_scientific,
-            );
-            let fmt_cell = if should_use_scientific {
-                &runtime.fmt_scientific
-            } else {
-                &runtime.data_formats_by_col[col_idx]
-            };
-            write_cell_with_format(
-                worksheet,
-                header_row_count + row_local_in_sheet,
-                col_idx,
-                &value,
-                fmt_cell,
-            )?;
-        }
-    }
-
-    Ok(())
-}
-
-#[allow(clippy::too_many_arguments)]
 fn write_arrow_record_batch_to_runtime_sheet(
     workbook: &mut Workbook,
     runtime: &XlsxSheetRuntime,
@@ -809,6 +758,8 @@ fn write_arrow_record_batch_to_runtime_sheet(
     should_keep_missing_values: bool,
     value_policy: &XlsxValuePolicy,
     policy_scientific: &ScientificPolicy,
+    value_plans: &[crate::spec::ColumnValuePlan],
+    report: &mut XlsxReport,
 ) -> Result<(), String> {
     let batch_start = row_offset;
     let batch_end = row_offset + batch.len();
@@ -841,14 +792,52 @@ fn write_arrow_record_batch_to_runtime_sheet(
                 runtime.is_decimal_explicit,
                 is_decimal_specified,
             );
-            let value_raw = convert_arrow_value_to_cell_value(col.as_ref(), row_local_in_batch)?;
-            let value = convert_cell_value(
-                &value_raw,
-                is_numeric_col,
-                is_integer_col,
-                should_keep_missing_values,
-                value_policy,
-            );
+            let value_raw = convert_arrow_value_with_plan(
+                col.as_ref(),
+                row_local_in_batch,
+                value_plans.get(col_abs),
+            )?;
+            if let Some(warning) = value_raw.warning
+                && let Some(plan) = value_plans.get(col_abs)
+            {
+                add_conversion_warning(report, col_abs, &plan.name, warning);
+            }
+            let value = if value_raw.warning.is_some() {
+                value_raw.value
+            } else {
+                match value_plans.get(col_abs).map(|plan| plan.kind) {
+                    Some(
+                        ColumnValueKind::Boolean
+                        | ColumnValueKind::Integer
+                        | ColumnValueKind::Decimal
+                        | ColumnValueKind::Date
+                        | ColumnValueKind::Datetime
+                        | ColumnValueKind::Time
+                        | ColumnValueKind::Duration,
+                    ) => {
+                        if matches!(value_raw.value, CellValue::Blank) && should_keep_missing_values
+                        {
+                            CellValue::String(value_policy.missing_value_str.clone())
+                        } else {
+                            value_raw.value
+                        }
+                    }
+                    Some(ColumnValueKind::Float) => convert_cell_value(
+                        &value_raw.value,
+                        true,
+                        false,
+                        should_keep_missing_values,
+                        value_policy,
+                    ),
+                    _ => convert_cell_value(
+                        &value_raw.value,
+                        is_numeric_col,
+                        is_integer_col,
+                        should_keep_missing_values,
+                        value_policy,
+                    ),
+                }
+            };
             let should_use_scientific = should_use_scientific_value(
                 &value,
                 is_numeric_col,
@@ -871,6 +860,41 @@ fn write_arrow_record_batch_to_runtime_sheet(
     }
 
     Ok(())
+}
+
+fn add_conversion_warning(
+    report: &mut XlsxReport,
+    column_index: usize,
+    column_name: &str,
+    warning: WarningCode,
+) {
+    let (prefix, detail) = match warning {
+        WarningCode::PrecisionAsText => (
+            "[precision-as-text]",
+            "contains values beyond Excel's 15-digit numeric precision; affected cells were written as exact text.",
+        ),
+        WarningCode::TemporalAsText => (
+            "[temporal-as-text]",
+            "contains values outside Excel's lossless temporal serial range; affected cells were written as exact text.",
+        ),
+    };
+    let key = format!("{prefix} column {column_name:?}");
+    if report.warnings.iter().any(|item| item.starts_with(&key)) {
+        return;
+    }
+    report
+        .warnings
+        .push(format!("{key} {detail} (source column {column_index})"));
+}
+
+fn sort_conversion_warnings(report: &mut XlsxReport) {
+    report.warnings.sort_by_key(|warning| {
+        warning
+            .rsplit_once("(source column ")
+            .and_then(|(_, suffix)| suffix.strip_suffix(')'))
+            .and_then(|value| value.parse::<usize>().ok())
+            .unwrap_or(usize::MAX)
+    });
 }
 
 fn create_sheet_identifier_local(sheet_name: &str, part_idx: usize) -> String {

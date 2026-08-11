@@ -5,7 +5,8 @@ use std::collections::{BTreeMap, BTreeSet};
 use rust_xlsxwriter::{Format, FormatAlign, FormatBorder, Worksheet, XlsxError};
 
 use crate::spec::{
-    AutofitMode, AutofitPolicy, CellFormatPatch, CellValue, ColumnFormatPlan, XlsxWriteOptions,
+    AutofitMode, AutofitPolicy, CellFormatPatch, CellValue, ColumnFormatPlan, ColumnValueKind,
+    ColumnValuePlan,
 };
 use crate::util::{
     apply_vertical_run_text_blankout, create_horizontal_merge_tracker, plan_horizontal_merges,
@@ -28,8 +29,34 @@ pub(super) struct ColumnFormatPlanOptions<'a> {
     pub(super) fmt_integer: &'a CellFormatPatch,
     /// Base decimal format.
     pub(super) fmt_decimal: &'a CellFormatPatch,
-    /// Global write options.
-    pub(super) options_write: &'a XlsxWriteOptions,
+    /// Explicit Workbook text-role override.
+    pub(super) fmt_text_override: &'a CellFormatPatch,
+    /// Explicit Workbook integer-role override.
+    pub(super) fmt_integer_override: &'a CellFormatPatch,
+    /// Explicit Workbook decimal-role override.
+    pub(super) fmt_decimal_override: &'a CellFormatPatch,
+    /// Inferred number formats by source-column index.
+    pub(super) inferred_num_formats: Option<&'a [Option<String>]>,
+}
+
+pub(super) fn inferred_num_formats(plans: &[ColumnValuePlan]) -> Vec<Option<String>> {
+    plans
+        .iter()
+        .map(|plan| match plan.kind {
+            ColumnValueKind::Decimal => plan.decimal_scale.map(|scale| {
+                if scale == 0 {
+                    "0".to_string()
+                } else {
+                    format!("0.{}", "0".repeat(scale))
+                }
+            }),
+            ColumnValueKind::Date => Some("yyyy-mm-dd".to_string()),
+            ColumnValueKind::Datetime => Some("yyyy-mm-dd hh:mm:ss.000".to_string()),
+            ColumnValueKind::Time => Some("hh:mm:ss.000".to_string()),
+            ColumnValueKind::Duration => Some("[h]:mm:ss.000".to_string()),
+            _ => None,
+        })
+        .collect()
 }
 
 pub(super) fn apply_column_widths(
@@ -77,7 +104,10 @@ pub(super) fn plan_column_formats(options: ColumnFormatPlanOptions<'_>) -> Colum
         fmt_text,
         fmt_integer,
         fmt_decimal,
-        options_write,
+        fmt_text_override,
+        fmt_integer_override,
+        fmt_decimal_override,
+        inferred_num_formats,
     } = options;
 
     let numeric_cols_idx: BTreeSet<usize> = cols_idx_numeric.iter().copied().collect();
@@ -101,7 +131,28 @@ pub(super) fn plan_column_formats(options: ColumnFormatPlanOptions<'_>) -> Colum
             fmt_text.clone()
         };
 
-        fmt_base = fmt_base.merge(&options_write.base_format_patch);
+        if let Some(formats) = inferred_num_formats
+            && let Some(Some(num_format)) = formats.get(col_idx)
+        {
+            fmt_base = fmt_base.merge(&CellFormatPatch {
+                num_format: Some(num_format.clone()),
+                ..Default::default()
+            });
+        }
+
+        let role_override = if integer_cols_idx.contains(&col_idx) {
+            fmt_integer_override
+        } else if decimal_cols_idx
+            .as_ref()
+            .map_or(numeric_cols_idx.contains(&col_idx), |indices| {
+                indices.contains(&col_idx)
+            })
+        {
+            fmt_decimal_override
+        } else {
+            fmt_text_override
+        };
+        fmt_base = fmt_base.merge(role_override);
 
         let fmt_final = if let Some(fmt_override) = cols_fmt_overrides.get(&col_idx) {
             fmt_base.merge(fmt_override)
@@ -202,7 +253,7 @@ pub(super) fn write_cell_with_format(
     format: &Format,
 ) -> Result<(), String> {
     match value {
-        CellValue::None => {
+        CellValue::Blank => {
             worksheet
                 .write_blank(cast_row_num(row_idx)?, cast_col_num(col_idx)?, format)
                 .map_err(format_xlsx_error_text)?;
@@ -220,6 +271,16 @@ pub(super) fn write_cell_with_format(
         CellValue::Number(val) => {
             worksheet
                 .write_number_with_format(
+                    cast_row_num(row_idx)?,
+                    cast_col_num(col_idx)?,
+                    *val,
+                    format,
+                )
+                .map_err(format_xlsx_error_text)?;
+        }
+        CellValue::Boolean(val) => {
+            worksheet
+                .write_boolean_with_format(
                     cast_row_num(row_idx)?,
                     cast_col_num(col_idx)?,
                     *val,

@@ -1,0 +1,88 @@
+{
+  "kind": "workbook",
+  "known_gaps": [],
+  "reports": [
+    {
+      "requested_name": "Results",
+      "warnings": [],
+      "worksheets": [
+        {
+          "columns": [
+            0,
+            6
+          ],
+          "name": "Results",
+          "rows": [
+            0,
+            3
+          ]
+        }
+      ]
+    }
+  ],
+  "scenario": "ordinary-scientific",
+  "schema_version": 1,
+  "sentinels": {
+    "Results": [
+      {
+        "address": "A1",
+        "kind": "string",
+        "number_format": "General",
+        "value": "sample_id"
+      },
+      {
+        "address": "B2",
+        "kind": "number",
+        "number_format": "0",
+        "value": 10
+      },
+      {
+        "address": "C2",
+        "kind": "number",
+        "number_format": "0.00E+0",
+        "value": 1.23e-05
+      },
+      {
+        "address": "D2",
+        "kind": "number",
+        "number_format": "0.00E+0",
+        "value": 1.2e-08
+      },
+      {
+        "address": "E2",
+        "kind": "string",
+        "number_format": "General",
+        "value": "=SUM(A2:A3)"
+      },
+      {
+        "address": "E3",
+        "kind": "string",
+        "number_format": "General",
+        "value": "+cmd"
+      },
+      {
+        "address": "F3",
+        "kind": "blank",
+        "number_format": "General",
+        "value": null
+      }
+    ]
+  },
+  "worksheets": [
+    {
+      "dimensions": [
+        4,
+        6
+      ],
+      "freeze_panes": "B2",
+      "merges": [],
+      "name": "Results",
+      "widths": {
+        "A": 11.7109,
+        "B": 8.7109,
+        "C": 9.7109,
+        "D": 13.0
+      }
+    }
+  ]
+}

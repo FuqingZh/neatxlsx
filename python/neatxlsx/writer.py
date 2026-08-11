@@ -16,9 +16,9 @@ from typing import Any, Literal, Protocol, Self, cast
 import polars as pl
 import polars.selectors as cs
 
+from ._dtype import prepare_lazy_frame
 from ._polars import collect_batches
 from ._rs_bridge import create_xlsx_writer_via_rs, is_rs_backend_available
-from .constant import DEFAULT_FORMATS
 from .errors import CommitError, StateError, WriteError
 from .spec import (
     Autofit,
@@ -126,6 +126,16 @@ class Workbook:
             if not isinstance(value, bool):
                 raise TypeError(f"{name} must be bool.")
 
+        for name, value in (
+            ("text_format", text_format),
+            ("integer_format", integer_format),
+            ("decimal_format", decimal_format),
+            ("scientific_format", scientific_format),
+            ("header_format", header_format),
+        ):
+            if value is not None and not isinstance(value, Format):
+                raise TypeError(f"{name} must be neatxlsx.Format or None.")
+
         target = Path(path)
         if target.is_symlink():
             raise ValueError("path must not be a symbolic link.")
@@ -173,13 +183,6 @@ class Workbook:
             should_infer_numeric_cols=False,
             should_infer_integer_cols=False,
             row_chunk_policy=_RowChunkPolicy(fixed_size=chunk_size),
-            base_format_patch=Format(
-                border=0,
-                top=0,
-                bottom=0,
-                left=0,
-                right=0,
-            ),
             should_use_zip64=use_zip64,
         )
         self._options = options
@@ -188,17 +191,11 @@ class Workbook:
                 _Backend,
                 create_xlsx_writer_via_rs(
                     str(self._temp_path),
-                    fmt_text=_merge_format(DEFAULT_FORMATS["text"], text_format),
-                    fmt_integer=_merge_format(
-                        DEFAULT_FORMATS["integer"], integer_format
-                    ),
-                    fmt_decimal=_merge_format(
-                        DEFAULT_FORMATS["decimal"], decimal_format
-                    ),
-                    fmt_scientific=_merge_format(
-                        DEFAULT_FORMATS["scientific"], scientific_format
-                    ),
-                    fmt_header=_merge_format(DEFAULT_FORMATS["header"], header_format),
+                    fmt_text=text_format,
+                    fmt_integer=integer_format,
+                    fmt_decimal=decimal_format,
+                    fmt_scientific=scientific_format,
+                    fmt_header=header_format,
                     options_write=options,
                 ),
             )
@@ -322,6 +319,9 @@ class Workbook:
             self._infer_integer_columns,
             "infer_integer_columns",
         )
+        preparation = prepare_lazy_frame(lazy, schema)
+        lazy = preparation.lazy
+        value_plans = preparation.plans
         integer_names, decimal_names = _resolve_numeric_roles(
             schema,
             integer_columns=integer_columns,
@@ -332,7 +332,7 @@ class Workbook:
         chunk_size = _derive_chunk_size(
             len(schema), self._options.row_chunk_policy.fixed_size
         )
-        schema_frame = pl.DataFrame(schema=schema)
+        schema_frame = pl.DataFrame(schema=lazy.collect_schema())
         kwargs = {
             "header": normalized_header,
             "cols_integer": integer_names,
@@ -344,6 +344,7 @@ class Workbook:
             "policy_autofit": resolved_autofit,
             "policy_scientific": resolved_scientific,
             "schema_body": schema_frame,
+            "value_plans": [plan.to_bridge() for plan in value_plans],
         }
         backend = cast(_Backend, self._backend)
         try:

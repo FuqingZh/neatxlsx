@@ -39,7 +39,7 @@ fn convert_infinite_number(
                 .unwrap_or_else(|_| value_policy.nan_str.clone()),
         )
     } else {
-        CellValue::None
+        CellValue::Blank
     }
 }
 
@@ -94,11 +94,11 @@ pub fn convert_cell_value(
     should_keep_missing_values: bool,
     value_policy: &XlsxValuePolicy,
 ) -> CellValue {
-    if matches!(value, CellValue::None) {
+    if matches!(value, CellValue::Blank) {
         return if should_keep_missing_values {
             CellValue::String(value_policy.missing_value_str.clone())
         } else {
-            CellValue::None
+            CellValue::Blank
         };
     }
 
@@ -106,7 +106,8 @@ pub fn convert_cell_value(
         return match value {
             CellValue::String(s) => CellValue::String(s.clone()),
             CellValue::Number(n) => CellValue::String(n.to_string()),
-            CellValue::None => CellValue::None,
+            CellValue::Blank => CellValue::Blank,
+            CellValue::Boolean(value) => CellValue::Boolean(*value),
         };
     }
 
@@ -118,7 +119,8 @@ pub fn convert_cell_value(
             CellValue::String(_val) => {
                 convert_string_cell_to_integer(_val, should_keep_missing_values, value_policy)
             }
-            CellValue::None => CellValue::None,
+            CellValue::Blank => CellValue::Blank,
+            CellValue::Boolean(value) => CellValue::Boolean(*value),
         };
     }
 
@@ -141,7 +143,8 @@ pub fn convert_cell_value(
                 CellValue::String(_val.clone())
             }
         }
-        CellValue::None => CellValue::None,
+        CellValue::Blank => CellValue::Blank,
+        CellValue::Boolean(value) => CellValue::Boolean(*value),
     }
 }
 
@@ -598,5 +601,102 @@ mod tests {
         assert_eq!(grid[1][1], "");
         assert_eq!(grid[2][1], "");
         assert_eq!(grid[3][1], "");
+    }
+
+    #[test]
+    fn test_plan_sheet_slices_respects_row_and_column_boundaries() {
+        let mut below_report = XlsxReport {
+            sheets: vec![],
+            warnings: vec![],
+        };
+        let below = plan_sheet_slices(
+            NROWS_SHEET_MAX - 2,
+            NCOLS_SHEET_MAX - 1,
+            1,
+            "Split",
+            &mut below_report,
+        )
+        .unwrap();
+        assert_eq!(below.len(), 1);
+        assert_eq!(below[0].row_start_inclusive, 0);
+        assert_eq!(below[0].row_end_exclusive, NROWS_SHEET_MAX - 2);
+        assert_eq!(below[0].col_start_inclusive, 0);
+        assert_eq!(below[0].col_end_exclusive, NCOLS_SHEET_MAX - 1);
+        assert!(below_report.warnings.is_empty());
+
+        let mut at_report = XlsxReport {
+            sheets: vec![],
+            warnings: vec![],
+        };
+        let at = plan_sheet_slices(
+            NROWS_SHEET_MAX - 1,
+            NCOLS_SHEET_MAX,
+            1,
+            "Split",
+            &mut at_report,
+        )
+        .unwrap();
+        assert_eq!(at.len(), 1);
+        assert_eq!(at[0].row_end_exclusive, NROWS_SHEET_MAX - 1);
+        assert_eq!(at[0].col_end_exclusive, NCOLS_SHEET_MAX);
+        assert!(at_report.warnings.is_empty());
+
+        let mut above_report = XlsxReport {
+            sheets: vec![],
+            warnings: vec![],
+        };
+        let above = plan_sheet_slices(
+            NROWS_SHEET_MAX,
+            NCOLS_SHEET_MAX + 1,
+            1,
+            "Split",
+            &mut above_report,
+        )
+        .unwrap();
+        assert_eq!(above.len(), 4);
+        assert_eq!(
+            above
+                .iter()
+                .map(|slice| (
+                    slice.sheet_name.clone(),
+                    slice.row_start_inclusive,
+                    slice.row_end_exclusive,
+                    slice.col_start_inclusive,
+                    slice.col_end_exclusive,
+                ))
+                .collect::<Vec<_>>(),
+            vec![
+                (
+                    "Split_1".to_string(),
+                    0,
+                    NROWS_SHEET_MAX - 1,
+                    0,
+                    NCOLS_SHEET_MAX,
+                ),
+                (
+                    "Split_2".to_string(),
+                    NROWS_SHEET_MAX - 1,
+                    NROWS_SHEET_MAX,
+                    0,
+                    NCOLS_SHEET_MAX,
+                ),
+                (
+                    "Split_3".to_string(),
+                    0,
+                    NROWS_SHEET_MAX - 1,
+                    NCOLS_SHEET_MAX,
+                    NCOLS_SHEET_MAX + 1,
+                ),
+                (
+                    "Split_4".to_string(),
+                    NROWS_SHEET_MAX - 1,
+                    NROWS_SHEET_MAX,
+                    NCOLS_SHEET_MAX,
+                    NCOLS_SHEET_MAX + 1,
+                ),
+            ]
+        );
+        assert_eq!(above_report.warnings.len(), 1);
+        assert!(above_report.warnings[0].contains("columns-first"));
     }
 }
