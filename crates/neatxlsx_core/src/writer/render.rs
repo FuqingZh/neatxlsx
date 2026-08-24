@@ -197,23 +197,55 @@ pub(super) fn plan_scientific_formats(
         .collect()
 }
 
-/// Materialize the effective header format for every physical header row.
+struct HeaderRowFormatPlan {
+    base: Format,
+    column_overrides: BTreeMap<usize, Format>,
+}
+
+pub(super) struct HeaderFormatPlan {
+    rows: Vec<HeaderRowFormatPlan>,
+    column_count: usize,
+}
+
+impl HeaderFormatPlan {
+    fn format_for(&self, row_index: usize, column_index: usize) -> &Format {
+        let row = &self.rows[row_index];
+        row.column_overrides.get(&column_index).unwrap_or(&row.base)
+    }
+}
+
+/// Materialize one base format per header row and only the overridden cells.
 pub(super) fn plan_header_formats(
     base: &CellFormatPatch,
-    overrides: &[Option<CellFormatPatch>],
+    row_overrides: &[Option<CellFormatPatch>],
+    column_overrides: &BTreeMap<usize, CellFormatPatch>,
     row_count: usize,
-) -> Result<Vec<Format>, String> {
-    if !overrides.is_empty() && overrides.len() != row_count {
+    column_count: usize,
+) -> Result<HeaderFormatPlan, String> {
+    if !row_overrides.is_empty() && row_overrides.len() != row_count {
         return Err("header_row_formats length must equal header height.".to_string());
     }
-    (0..row_count)
+    let rows = (0..row_count)
         .map(|row_index| {
-            let patch = overrides.get(row_index).and_then(Option::as_ref);
-            Ok(create_rust_xlsx_format(
-                &patch.map_or_else(|| base.clone(), |value| base.merge(value)),
-            ))
+            let row_patch = row_overrides.get(row_index).and_then(Option::as_ref);
+            let row_format = row_patch.map_or_else(|| base.clone(), |value| base.merge(value));
+            let column_overrides = column_overrides
+                .iter()
+                .filter(|(column_index, _)| **column_index < column_count)
+                .map(|(column_index, value)| {
+                    (
+                        *column_index,
+                        create_rust_xlsx_format(&row_format.merge(value)),
+                    )
+                })
+                .collect();
+            HeaderRowFormatPlan {
+                base: create_rust_xlsx_format(&row_format),
+                column_overrides,
+            }
         })
-        .collect()
+        .collect();
+    Ok(HeaderFormatPlan { rows, column_count })
 }
 
 fn write_header_cell(
@@ -244,10 +276,16 @@ pub(super) fn write_header(
     worksheet: &mut Worksheet,
     mut header_grid: Vec<Vec<String>>,
     should_merge: bool,
-    fmt_headers: &[Format],
+    fmt_headers: &HeaderFormatPlan,
 ) -> Result<(), String> {
-    if fmt_headers.len() != header_grid.len() {
+    if fmt_headers.rows.len() != header_grid.len() {
         return Err("header format count must equal header row count.".to_string());
+    }
+    if header_grid
+        .iter()
+        .any(|row| row.len() != fmt_headers.column_count)
+    {
+        return Err("header format width must equal header width.".to_string());
     }
     if !should_merge {
         for (row_idx, row_values) in header_grid.iter().enumerate() {
@@ -257,7 +295,7 @@ pub(super) fn write_header(
                     row_idx,
                     col_idx,
                     cell_value,
-                    &fmt_headers[row_idx],
+                    fmt_headers.format_for(row_idx, col_idx),
                 )?;
             }
         }
@@ -283,7 +321,7 @@ pub(super) fn write_header(
                 row_idx,
                 col_idx,
                 cell_value,
-                &fmt_headers[row_idx],
+                fmt_headers.format_for(row_idx, col_idx),
             )?;
         }
 
@@ -296,7 +334,7 @@ pub(super) fn write_header(
                         cast_row_num(row_idx)?,
                         cast_col_num(merge.col_idx_end)?,
                         &merge.text,
-                        &fmt_headers[row_idx],
+                        fmt_headers.format_for(row_idx, merge.col_idx_start),
                     )
                     .map_err(format_xlsx_error_text)?;
             }
@@ -468,7 +506,7 @@ pub(super) fn format_xlsx_error_text(err: XlsxError) -> String {
 #[cfg(test)]
 mod tests {
     use super::{
-        ColumnFormatPlanOptions, plan_column_formats, plan_scientific_formats,
+        ColumnFormatPlanOptions, plan_column_formats, plan_header_formats, plan_scientific_formats,
         slice_column_format_overrides,
     };
     use crate::spec::CellFormatPatch;
@@ -571,5 +609,70 @@ mod tests {
             second.get(&0).and_then(|value| value.font_name.as_deref()),
             Some("SimSun")
         );
+    }
+
+    #[test]
+    fn header_column_rules_are_rebased_for_every_physical_column_part() {
+        let overrides = BTreeMap::from([
+            (
+                0,
+                CellFormatPatch {
+                    font_name: Some("Times New Roman".to_string()),
+                    ..Default::default()
+                },
+            ),
+            (
+                16_384,
+                CellFormatPatch {
+                    font_name: Some("SimSun".to_string()),
+                    ..Default::default()
+                },
+            ),
+        ]);
+
+        let first = slice_column_format_overrides(&overrides, 0, 16_384);
+        let second = slice_column_format_overrides(&overrides, 16_384, 16_385);
+
+        assert_eq!(
+            first.get(&0).and_then(|value| value.font_name.as_deref()),
+            Some("Times New Roman")
+        );
+        assert_eq!(
+            second.get(&0).and_then(|value| value.font_name.as_deref()),
+            Some("SimSun")
+        );
+    }
+
+    #[test]
+    fn wide_header_format_plans_only_materialize_column_overrides() {
+        let base = CellFormatPatch::default();
+        let row_overrides = vec![None, None];
+        let without_column_overrides =
+            plan_header_formats(&base, &row_overrides, &BTreeMap::new(), 2, 16_385)
+                .expect("wide header format plan");
+
+        assert_eq!(without_column_overrides.rows.len(), 2);
+        assert_eq!(without_column_overrides.column_count, 16_385);
+        assert!(
+            without_column_overrides
+                .rows
+                .iter()
+                .all(|row| row.column_overrides.is_empty())
+        );
+
+        let column_overrides = BTreeMap::from([(
+            16_384,
+            CellFormatPatch {
+                font_name: Some("SimSun".to_string()),
+                ..Default::default()
+            },
+        )]);
+        let with_one_column_override =
+            plan_header_formats(&base, &row_overrides, &column_overrides, 2, 16_385)
+                .expect("sparse header format plan");
+
+        assert!(with_one_column_override.rows.iter().all(|row| {
+            row.column_overrides.len() == 1 && row.column_overrides.contains_key(&16_384)
+        }));
     }
 }

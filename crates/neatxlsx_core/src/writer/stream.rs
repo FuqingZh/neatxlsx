@@ -98,6 +98,7 @@ impl XlsxWriter {
         if self.is_closed {
             return Err("Cannot write after close().".to_string());
         }
+        options.validate_preflight()?;
         validate_policy_autofit(&options.policy_autofit)?;
         validate_policy_scientific(&options.policy_scientific)?;
 
@@ -135,6 +136,7 @@ impl XlsxWriter {
         if self.is_closed {
             return Err("Cannot write after close().".to_string());
         }
+        options.validate_preflight()?;
         self.write_sheet_record_batches(plan, batches, options)
     }
 
@@ -154,6 +156,7 @@ impl XlsxWriter {
         if self.is_closed {
             return Err("Cannot write after close().".to_string());
         }
+        options.validate_preflight()?;
         validate_policy_autofit(&options.policy_autofit)?;
         validate_policy_scientific(&options.policy_scientific)?;
         if matches!(
@@ -229,6 +232,11 @@ impl XlsxWriter {
                 sheet_slice.col_start_inclusive,
                 sheet_slice.col_end_exclusive,
             );
+            let header_column_formats_slice = slice_column_format_overrides(
+                &options.header_column_formats,
+                sheet_slice.col_start_inclusive,
+                sheet_slice.col_end_exclusive,
+            );
             let column_format_plan = plan_column_formats(ColumnFormatPlanOptions {
                 width_data: sheet_slice.col_end_exclusive - sheet_slice.col_start_inclusive,
                 cols_idx_numeric: &cols_idx_numeric_slice,
@@ -264,7 +272,9 @@ impl XlsxWriter {
             let fmt_headers = plan_header_formats(
                 &self.fmt_header,
                 &options.header_row_formats,
+                &header_column_formats_slice,
                 header_row_count,
+                sheet_slice.col_end_exclusive - sheet_slice.col_start_inclusive,
             )?;
 
             let header_grid_slice = plan
@@ -682,6 +692,8 @@ impl XlsxWriter {
             };
             let column_formats_slice =
                 slice_column_format_overrides(&options.column_formats, col_start, col_end);
+            let header_column_formats_slice =
+                slice_column_format_overrides(&options.header_column_formats, col_start, col_end);
             let column_format_plan = plan_column_formats(ColumnFormatPlanOptions {
                 width_data: col_end - col_start,
                 cols_idx_numeric: &cols_idx_numeric_slice,
@@ -716,7 +728,9 @@ impl XlsxWriter {
             let fmt_headers = plan_header_formats(
                 &self.fmt_header,
                 &options.header_row_formats,
+                &header_column_formats_slice,
                 plan.header_grid.len(),
+                col_end - col_start,
             )?;
             let header_grid_slice = plan
                 .header_grid

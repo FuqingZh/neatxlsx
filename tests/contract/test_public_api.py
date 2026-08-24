@@ -31,6 +31,7 @@ def test_write_sheet_uses_caller_facing_parameter_names() -> None:
         "sheet_name",
         "header",
         "header_row_formats",
+        "header_column_formats",
         "column_formats",
         "integer_columns",
         "decimal_columns",
@@ -44,6 +45,7 @@ def test_write_sheet_uses_caller_facing_parameter_names() -> None:
         "infer_integer_columns",
     ]
     assert parameters["header_row_formats"].default is None
+    assert parameters["header_column_formats"].default is None
     assert parameters["column_formats"].default is None
     assert all(
         parameter.kind is inspect.Parameter.KEYWORD_ONLY
@@ -57,7 +59,7 @@ def test_additive_format_parameters_preserve_the_old_signature_order() -> None:
     assert [
         name
         for name in parameters
-        if name not in {"header_row_formats", "column_formats"}
+        if name not in {"header_row_formats", "header_column_formats", "column_formats"}
     ] == [
         "self",
         "data",
