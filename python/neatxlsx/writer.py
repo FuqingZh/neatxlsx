@@ -236,6 +236,8 @@ class Workbook:
         sheet_name: str,
         *,
         header: pl.DataFrame | None = None,
+        header_row_formats: Sequence[Format | None] | None = None,
+        column_formats: Mapping[str | int, Format] | None = None,
         integer_columns: ColumnSelection = None,
         decimal_columns: ColumnSelection = None,
         freeze_columns: int = 0,
@@ -258,6 +260,12 @@ class Workbook:
             data: Polars DataFrame or LazyFrame.
             sheet_name: Requested name before Excel sanitization and uniqueness.
             header: Optional multi-row header DataFrame with the same width.
+            header_row_formats: Per-row patches for a custom header. Each item
+                is a :class:`Format` patch or ``None`` to inherit the workbook
+                header format. The sequence length must equal ``header.height``.
+            column_formats: Per-body-column :class:`Format` patches keyed by
+                column name or zero-based index. These patches take precedence
+                over inferred and workbook role formats.
             integer_columns: Columns forced to integer handling.
             decimal_columns: Columns forced to decimal handling.
             freeze_columns: Number of leading columns to freeze.
@@ -281,6 +289,11 @@ class Workbook:
             ...     workbook.write_sheet(
             ...         pl.DataFrame({"id": [1], "score": [1.25]}),
             ...         "Data",
+            ...         header=pl.DataFrame(
+            ...             {"id": ["Metadata", "Identifier"], "score": ["Result", "Score"]}
+            ...         ),
+            ...         header_row_formats=[Format(font_name="SimSun"), None],
+            ...         column_formats={"score": Format(font_name="SimSun")},
             ...         integer_columns="id",
             ...         decimal_columns=cs.float(),
             ...         freeze_columns=1,
@@ -295,6 +308,10 @@ class Workbook:
                 raise ValueError("header must contain at least one row.")
             if normalized_header.width != len(schema):
                 raise ValueError("header width must equal data width.")
+        resolved_header_row_formats = _normalize_header_row_formats(
+            normalized_header, header_row_formats
+        )
+        resolved_column_formats = _resolve_column_formats(column_formats, schema)
         resolved_autofit = autofit or Autofit()
         resolved_scientific = scientific_notation or ScientificNotation()
         _validate_nonnegative_int(freeze_columns, "freeze_columns")
@@ -335,6 +352,8 @@ class Workbook:
         schema_frame = pl.DataFrame(schema=lazy.collect_schema())
         kwargs = {
             "header": normalized_header,
+            "header_row_formats": resolved_header_row_formats,
+            "column_formats": resolved_column_formats,
             "cols_integer": integer_names,
             "cols_decimal": decimal_names,
             "num_frozen_cols": freeze_columns,
@@ -497,6 +516,62 @@ def _normalize_header(value: pl.DataFrame | None) -> pl.DataFrame | None:
     if value is None or isinstance(value, pl.DataFrame):
         return value
     raise TypeError("header must be a polars DataFrame or None.")
+
+
+def _normalize_header_row_formats(
+    header: pl.DataFrame | None,
+    value: Sequence[Format | None] | None,
+) -> tuple[Format | None, ...]:
+    if value is None:
+        return ()
+    if header is None:
+        raise ValueError("header_row_formats requires a custom header.")
+    if isinstance(
+        value, (str, bytes, bytearray, set, frozenset, Mapping)
+    ) or not isinstance(value, Sequence):
+        raise TypeError("header_row_formats must be a sequence of Format or None.")
+    if len(value) != header.height:
+        raise ValueError("header_row_formats length must equal header height.")
+    for item in value:
+        if item is not None and not isinstance(item, Format):
+            raise TypeError("header_row_formats items must be neatxlsx.Format or None.")
+    return tuple(value)
+
+
+def _resolve_column_formats(
+    value: Mapping[str | int, Format] | None,
+    schema: pl.Schema,
+) -> tuple[tuple[int, Format], ...]:
+    if value is None:
+        return ()
+    if not isinstance(value, Mapping):
+        raise TypeError(
+            "column_formats must be a mapping of column name or index to Format."
+        )
+
+    names = schema.names()
+    resolved: dict[int, Format] = {}
+    for key, fmt in value.items():
+        if isinstance(key, bool):
+            raise TypeError("column_formats keys must not be bool.")
+        if isinstance(key, str):
+            if key not in schema:
+                raise ValueError(f"column_formats contains unknown column {key!r}.")
+            index = names.index(key)
+        elif isinstance(key, int):
+            if key < 0 or key >= len(names):
+                raise ValueError(f"column_formats index {key} is out of range.")
+            index = key
+        else:
+            raise TypeError("column_formats keys must be str or int.")
+        if not isinstance(fmt, Format):
+            raise TypeError("column_formats values must be neatxlsx.Format.")
+        if index in resolved:
+            raise ValueError(
+                f"column_formats selects column {names[index]!r} more than once."
+            )
+        resolved[index] = fmt
+    return tuple(sorted(resolved.items()))
 
 
 def _resolve_numeric_roles(

@@ -1,3 +1,4 @@
+use std::collections::BTreeMap;
 use std::path::PathBuf;
 use std::sync::Arc;
 
@@ -19,8 +20,8 @@ use pyo3::ffi as pyffi;
 use pyo3::prelude::*;
 use pyo3::types::{PyAny, PyIterator, PyList, PyTuple};
 
-pub const BRIDGE_ABI_VERSION: u64 = 3;
-pub const BRIDGE_CONTRACT_VERSION: &str = "neatxlsx.xlsx.writer.v3";
+pub const BRIDGE_ABI_VERSION: u64 = 4;
+pub const BRIDGE_CONTRACT_VERSION: &str = "neatxlsx.xlsx.writer.v4";
 pub const BRIDGE_TRANSPORT: &str = "arrow_c_data";
 pub const BUILD_PROFILE: &str = env!("NEATXLSX_BUILD_PROFILE");
 const C_ARROW_ARRAY_STREAM_CAPSULE_NAME: &[u8] = b"arrow_array_stream\0";
@@ -150,6 +151,8 @@ impl PyXlsxWriter {
         body,
         sheet_name,
         header = None,
+        header_row_formats = None,
+        column_formats = None,
         cols_integer = None,
         cols_decimal = None,
         num_frozen_cols = 0,
@@ -167,6 +170,8 @@ impl PyXlsxWriter {
         body: &Bound<'py, PyAny>,
         sheet_name: &str,
         header: Option<&Bound<'py, PyAny>>,
+        header_row_formats: Option<&Bound<'py, PyAny>>,
+        column_formats: Option<&Bound<'py, PyAny>>,
         cols_integer: Option<&Bound<'py, PyAny>>,
         cols_decimal: Option<&Bound<'py, PyAny>>,
         num_frozen_cols: usize,
@@ -178,6 +183,8 @@ impl PyXlsxWriter {
         value_plans: Option<&Bound<'py, PyAny>>,
     ) -> PyResult<PyRefMut<'py, Self>> {
         let cfg_sheet_write_options = XlsxSheetWriteOptions {
+            header_row_formats: parse_header_row_formats(header_row_formats)?,
+            column_formats: parse_column_formats(column_formats)?,
             cols_integer: parse_column_refs(cols_integer)?,
             cols_decimal: parse_column_refs(cols_decimal)?,
             num_frozen_cols,
@@ -217,6 +224,8 @@ impl PyXlsxWriter {
         batches_write,
         sheet_name,
         header = None,
+        header_row_formats = None,
+        column_formats = None,
         cols_integer = None,
         cols_decimal = None,
         num_frozen_cols = 0,
@@ -236,6 +245,8 @@ impl PyXlsxWriter {
         batches_write: &Bound<'py, PyAny>,
         sheet_name: &str,
         header: Option<&Bound<'py, PyAny>>,
+        header_row_formats: Option<&Bound<'py, PyAny>>,
+        column_formats: Option<&Bound<'py, PyAny>>,
         cols_integer: Option<&Bound<'py, PyAny>>,
         cols_decimal: Option<&Bound<'py, PyAny>>,
         num_frozen_cols: usize,
@@ -248,6 +259,8 @@ impl PyXlsxWriter {
         value_plans: Option<&Bound<'py, PyAny>>,
     ) -> PyResult<PyRefMut<'py, Self>> {
         let cfg_sheet_write_options = XlsxSheetWriteOptions {
+            header_row_formats: parse_header_row_formats(header_row_formats)?,
+            column_formats: parse_column_formats(column_formats)?,
             cols_integer: parse_column_refs(cols_integer)?,
             cols_decimal: parse_column_refs(cols_decimal)?,
             num_frozen_cols,
@@ -292,6 +305,8 @@ impl PyXlsxWriter {
         batches_write,
         sheet_name,
         header = None,
+        header_row_formats = None,
+        column_formats = None,
         cols_integer = None,
         cols_decimal = None,
         num_frozen_cols = 0,
@@ -310,6 +325,8 @@ impl PyXlsxWriter {
         batches_write: &Bound<'py, PyAny>,
         sheet_name: &str,
         header: Option<&Bound<'py, PyAny>>,
+        header_row_formats: Option<&Bound<'py, PyAny>>,
+        column_formats: Option<&Bound<'py, PyAny>>,
         cols_integer: Option<&Bound<'py, PyAny>>,
         cols_decimal: Option<&Bound<'py, PyAny>>,
         num_frozen_cols: usize,
@@ -322,6 +339,8 @@ impl PyXlsxWriter {
         value_plans: Option<&Bound<'py, PyAny>>,
     ) -> PyResult<PyRefMut<'py, Self>> {
         let cfg_sheet_write_options = XlsxSheetWriteOptions {
+            header_row_formats: parse_header_row_formats(header_row_formats)?,
+            column_formats: parse_column_formats(column_formats)?,
             cols_integer: parse_column_refs(cols_integer)?,
             cols_decimal: parse_column_refs(cols_decimal)?,
             num_frozen_cols,
@@ -736,6 +755,57 @@ fn format_header_text_from_any_value(value: AnyValue<'_>) -> String {
         AnyValue::StringOwned(val) => val.to_string(),
         _ => value.to_string(),
     }
+}
+
+fn parse_header_row_formats(
+    value: Option<&Bound<'_, PyAny>>,
+) -> PyResult<Vec<Option<CellFormatPatch>>> {
+    let Some(value) = value else {
+        return Ok(Vec::new());
+    };
+    if value.is_none() {
+        return Ok(Vec::new());
+    }
+
+    value
+        .try_iter()?
+        .map(|item| {
+            let item = item?;
+            parse_cell_format_patch(Some(&item))
+        })
+        .collect()
+}
+
+fn parse_column_formats(
+    value: Option<&Bound<'_, PyAny>>,
+) -> PyResult<BTreeMap<usize, CellFormatPatch>> {
+    let Some(value) = value else {
+        return Ok(BTreeMap::new());
+    };
+    if value.is_none() {
+        return Ok(BTreeMap::new());
+    }
+
+    let mut formats = BTreeMap::new();
+    for item in value.try_iter()? {
+        let item = item?;
+        let tuple = item.downcast::<PyTuple>()?;
+        if tuple.len() != 2 {
+            return Err(PyValueError::new_err(
+                "column_formats bridge items must contain an index and Format.",
+            ));
+        }
+        let index = tuple.get_item(0)?.extract::<usize>()?;
+        let format_obj = tuple.get_item(1)?;
+        let format = parse_cell_format_patch(Some(&format_obj))?
+            .ok_or_else(|| PyValueError::new_err("column_formats bridge values must be Format."))?;
+        if formats.insert(index, format).is_some() {
+            return Err(PyValueError::new_err(
+                "column_formats bridge indices must be unique.",
+            ));
+        }
+    }
+    Ok(formats)
 }
 
 fn parse_cell_format_patch(obj: Option<&Bound<'_, PyAny>>) -> PyResult<Option<CellFormatPatch>> {

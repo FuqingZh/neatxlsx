@@ -1,6 +1,6 @@
 //! RecordBatch planning and one-pass/two-pass streaming orchestration.
 
-use std::collections::{BTreeMap, BTreeSet};
+use std::collections::BTreeSet;
 
 use arrow::array::Array as ArrowArray;
 use arrow::record_batch::RecordBatchT;
@@ -20,6 +20,7 @@ use super::plan::{XlsxSheetPlan, XlsxSheetPlanBuilder, calculate_slice_indices};
 use super::render::{
     ColumnFormatPlanOptions, apply_column_widths, cast_col_num, cast_row_num,
     create_rust_xlsx_format, format_xlsx_error_text, inferred_num_formats, plan_column_formats,
+    plan_header_formats, plan_scientific_formats, slice_column_format_overrides,
     write_cell_with_format, write_header,
 };
 use super::value::{
@@ -39,7 +40,7 @@ struct XlsxSheetRuntime {
     worksheet_index: usize,
     sheet_slice: SheetSlice,
     data_formats_by_col: Vec<Format>,
-    fmt_scientific: Format,
+    scientific_formats_by_col: Vec<Format>,
     numeric_cols_idx: BTreeSet<usize>,
     integer_cols_idx: BTreeSet<usize>,
     decimal_cols_idx: BTreeSet<usize>,
@@ -223,6 +224,11 @@ impl XlsxWriter {
                     vec![None; sheet_slice.col_end_exclusive - sheet_slice.col_start_inclusive]
                 };
 
+            let column_formats_slice = slice_column_format_overrides(
+                &options.column_formats,
+                sheet_slice.col_start_inclusive,
+                sheet_slice.col_end_exclusive,
+            );
             let column_format_plan = plan_column_formats(ColumnFormatPlanOptions {
                 width_data: sheet_slice.col_end_exclusive - sheet_slice.col_start_inclusive,
                 cols_idx_numeric: &cols_idx_numeric_slice,
@@ -232,7 +238,7 @@ impl XlsxWriter {
                 } else {
                     Some(&cols_idx_decimal_slice)
                 },
-                cols_fmt_overrides: &BTreeMap::new(),
+                cols_fmt_overrides: &column_formats_slice,
                 fmt_text: &self.fmt_text,
                 fmt_integer: &self.fmt_integer,
                 fmt_decimal: &self.fmt_decimal,
@@ -247,8 +253,19 @@ impl XlsxWriter {
                 .iter()
                 .map(create_rust_xlsx_format)
                 .collect();
-            let fmt_scientific = create_rust_xlsx_format(&self.fmt_scientific);
-            let fmt_header = create_rust_xlsx_format(&self.fmt_header);
+            let scientific_formats_by_col = plan_scientific_formats(
+                column_format_plan.fmts_by_col.len(),
+                &self.fmt_scientific,
+                &column_formats_slice,
+            )
+            .iter()
+            .map(create_rust_xlsx_format)
+            .collect::<Vec<_>>();
+            let fmt_headers = plan_header_formats(
+                &self.fmt_header,
+                &options.header_row_formats,
+                header_row_count,
+            )?;
 
             let header_grid_slice = plan
                 .header_grid
@@ -262,7 +279,7 @@ impl XlsxWriter {
                 worksheet,
                 header_grid_slice,
                 options.should_merge_header,
-                &fmt_header,
+                &fmt_headers,
             )?;
 
             worksheet
@@ -285,7 +302,7 @@ impl XlsxWriter {
                 worksheet_index,
                 sheet_slice: sheet_slice.clone(),
                 data_formats_by_col,
-                fmt_scientific,
+                scientific_formats_by_col,
                 numeric_cols_idx: cols_idx_numeric_slice.iter().copied().collect(),
                 integer_cols_idx: cols_idx_integer_slice.iter().copied().collect(),
                 decimal_cols_idx: cols_idx_decimal_slice.iter().copied().collect(),
@@ -663,6 +680,8 @@ impl XlsxWriter {
             } else {
                 vec![None; col_end - col_start]
             };
+            let column_formats_slice =
+                slice_column_format_overrides(&options.column_formats, col_start, col_end);
             let column_format_plan = plan_column_formats(ColumnFormatPlanOptions {
                 width_data: col_end - col_start,
                 cols_idx_numeric: &cols_idx_numeric_slice,
@@ -672,7 +691,7 @@ impl XlsxWriter {
                 } else {
                     Some(&cols_idx_decimal_slice)
                 },
-                cols_fmt_overrides: &BTreeMap::new(),
+                cols_fmt_overrides: &column_formats_slice,
                 fmt_text: &self.fmt_text,
                 fmt_integer: &self.fmt_integer,
                 fmt_decimal: &self.fmt_decimal,
@@ -686,8 +705,19 @@ impl XlsxWriter {
                 .iter()
                 .map(create_rust_xlsx_format)
                 .collect::<Vec<_>>();
-            let fmt_scientific = create_rust_xlsx_format(&self.fmt_scientific);
-            let fmt_header = create_rust_xlsx_format(&self.fmt_header);
+            let scientific_formats_by_col = plan_scientific_formats(
+                column_format_plan.fmts_by_col.len(),
+                &self.fmt_scientific,
+                &column_formats_slice,
+            )
+            .iter()
+            .map(create_rust_xlsx_format)
+            .collect::<Vec<_>>();
+            let fmt_headers = plan_header_formats(
+                &self.fmt_header,
+                &options.header_row_formats,
+                plan.header_grid.len(),
+            )?;
             let header_grid_slice = plan
                 .header_grid
                 .iter()
@@ -697,7 +727,7 @@ impl XlsxWriter {
                 worksheet,
                 header_grid_slice,
                 options.should_merge_header,
-                &fmt_header,
+                &fmt_headers,
             )?;
             worksheet
                 .set_freeze_panes(
@@ -732,7 +762,7 @@ impl XlsxWriter {
                         col_end_exclusive: col_end,
                     },
                     data_formats_by_col,
-                    fmt_scientific,
+                    scientific_formats_by_col,
                     numeric_cols_idx: cols_idx_numeric_slice.iter().copied().collect(),
                     integer_cols_idx: cols_idx_integer_slice.iter().copied().collect(),
                     decimal_cols_idx: cols_idx_decimal_slice.iter().copied().collect(),
@@ -845,7 +875,7 @@ fn write_arrow_record_batch_to_runtime_sheet(
                 policy_scientific,
             );
             let fmt_cell = if should_use_scientific {
-                &runtime.fmt_scientific
+                &runtime.scientific_formats_by_col[col_idx]
             } else {
                 &runtime.data_formats_by_col[col_idx]
             };

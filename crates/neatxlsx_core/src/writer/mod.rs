@@ -24,8 +24,8 @@ pub use plan::XlsxSheetPlan;
 use plan::calculate_slice_indices;
 use render::{
     ColumnFormatPlanOptions, cast_col_num, cast_row_num, create_rust_xlsx_format,
-    format_xlsx_error_text, inferred_num_formats, plan_column_formats, write_cell_with_format,
-    write_header,
+    format_xlsx_error_text, inferred_num_formats, plan_column_formats, plan_header_formats,
+    plan_scientific_formats, slice_column_format_overrides, write_cell_with_format, write_header,
 };
 pub use stream::{XlsxRecordBatch, XlsxRecordBatchResult};
 use value::{
@@ -38,6 +38,10 @@ use value::{
 /// Per-sheet call options (aligned with Python `XlsxWriter.write_sheet` kwargs).
 #[derive(Default, Debug, Clone)]
 pub struct XlsxSheetWriteOptions {
+    /// Optional per-row patches for a custom header; `None` inherits the writer header format.
+    pub header_row_formats: Vec<Option<CellFormatPatch>>,
+    /// Per-source-column body format patches keyed by zero-based logical index.
+    pub column_formats: BTreeMap<usize, CellFormatPatch>,
     /// Integer columns by typed name or zero-based index.
     pub cols_integer: Option<Vec<ColumnIdentifier>>,
     /// Decimal columns by typed name or zero-based index.
@@ -310,6 +314,11 @@ impl XlsxWriter {
                 } else {
                     vec![None; sheet_slice.col_end_exclusive - sheet_slice.col_start_inclusive]
                 };
+            let column_formats_slice = slice_column_format_overrides(
+                &options.column_formats,
+                sheet_slice.col_start_inclusive,
+                sheet_slice.col_end_exclusive,
+            );
             let column_format_plan = plan_column_formats(ColumnFormatPlanOptions {
                 width_data: sheet_slice.col_end_exclusive - sheet_slice.col_start_inclusive,
                 cols_idx_numeric: &cols_idx_numeric_slice,
@@ -319,7 +328,7 @@ impl XlsxWriter {
                 } else {
                     Some(&cols_idx_decimal_slice)
                 },
-                cols_fmt_overrides: &BTreeMap::new(),
+                cols_fmt_overrides: &column_formats_slice,
                 fmt_text: &self.fmt_text,
                 fmt_integer: &self.fmt_integer,
                 fmt_decimal: &self.fmt_decimal,
@@ -334,8 +343,19 @@ impl XlsxWriter {
                 .iter()
                 .map(create_rust_xlsx_format)
                 .collect();
-            let fmt_scientific = create_rust_xlsx_format(&self.fmt_scientific);
-            let fmt_header = create_rust_xlsx_format(&self.fmt_header);
+            let scientific_formats_by_col = plan_scientific_formats(
+                column_format_plan.fmts_by_col.len(),
+                &self.fmt_scientific,
+                &column_formats_slice,
+            )
+            .iter()
+            .map(create_rust_xlsx_format)
+            .collect::<Vec<_>>();
+            let fmt_headers = plan_header_formats(
+                &self.fmt_header,
+                &options.header_row_formats,
+                header_row_count,
+            )?;
 
             let header_grid_slice = header_grid
                 .iter()
@@ -378,7 +398,7 @@ impl XlsxWriter {
                 worksheet,
                 header_grid_slice,
                 options.should_merge_header,
-                &fmt_header,
+                &fmt_headers,
             )?;
 
             worksheet
@@ -471,7 +491,7 @@ impl XlsxWriter {
                             &options.policy_scientific,
                         );
                         let fmt_cell = if should_use_scientific {
-                            &fmt_scientific
+                            &scientific_formats_by_col[col_idx]
                         } else {
                             &data_formats_by_col[col_idx]
                         };
