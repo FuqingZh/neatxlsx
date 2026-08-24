@@ -22,7 +22,7 @@ validate = validate_dist.validate
 
 def _write_wheel(
     dist_dir: Path,
-    version: str = "0.1.0",
+    version: str = "0.2.0",
     platform: str = "manylinux_2_28_x86_64",
 ) -> None:
     wheel = dist_dir / f"neatxlsx-{version}-cp311-abi3-{platform}.whl"
@@ -32,7 +32,7 @@ def _write_wheel(
         archive.writestr("neatxlsx/_native.abi3.so", "")
 
 
-def _write_sdist(dist_dir: Path, version: str = "0.1.0") -> None:
+def _write_sdist(dist_dir: Path, version: str = "0.2.0") -> None:
     sdist = dist_dir / f"neatxlsx-{version}.tar.gz"
     with tarfile.open(sdist, "w:gz") as archive:
         for name in REQUIRED_SDIST_FILES:
@@ -50,12 +50,12 @@ def test_validate_accepts_one_versioned_release_bundle(tmp_path: Path) -> None:
     assert (
         validate(
             tmp_path,
-            expected_version="0.1.0",
+            expected_version="0.2.0",
             expected_wheel_count=5,
             require_release_platforms=True,
             require_sdist=True,
         )
-        == "0.1.0"
+        == "0.2.0"
     )
 
 
@@ -63,8 +63,8 @@ def test_validate_includes_sdist_version_in_consistency_check(
     tmp_path: Path,
 ) -> None:
     for platform in REQUIRED_WHEEL_PLATFORMS:
-        _write_wheel(tmp_path, "0.1.0", platform)
-    _write_sdist(tmp_path, "0.2.0")
+        _write_wheel(tmp_path, "0.2.0", platform)
+    _write_sdist(tmp_path, "0.3.0")
 
     with pytest.raises(RuntimeError, match="Mixed distribution versions"):
         validate(tmp_path, require_sdist=True)
@@ -93,10 +93,10 @@ def test_validate_requires_the_contracted_wheel_platforms(tmp_path: Path) -> Non
 
 def test_validate_normalizes_cargo_prerelease_versions(tmp_path: Path) -> None:
     for platform in REQUIRED_WHEEL_PLATFORMS:
-        _write_wheel(tmp_path, "0.2.0rc1", platform)
-    _write_sdist(tmp_path, "0.2.0rc1")
+        _write_wheel(tmp_path, "0.3.0rc1", platform)
+    _write_sdist(tmp_path, "0.3.0rc1")
 
-    assert validate(tmp_path, expected_version="0.2.0-rc.1") == "0.2.0rc1"
+    assert validate(tmp_path, expected_version="0.3.0-rc.1") == "0.3.0rc1"
 
 
 def test_validate_can_require_one_sdist(tmp_path: Path) -> None:
@@ -112,10 +112,10 @@ def test_validate_requires_buildable_sdist_sources(tmp_path: Path) -> None:
         _write_wheel(tmp_path, platform=platform)
     _write_sdist(tmp_path)
 
-    sdist = tmp_path / "neatxlsx-0.1.0.tar.gz"
+    sdist = tmp_path / "neatxlsx-0.2.0.tar.gz"
     with tarfile.open(sdist, "w:gz") as archive:
         for name in REQUIRED_SDIST_FILES - {"crates/neatxlsx_core/src/lib.rs"}:
-            info = tarfile.TarInfo(f"neatxlsx-0.1.0/{name}")
+            info = tarfile.TarInfo(f"neatxlsx-0.2.0/{name}")
             info.size = 0
             archive.addfile(info, io.BytesIO())
 

@@ -25,6 +25,11 @@ REQUIRED_WHEEL_PLATFORMS = {
 }
 REQUIRED_WHEEL_FILES = {
     "neatxlsx/__init__.py",
+    "neatxlsx/_dtype.py",
+    "neatxlsx/_native.pyi",
+    "neatxlsx/_polars.py",
+    "neatxlsx/_rs_bridge.py",
+    "neatxlsx/constant.py",
     "neatxlsx/errors.py",
     "neatxlsx/spec.py",
     "neatxlsx/writer.py",
@@ -116,8 +121,8 @@ def validate(
     Examples:
         Validate the distributions produced by a local package build:
 
-        >>> validate(Path("dist"), expected_version="0.1.0")
-        '0.1.0'
+        >>> validate(Path("dist"), expected_version="0.2.0")
+        '0.2.0'
     """
     wheels = sorted(dist_dir.glob("neatxlsx-*.whl"))
     if not wheels:

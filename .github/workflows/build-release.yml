@@ -48,7 +48,7 @@ jobs:
           CIBW_ENVIRONMENT_LINUX: RUSTUP_TOOLCHAIN=1.96.1
           MACOSX_DEPLOYMENT_TARGET: "10.12"
           CIBW_TEST_COMMAND: >-
-            python -c "from neatxlsx._rs_bridge import is_rs_backend_available; assert is_rs_backend_available()"
+            python -c "import inspect; import neatxlsx as nx; from neatxlsx import _native; from neatxlsx._rs_bridge import is_rs_backend_available; parameters = inspect.signature(nx.Workbook.write_sheet).parameters; assert tuple(parameters) == ('self', 'data', 'sheet_name', 'header', 'header_row_formats', 'header_column_formats', 'column_formats', 'integer_columns', 'decimal_columns', 'freeze_columns', 'freeze_rows', 'merge_header', 'keep_missing_values', 'autofit', 'scientific_notation', 'infer_numeric_columns', 'infer_integer_columns'); assert parameters['header_row_formats'].default is None; assert parameters['header_column_formats'].default is None; assert parameters['column_formats'].default is None; assert all(parameter.kind is inspect.Parameter.KEYWORD_ONLY for parameter in tuple(parameters.values())[3:]); assert _native.__build_profile__; assert _native.__bridge_abi__ == 5; assert _native.__bridge_contract__ == 'neatxlsx.xlsx.writer.v5'; assert _native.__bridge_transport__ == 'arrow_c_data'; assert is_rs_backend_available()"
         run: python -m cibuildwheel --output-dir dist .
       - uses: actions/upload-artifact@v4
         with:
@@ -96,7 +96,7 @@ jobs:
             --require-sdist
           python -m twine check release/*
           python -m pip install --force-reinstall release/*.tar.gz
-          python -c "from neatxlsx._rs_bridge import is_rs_backend_available; assert is_rs_backend_available()"
+          EXPECTED_RELEASE_VERSION="${version}" python -c "import inspect; import os; from importlib.metadata import version; import neatxlsx as nx; from neatxlsx import _native; from neatxlsx._rs_bridge import is_rs_backend_available; parameters = inspect.signature(nx.Workbook.write_sheet).parameters; assert version('neatxlsx') == os.environ['EXPECTED_RELEASE_VERSION']; assert tuple(parameters) == ('self', 'data', 'sheet_name', 'header', 'header_row_formats', 'header_column_formats', 'column_formats', 'integer_columns', 'decimal_columns', 'freeze_columns', 'freeze_rows', 'merge_header', 'keep_missing_values', 'autofit', 'scientific_notation', 'infer_numeric_columns', 'infer_integer_columns'); assert parameters['header_row_formats'].default is None; assert parameters['header_column_formats'].default is None; assert parameters['column_formats'].default is None; assert all(parameter.kind is inspect.Parameter.KEYWORD_ONLY for parameter in tuple(parameters.values())[3:]); assert _native.__build_profile__; assert _native.__bridge_abi__ == 5; assert _native.__bridge_contract__ == 'neatxlsx.xlsx.writer.v5'; assert _native.__bridge_transport__ == 'arrow_c_data'; assert is_rs_backend_available()"
       - name: Write immutable release manifest
         run: |
           python - <<'PY'

@@ -19,10 +19,11 @@ Read these current documents in order:
    release publication remain separate gates.
 6. [Test plan](testing/20260728-v1.0-neatxlsx-test-plan.md) for test layers,
    oracles, CI lanes, and release evidence.
-7. [M1 release notes draft](release-notes/20260811-v0.2.0-m1.md) for the
-   locally implemented, not-yet-published behavior.
+7. [0.2.0 release notes](release-notes/20260811-v0.2.0-m1.md) for the M1 value
+   semantics and additive row/header/body column-format controls included in
+   this minor release.
 8. [Completed extraction migration](implementation-plan/20260728-v1.0-axiomkit-xlsx-extraction-migration-plan.md)
    for historical extraction checkpoints and the independence boundary.
 
-No documents are archived or superseded in v0.1. The extraction migration plan
-is retained as completed historical evidence.
+No current documents are archived or superseded for 0.2.0. The extraction
+migration plan is retained as completed historical evidence.
