@@ -197,21 +197,29 @@ pub(super) fn plan_scientific_formats(
         .collect()
 }
 
-/// Materialize the effective header format for every physical header row.
+/// Materialize effective header formats for every physical header cell.
 pub(super) fn plan_header_formats(
     base: &CellFormatPatch,
-    overrides: &[Option<CellFormatPatch>],
+    row_overrides: &[Option<CellFormatPatch>],
+    column_overrides: &BTreeMap<usize, CellFormatPatch>,
     row_count: usize,
-) -> Result<Vec<Format>, String> {
-    if !overrides.is_empty() && overrides.len() != row_count {
+    column_count: usize,
+) -> Result<Vec<Vec<Format>>, String> {
+    if !row_overrides.is_empty() && row_overrides.len() != row_count {
         return Err("header_row_formats length must equal header height.".to_string());
     }
     (0..row_count)
         .map(|row_index| {
-            let patch = overrides.get(row_index).and_then(Option::as_ref);
-            Ok(create_rust_xlsx_format(
-                &patch.map_or_else(|| base.clone(), |value| base.merge(value)),
-            ))
+            let row_patch = row_overrides.get(row_index).and_then(Option::as_ref);
+            let row_format = row_patch.map_or_else(|| base.clone(), |value| base.merge(value));
+            (0..column_count)
+                .map(|column_index| {
+                    let cell_format = column_overrides
+                        .get(&column_index)
+                        .map_or_else(|| row_format.clone(), |value| row_format.merge(value));
+                    Ok(create_rust_xlsx_format(&cell_format))
+                })
+                .collect()
         })
         .collect()
 }
@@ -244,10 +252,17 @@ pub(super) fn write_header(
     worksheet: &mut Worksheet,
     mut header_grid: Vec<Vec<String>>,
     should_merge: bool,
-    fmt_headers: &[Format],
+    fmt_headers: &[Vec<Format>],
 ) -> Result<(), String> {
     if fmt_headers.len() != header_grid.len() {
         return Err("header format count must equal header row count.".to_string());
+    }
+    if header_grid
+        .iter()
+        .zip(fmt_headers)
+        .any(|(row, formats)| row.len() != formats.len())
+    {
+        return Err("header format width must equal header width.".to_string());
     }
     if !should_merge {
         for (row_idx, row_values) in header_grid.iter().enumerate() {
@@ -257,7 +272,7 @@ pub(super) fn write_header(
                     row_idx,
                     col_idx,
                     cell_value,
-                    &fmt_headers[row_idx],
+                    &fmt_headers[row_idx][col_idx],
                 )?;
             }
         }
@@ -283,7 +298,7 @@ pub(super) fn write_header(
                 row_idx,
                 col_idx,
                 cell_value,
-                &fmt_headers[row_idx],
+                &fmt_headers[row_idx][col_idx],
             )?;
         }
 
@@ -296,7 +311,7 @@ pub(super) fn write_header(
                         cast_row_num(row_idx)?,
                         cast_col_num(merge.col_idx_end)?,
                         &merge.text,
-                        &fmt_headers[row_idx],
+                        &fmt_headers[row_idx][merge.col_idx_start],
                     )
                     .map_err(format_xlsx_error_text)?;
             }
@@ -543,6 +558,38 @@ mod tests {
 
     #[test]
     fn column_rules_are_rebased_for_every_physical_column_part() {
+        let overrides = BTreeMap::from([
+            (
+                0,
+                CellFormatPatch {
+                    font_name: Some("Times New Roman".to_string()),
+                    ..Default::default()
+                },
+            ),
+            (
+                16_384,
+                CellFormatPatch {
+                    font_name: Some("SimSun".to_string()),
+                    ..Default::default()
+                },
+            ),
+        ]);
+
+        let first = slice_column_format_overrides(&overrides, 0, 16_384);
+        let second = slice_column_format_overrides(&overrides, 16_384, 16_385);
+
+        assert_eq!(
+            first.get(&0).and_then(|value| value.font_name.as_deref()),
+            Some("Times New Roman")
+        );
+        assert_eq!(
+            second.get(&0).and_then(|value| value.font_name.as_deref()),
+            Some("SimSun")
+        );
+    }
+
+    #[test]
+    fn header_column_rules_are_rebased_for_every_physical_column_part() {
         let overrides = BTreeMap::from([
             (
                 0,

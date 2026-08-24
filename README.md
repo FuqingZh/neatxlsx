@@ -56,6 +56,8 @@ with nx.Workbook(
     workbook.write_sheet(
         data,
         "Results",
+        header_column_formats={"Sample": nx.Format(font_name="Arial")},
+        column_formats={"Score": nx.Format(font_color="#1F4E78")},
         integer_columns=cs.integer(),
         decimal_columns=cs.float(),
         autofit=nx.Autofit(mode="all", max_rows=10_000),
@@ -68,6 +70,13 @@ selector. Explicit integer and decimal selections override inferred roles for
 those columns; other columns remain inferred unless the matching `infer_*`
 option is disabled.
 
+`header_column_formats` maps one logical data-column name or zero-based index
+to a header `Format` patch. It applies to the generated header and every custom
+header row, after the workbook header format and any `header_row_formats` row
+patch. `column_formats` remains body-only. Nonempty header-column patches cannot
+be combined with `merge_header=True` because a merged range has no unambiguous
+per-column style.
+
 ## Large workbooks
 
 ZIP64 is enabled by default because XLSX size depends on uncompressed worksheet
@@ -78,4 +87,3 @@ evaluation; `"body"` and `"all"` evaluate it twice.
 
 See [the documentation map](docs/README.md) for the complete API, lifecycle,
 testing, and release contracts.
-

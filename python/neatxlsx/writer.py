@@ -237,6 +237,7 @@ class Workbook:
         *,
         header: pl.DataFrame | None = None,
         header_row_formats: Sequence[Format | None] | None = None,
+        header_column_formats: Mapping[str | int, Format] | None = None,
         column_formats: Mapping[str | int, Format] | None = None,
         integer_columns: ColumnSelection = None,
         decimal_columns: ColumnSelection = None,
@@ -263,6 +264,10 @@ class Workbook:
             header_row_formats: Per-row patches for a custom header. Each item
                 is a :class:`Format` patch or ``None`` to inherit the workbook
                 header format. The sequence length must equal ``header.height``.
+            header_column_formats: Per-column header :class:`Format` patches
+                keyed by data-column name or zero-based index. These patches
+                apply to generated and custom header rows after any row patch.
+                Nonempty mappings cannot be combined with ``merge_header``.
             column_formats: Per-body-column :class:`Format` patches keyed by
                 column name or zero-based index. These patches take precedence
                 over inferred and workbook role formats.
@@ -293,6 +298,7 @@ class Workbook:
             ...             {"id": ["Metadata", "Identifier"], "score": ["Result", "Score"]}
             ...         ),
             ...         header_row_formats=[Format(font_name="SimSun"), None],
+            ...         header_column_formats={"score": Format(bold=True)},
             ...         column_formats={"score": Format(font_name="SimSun")},
             ...         integer_columns="id",
             ...         decimal_columns=cs.float(),
@@ -311,6 +317,9 @@ class Workbook:
         resolved_header_row_formats = _normalize_header_row_formats(
             normalized_header, header_row_formats
         )
+        resolved_header_column_formats = _resolve_format_columns(
+            header_column_formats, schema, "header_column_formats"
+        )
         resolved_column_formats = _resolve_column_formats(column_formats, schema)
         resolved_autofit = autofit or Autofit()
         resolved_scientific = scientific_notation or ScientificNotation()
@@ -325,6 +334,10 @@ class Workbook:
             raise TypeError("keep_missing_values must be bool or None.")
         if not isinstance(merge_header, bool):
             raise TypeError("merge_header must be bool.")
+        if merge_header and resolved_header_column_formats:
+            raise ValueError(
+                "header_column_formats cannot be nonempty when merge_header=True."
+            )
 
         infer_numeric = _resolve_inherit_bool(
             infer_numeric_columns,
@@ -353,6 +366,7 @@ class Workbook:
         kwargs = {
             "header": normalized_header,
             "header_row_formats": resolved_header_row_formats,
+            "header_column_formats": resolved_header_column_formats,
             "column_formats": resolved_column_formats,
             "cols_integer": integer_names,
             "cols_decimal": decimal_names,
@@ -542,33 +556,41 @@ def _resolve_column_formats(
     value: Mapping[str | int, Format] | None,
     schema: pl.Schema,
 ) -> tuple[tuple[int, Format], ...]:
+    return _resolve_format_columns(value, schema, "column_formats")
+
+
+def _resolve_format_columns(
+    value: Mapping[str | int, Format] | None,
+    schema: pl.Schema,
+    argument: str,
+) -> tuple[tuple[int, Format], ...]:
     if value is None:
         return ()
     if not isinstance(value, Mapping):
         raise TypeError(
-            "column_formats must be a mapping of column name or index to Format."
+            f"{argument} must be a mapping of column name or index to Format."
         )
 
     names = schema.names()
     resolved: dict[int, Format] = {}
     for key, fmt in value.items():
         if isinstance(key, bool):
-            raise TypeError("column_formats keys must not be bool.")
+            raise TypeError(f"{argument} keys must not be bool.")
         if isinstance(key, str):
             if key not in schema:
-                raise ValueError(f"column_formats contains unknown column {key!r}.")
+                raise ValueError(f"{argument} contains unknown column {key!r}.")
             index = names.index(key)
         elif isinstance(key, int):
             if key < 0 or key >= len(names):
-                raise ValueError(f"column_formats index {key} is out of range.")
+                raise ValueError(f"{argument} index {key} is out of range.")
             index = key
         else:
-            raise TypeError("column_formats keys must be str or int.")
+            raise TypeError(f"{argument} keys must be str or int.")
         if not isinstance(fmt, Format):
-            raise TypeError("column_formats values must be neatxlsx.Format.")
+            raise TypeError(f"{argument} values must be neatxlsx.Format.")
         if index in resolved:
             raise ValueError(
-                f"column_formats selects column {names[index]!r} more than once."
+                f"{argument} selects column {names[index]!r} more than once."
             )
         resolved[index] = fmt
     return tuple(sorted(resolved.items()))
