@@ -170,6 +170,52 @@ pub(super) fn plan_column_formats(options: ColumnFormatPlanOptions<'_>) -> Colum
     }
 }
 
+/// Rebase source-column format patches onto one physical column slice.
+pub(super) fn slice_column_format_overrides(
+    overrides: &BTreeMap<usize, CellFormatPatch>,
+    start: usize,
+    end: usize,
+) -> BTreeMap<usize, CellFormatPatch> {
+    overrides
+        .range(start..end)
+        .map(|(index, format)| (index - start, format.clone()))
+        .collect()
+}
+
+/// Build scientific variants while keeping the column rule as the final patch.
+pub(super) fn plan_scientific_formats(
+    width: usize,
+    scientific: &CellFormatPatch,
+    column_overrides: &BTreeMap<usize, CellFormatPatch>,
+) -> Vec<CellFormatPatch> {
+    (0..width)
+        .map(|index| {
+            column_overrides
+                .get(&index)
+                .map_or_else(|| scientific.clone(), |patch| scientific.merge(patch))
+        })
+        .collect()
+}
+
+/// Materialize the effective header format for every physical header row.
+pub(super) fn plan_header_formats(
+    base: &CellFormatPatch,
+    overrides: &[Option<CellFormatPatch>],
+    row_count: usize,
+) -> Result<Vec<Format>, String> {
+    if !overrides.is_empty() && overrides.len() != row_count {
+        return Err("header_row_formats length must equal header height.".to_string());
+    }
+    (0..row_count)
+        .map(|row_index| {
+            let patch = overrides.get(row_index).and_then(Option::as_ref);
+            Ok(create_rust_xlsx_format(
+                &patch.map_or_else(|| base.clone(), |value| base.merge(value)),
+            ))
+        })
+        .collect()
+}
+
 fn write_header_cell(
     worksheet: &mut Worksheet,
     row_idx: usize,
@@ -198,12 +244,21 @@ pub(super) fn write_header(
     worksheet: &mut Worksheet,
     mut header_grid: Vec<Vec<String>>,
     should_merge: bool,
-    fmt_header: &Format,
+    fmt_headers: &[Format],
 ) -> Result<(), String> {
+    if fmt_headers.len() != header_grid.len() {
+        return Err("header format count must equal header row count.".to_string());
+    }
     if !should_merge {
         for (row_idx, row_values) in header_grid.iter().enumerate() {
             for (col_idx, cell_value) in row_values.iter().enumerate() {
-                write_header_cell(worksheet, row_idx, col_idx, cell_value, fmt_header)?;
+                write_header_cell(
+                    worksheet,
+                    row_idx,
+                    col_idx,
+                    cell_value,
+                    &fmt_headers[row_idx],
+                )?;
             }
         }
         return Ok(());
@@ -223,7 +278,13 @@ pub(super) fn write_header(
                 continue;
             }
 
-            write_header_cell(worksheet, row_idx, col_idx, cell_value, fmt_header)?;
+            write_header_cell(
+                worksheet,
+                row_idx,
+                col_idx,
+                cell_value,
+                &fmt_headers[row_idx],
+            )?;
         }
 
         if let Some(merges) = horizontal_merges_by_row.get(&row_idx) {
@@ -235,7 +296,7 @@ pub(super) fn write_header(
                         cast_row_num(row_idx)?,
                         cast_col_num(merge.col_idx_end)?,
                         &merge.text,
-                        fmt_header,
+                        &fmt_headers[row_idx],
                     )
                     .map_err(format_xlsx_error_text)?;
             }
@@ -402,4 +463,113 @@ pub(super) fn cast_col_num(value: usize) -> Result<u16, String> {
 
 pub(super) fn format_xlsx_error_text(err: XlsxError) -> String {
     format!("xlsx write error: {err}")
+}
+
+#[cfg(test)]
+mod tests {
+    use super::{
+        ColumnFormatPlanOptions, plan_column_formats, plan_scientific_formats,
+        slice_column_format_overrides,
+    };
+    use crate::spec::CellFormatPatch;
+    use std::collections::BTreeMap;
+
+    #[test]
+    fn column_rule_wins_after_inferred_and_workbook_role_formats() {
+        let overrides = BTreeMap::from([(
+            0,
+            CellFormatPatch {
+                font_name: Some("SimSun".to_string()),
+                ..Default::default()
+            },
+        )]);
+        let inferred = vec![Some("0.00".to_string())];
+        let plan = plan_column_formats(ColumnFormatPlanOptions {
+            width_data: 1,
+            cols_idx_numeric: &[0],
+            cols_idx_integer: &[],
+            cols_idx_decimal: Some(&[0]),
+            cols_fmt_overrides: &overrides,
+            fmt_text: &CellFormatPatch::default(),
+            fmt_integer: &CellFormatPatch::default(),
+            fmt_decimal: &CellFormatPatch {
+                font_name: Some("Times New Roman".to_string()),
+                ..Default::default()
+            },
+            fmt_text_override: &CellFormatPatch::default(),
+            fmt_integer_override: &CellFormatPatch::default(),
+            fmt_decimal_override: &CellFormatPatch {
+                italic: Some(true),
+                ..Default::default()
+            },
+            inferred_num_formats: Some(&inferred),
+        });
+
+        assert_eq!(
+            plan.fmts_base_by_col[0].font_name.as_deref(),
+            Some("Times New Roman")
+        );
+        assert_eq!(plan.fmts_base_by_col[0].num_format.as_deref(), Some("0.00"));
+        assert_eq!(plan.fmts_base_by_col[0].italic, Some(true));
+        assert_eq!(plan.fmts_by_col[0].font_name.as_deref(), Some("SimSun"));
+        assert_eq!(plan.fmts_by_col[0].num_format.as_deref(), Some("0.00"));
+        assert_eq!(plan.fmts_by_col[0].italic, Some(true));
+
+        let scientific = plan_scientific_formats(
+            1,
+            &CellFormatPatch {
+                font_name: Some("Arial".to_string()),
+                num_format: Some("0.0E+0".to_string()),
+                ..Default::default()
+            },
+            &overrides,
+        );
+        assert_eq!(scientific[0].font_name.as_deref(), Some("SimSun"));
+        assert_eq!(scientific[0].num_format.as_deref(), Some("0.0E+0"));
+        assert_eq!(scientific[0].italic, None);
+
+        let without_override = plan_scientific_formats(
+            1,
+            &CellFormatPatch {
+                font_name: Some("Arial".to_string()),
+                num_format: Some("0.0E+0".to_string()),
+                ..Default::default()
+            },
+            &BTreeMap::new(),
+        );
+        assert_eq!(without_override[0].font_name.as_deref(), Some("Arial"));
+        assert_eq!(without_override[0].italic, None);
+    }
+
+    #[test]
+    fn column_rules_are_rebased_for_every_physical_column_part() {
+        let overrides = BTreeMap::from([
+            (
+                0,
+                CellFormatPatch {
+                    font_name: Some("Times New Roman".to_string()),
+                    ..Default::default()
+                },
+            ),
+            (
+                16_384,
+                CellFormatPatch {
+                    font_name: Some("SimSun".to_string()),
+                    ..Default::default()
+                },
+            ),
+        ]);
+
+        let first = slice_column_format_overrides(&overrides, 0, 16_384);
+        let second = slice_column_format_overrides(&overrides, 16_384, 16_385);
+
+        assert_eq!(
+            first.get(&0).and_then(|value| value.font_name.as_deref()),
+            Some("Times New Roman")
+        );
+        assert_eq!(
+            second.get(&0).and_then(|value| value.font_name.as_deref()),
+            Some("SimSun")
+        );
+    }
 }

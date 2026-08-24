@@ -30,6 +30,39 @@ def test_write_sheet_uses_caller_facing_parameter_names() -> None:
         "data",
         "sheet_name",
         "header",
+        "header_row_formats",
+        "column_formats",
+        "integer_columns",
+        "decimal_columns",
+        "freeze_columns",
+        "freeze_rows",
+        "merge_header",
+        "keep_missing_values",
+        "autofit",
+        "scientific_notation",
+        "infer_numeric_columns",
+        "infer_integer_columns",
+    ]
+    assert parameters["header_row_formats"].default is None
+    assert parameters["column_formats"].default is None
+    assert all(
+        parameter.kind is inspect.Parameter.KEYWORD_ONLY
+        for parameter in tuple(parameters.values())[3:]
+    )
+
+
+def test_additive_format_parameters_preserve_the_old_signature_order() -> None:
+    parameters = inspect.signature(nx.Workbook.write_sheet).parameters
+
+    assert [
+        name
+        for name in parameters
+        if name not in {"header_row_formats", "column_formats"}
+    ] == [
+        "self",
+        "data",
+        "sheet_name",
+        "header",
         "integer_columns",
         "decimal_columns",
         "freeze_columns",
