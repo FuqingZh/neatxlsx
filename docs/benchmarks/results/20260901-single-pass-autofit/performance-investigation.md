@@ -158,11 +158,12 @@ b13a330d838f8087b863de8b468a2a95f50408731765d924d297a7320dbeb315  perf-baseline-
 
 These are separate changes and are not included in the single-pass branch:
 
-1. **Native zlib feasibility.** `rust_xlsxwriter 0.90.2` documents an optional
-   `zlib` feature for faster compression. neatxlsx currently enables only
-   `constant_memory`. This targets the largest measured hotspot, but it changes
-   the native dependency/build surface and needs Linux, macOS, Windows, and
-   wheel-build validation before adoption.
+1. **Native zlib feasibility (investigated and rejected).** The subsequent
+   [native zlib canary](../20260901-native-zlib-canary/README.md) proved that
+   stock C zlib was active, then measured confident total-time regressions in
+   all five interleaved scenarios. Production remains on `zlib-rs`; the failed
+   performance prerequisite made cross-platform distribution validation
+   unnecessary for this adoption decision.
 2. **Width-tracker hot path.** Avoid tracking branches after `max_rows` is
    exhausted and avoid temporary numeric formatting allocations where the
    exact existing display-width semantics can be preserved. This is narrower
@@ -173,7 +174,7 @@ These are separate changes and are not included in the single-pass branch:
    explicit overrides, missing values, and header/body precedence can require
    different cell formats. It should be designed and validated independently.
 
-The order above follows measured cost and contract risk. No optimization should
+The remaining order follows measured cost and contract risk. No optimization should
 be accepted from a microbenchmark alone; output values, formats, widths,
 pagination, column splitting, and reader compatibility remain required oracles.
 

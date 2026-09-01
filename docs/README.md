@@ -17,7 +17,10 @@ records for their stated scope:
    caller-facing behavior authority.
 5. [Interleaved benchmark and native zlib validation plan](implementation-plan/20260901-v1.0-interleaved-benchmark-zlib-validation-plan.md)
    for the fixed dual-environment comparison harness, paired verdict rules,
-   compressor-identity stop gate, and wheel portability boundary.
+   compressor-identity stop gate, and wheel portability boundary. The completed
+   [native zlib canary](benchmarks/results/20260901-native-zlib-canary/README.md)
+   proved that C zlib was active but rejected adoption after five confident
+   performance regressions.
 6. [Caller migration guide](how-to-guides/20260831-v1.0-migrate-axiomkit-xlsx.md)
    for mapping axiomkit XLSX calls to the current API, lifecycle, and ZIP64
    reader compatibility.
@@ -41,6 +44,8 @@ records for their stated scope:
    [single-pass comparison](benchmarks/results/20260901-single-pass-autofit/comparison.md)
    and its post-hoc
    [performance investigation](benchmarks/results/20260901-single-pass-autofit/performance-investigation.md).
+   The later native-zlib decision is retained separately in the
+   [canary record](benchmarks/results/20260901-native-zlib-canary/README.md).
 12. [0.2.0 release notes](release-notes/20260811-v0.2.0-m1.md) for the M1 value
    semantics and additive row/header/body column-format controls included in
    the published release.

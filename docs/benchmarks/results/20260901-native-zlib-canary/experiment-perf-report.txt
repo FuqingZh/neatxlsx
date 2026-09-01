@@ -1,0 +1,568 @@
+# To display the perf.data header info, please use --header/--header-only options.
+#
+#
+# Total Lost Samples: 0
+#
+# Samples: 2K of event 'cycles:u'
+# Event count (approx.): 24144772015
+#
+# Overhead  Symbol                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  IPC   [IPC Coverage]
+# ........  ......................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................  ....................
+#
+    11.73%  [.] sha256_block_data_order_avx2                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        -      -
+            |
+            |--5.53%--sqlite3DropTable.org.0 (inlined)
+            |
+            |--3.19%--sqlite3CreateForeignKey.org.0 (inlined)
+            |
+            |--1.03%--sqlite3AddCheckConstraint.org.0 (inlined)
+            |
+            |--0.98%--sqlite3AddGenerated (inlined)
+            |
+            |--0.55%--sqlite3AddCollateType (inlined)
+            |
+             --0.45%--sqlite3CreateIndex.org.0 (inlined)
+
+    10.85%  [.] <core::hash::sip::Hasher<S> as core::hash::Hasher>::write                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                           -      -
+            |
+            ---<core::hash::sip::Hasher<S> as core::hash::Hasher>::write
+               |
+               |--4.00%--rust_xlsxwriter::worksheet::Worksheet::format_xf_index
+               |
+               |--0.71%--0x1ffff
+               |
+               |--0.48%--0xfe
+               |
+               |--0.29%--0x2ff3131ff6d
+               |
+               |--0.27%--0x6d
+               |
+                --0.23%--0x1ffffffffffff
+
+     9.81%  [.] 0x00000000000033e0                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  -      -
+            |
+            ---0x7f837c0b33e0
+               0x7f837c0b4637
+               deflate
+               flate2::ffi::c::Deflate::compress_inner
+               0x7fff
+
+     5.37%  [.] inflate_fast                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        -      -
+     3.78%  [.] 0x00000000000033e6                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  -      -
+            |
+            ---0x7f837c0b33e6
+               0x7f837c0b4637
+               deflate
+               flate2::ffi::c::Deflate::compress_inner
+               0x7fff
+
+     2.00%  [.] __memmove_avx_unaligned_erms                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        -      -
+            |
+            ---__memmove_avx_unaligned_erms
+               |
+                --0.85%--<std::io::default_write_fmt::Adapter<T> as core::fmt::Write>::write_str
+                          |
+                           --0.48%--0x7f837c57b789
+
+     2.00%  [.] 0x0000000000003406                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  -      -
+            |
+            ---0x7f837c0b3406
+               0x7f837c0b4637
+               deflate
+               flate2::ffi::c::Deflate::compress_inner
+               0x7fff
+
+     1.86%  [.] _RNvNtNtNtNtNtCs3BFokC4QLxY_4core3num3imp7flt2dec8strategy5grisu19format_shortest_opt                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                               -      -
+            |
+            ---_RNvNtNtNtNtNtCs3BFokC4QLxY_4core3num3imp7flt2dec8strategy5grisu19format_shortest_opt
+               |
+                --1.56%--_RINvNtNtCs3BFokC4QLxY_4core3fmt5float32float_to_decimal_common_shortestdEB6_
+                          _RNvNtCs3BFokC4QLxY_4core3fmt5write
+                          rust_xlsxwriter::worksheet::Worksheet::flush_data_row
+                          0x7f837d6b9a2f
+                          0x3b
+
+     1.70%  [.] crc32_z                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                             -      -
+            |
+            ---.LCPI26_0 (inlined)
+               _PyEval_EvalFrameDefault.org.0 (inlined)
+               _PyEval_EvalFrameDefault.org.0 (inlined)
+
+     1.62%  [.] 0x00000000000033ef                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  -      -
+            |
+            ---0x7f837c0b33ef
+               0x7f837c0b4637
+               deflate
+               flate2::ffi::c::Deflate::compress_inner
+               0x7fff
+
+     1.57%  [.] neatxlsx_core::writer::stream::write_arrow_record_batch_to_runtime_sheet                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            -      -
+            |
+            ---neatxlsx_core::writer::stream::write_arrow_record_batch_to_runtime_sheet
+               |
+               |--0.41%--0xa1973d4202000000
+               |
+                --0.30%--0xa1973d4201ffffff
+
+     1.52%  [.] alloc::collections::btree::map::BTreeMap<K,V,A>::insert                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                             -      -
+            |
+            ---alloc::collections::btree::map::BTreeMap<K,V,A>::insert
+
+     1.44%  [.] fastsearch.llvm.9832789911285586643                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 -      -
+     1.41%  [.] 0x0000000000003400                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  -      -
+            |
+            ---0x7f837c0b3400
+               0x7f837c0b4637
+               deflate
+               flate2::ffi::c::Deflate::compress_inner
+               0x7fff
+
+     1.21%  [.] rust_xlsxwriter::worksheet::Worksheet::format_xf_index                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              -      -
+            |
+            ---rust_xlsxwriter::worksheet::Worksheet::format_xf_index
+
+     1.17%  [.] core::hash::BuildHasher::hash_one                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                   -      -
+            |
+            ---core::hash::BuildHasher::hash_one
+
+     1.11%  [.] malloc                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              -      -
+            |
+            ---__GI___libc_malloc (inlined)
+               |
+               |--0.43%--_RNvXs4_NtCs8y6E41fb8tc_5alloc6stringNtB5_6StringNtNtCs3BFokC4QLxY_4core5clone5Clone5clone
+               |
+                --0.38%--_RNvMs4_NtCs8y6E41fb8tc_5alloc7raw_vecNtB5_11RawVecInner11finish_growB7_
+                          _RINvNvMs2_NtCs8y6E41fb8tc_5alloc7raw_vecINtB8_11RawVecInnerpE7reserve21do_reserve_and_handleNtNtBa_5alloc6GlobalEBa_
+                          _RNvXsZ_NtCs8y6E41fb8tc_5alloc6stringNtB5_6StringNtNtCs3BFokC4QLxY_4core3fmt5Write10write_char
+                          _RNvNtCs3BFokC4QLxY_4core3fmt5write
+                          _RNvNvNtCs8y6E41fb8tc_5alloc3fmt6format12format_inner
+                          rust_xlsxwriter::utility::column_number_to_name
+
+     1.04%  [.] _RNvNtCs3BFokC4QLxY_4core3fmt5write                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 -      -
+            |
+            ---_RNvNtCs3BFokC4QLxY_4core3fmt5write
+               |
+               |--0.62%--rust_xlsxwriter::worksheet::Worksheet::flush_data_row
+               |          |
+               |          |--0.32%--rust_xlsxwriter::worksheet::Worksheet::insert_cell
+               |          |          rust_xlsxwriter::worksheet::Worksheet::store_number_type
+               |          |
+               |           --0.30%--0x7f837d6b9a2f
+               |                     0x3b
+               |
+                --0.32%--_RNvNvNtCs8y6E41fb8tc_5alloc3fmt6format12format_inner
+                          rust_xlsxwriter::utility::column_number_to_name
+
+     1.00%  [.] rust_xlsxwriter::worksheet::Worksheet::flush_data_row                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                               -      -
+            |
+            ---rust_xlsxwriter::worksheet::Worksheet::flush_data_row
+               |
+               |--0.69%--0x7f837d6b9a2f
+               |          |
+               |          |--0.42%--0x3b
+               |          |
+               |           --0.27%--<rust_xlsxwriter::format::Format as core::cmp::PartialEq>::eq
+               |                     0x3
+               |
+                --0.23%--rust_xlsxwriter::worksheet::Worksheet::insert_cell
+                          rust_xlsxwriter::worksheet::Worksheet::store_number_type
+
+     0.80%  [.] neatxlsx_core::writer::value::convert_arrow_value_with_plan                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                         -      -
+            |
+            ---neatxlsx_core::writer::value::convert_arrow_value_with_plan
+
+     0.79%  [.] alloc::collections::btree::node::Handle<alloc::collections::btree::node::NodeRef<alloc::collections::btree::node::marker::Mut,K,V,alloc::collections::btree::node::marker::Leaf>,alloc::collections::btree::node::marker::Edge>::insert_recursing                                                                                                                                                                                                                                                                                                                                                                                   -      -
+            |
+            ---alloc::collections::btree::node::Handle<alloc::collections::btree::node::NodeRef<alloc::collections::btree::node::marker::Mut,K,V,alloc::collections::btree::node::marker::Leaf>,alloc::collections::btree::node::marker::Edge>::insert_recursing
+
+     0.78%  [.] 0x000000000000459c                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  -      -
+            |
+            ---0x7f837c0b459c
+               deflate
+               flate2::ffi::c::Deflate::compress_inner
+               0x7fff
+
+     0.75%  [.] _int_free                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                           -      -
+            |
+            ---_int_free
+               |
+                --0.28%--neatxlsx_core::writer::value::convert_arrow_value_with_plan
+                          neatxlsx_core::writer::value::normalize_arrow_cell
+
+     0.65%  [.] <rust_xlsxwriter::format::Border as core::hash::Hash>::hash                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                         -      -
+            |
+            ---<rust_xlsxwriter::format::Border as core::hash::Hash>::hash
+               |
+               |--0.33%--0xf29e3a2cb3796b00
+               |
+                --0.27%--0xa1973d422a36deff
+                          0xc
+
+     0.61%  [.] 0x000000000000340d                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  -      -
+            |
+            ---0x7f837c0b340d
+               0x7f837c0b4637
+               deflate
+               flate2::ffi::c::Deflate::compress_inner
+               0x7fff
+
+     0.55%  [.] 0x000000000000350a                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  -      -
+            |
+            ---0x7f837c0b350a
+               0x7f837c0b4637
+               deflate
+               flate2::ffi::c::Deflate::compress_inner
+               0x7fff
+
+     0.55%  [.] 0x0000000000004576                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  -      -
+            |
+            ---0x7f837c0b4576
+               deflate
+               flate2::ffi::c::Deflate::compress_inner
+               0x7fff
+
+     0.54%  [.] <std::io::default_write_fmt::Adapter<T> as core::fmt::Write>::write_str                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                             -      -
+            |
+            ---<std::io::default_write_fmt::Adapter<T> as core::fmt::Write>::write_str
+               |
+                --0.21%--_RNvNtCs3BFokC4QLxY_4core3fmt5write
+                          _RNvNtCs3BFokC4QLxY_4core3fmt5write
+                          rust_xlsxwriter::worksheet::Worksheet::flush_data_row
+
+     0.54%  [.] 0x0000000000003330                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  -      -
+            |
+            ---0x7f837c0b3330
+               0x7f837c0b36ba
+               0x7f837c0b43a5
+               deflate
+               flate2::ffi::c::Deflate::compress_inner
+               0x7fff
+
+     0.54%  [.] _PyEval_EvalFrameDefault                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            -      -
+     0.51%  [k] 0xffffffffb5401100                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  -      -
+            |
+            ---0xffffffffb5401100
+               |
+                --0.22%--__memmove_avx_unaligned_erms
+
+     0.50%  [.] 0x00000000000033f8                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  -      -
+            |
+            ---0x7f837c0b33f8
+               0x7f837c0b4637
+               deflate
+               flate2::ffi::c::Deflate::compress_inner
+               0x7fff
+
+     0.49%  [.] rust_xlsxwriter::utility::column_number_to_name                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                     -      -
+            |
+            ---rust_xlsxwriter::utility::column_number_to_name
+
+     0.46%  [.] _RNvMsa_NtCs3BFokC4QLxY_4core3fmtNtB5_9Formatter12pad_integral                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      -      -
+            |
+            ---_RNvMsa_NtCs3BFokC4QLxY_4core3fmtNtB5_9Formatter12pad_integral
+               _RNvXs8_NtNtNtCs3BFokC4QLxY_4core3fmt3num3impmNtB9_7Display3fmt
+               _RNvNtCs3BFokC4QLxY_4core3fmt5write
+               rust_xlsxwriter::worksheet::Worksheet::flush_data_row
+               |
+               |--0.23%--0x7f837d6b9a2f
+               |          0x3b
+               |
+                --0.22%--rust_xlsxwriter::worksheet::Worksheet::insert_cell
+                          rust_xlsxwriter::worksheet::Worksheet::store_number_type
+
+     0.45%  [.] _RNvNvNtCs8y6E41fb8tc_5alloc3fmt6format12format_inner                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                               -      -
+            |
+            ---_RNvNvNtCs8y6E41fb8tc_5alloc3fmt6format12format_inner
+               |
+                --0.31%--rust_xlsxwriter::utility::column_number_to_name
+
+     0.45%  [.] 0x00000000000045a1                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  -      -
+            |
+            ---0x7f837c0b45a1
+               deflate
+               flate2::ffi::c::Deflate::compress_inner
+               0x7fff
+
+     0.42%  [.] neatxlsx_core::writer::value::normalize_arrow_cell                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  -      -
+            |
+            ---neatxlsx_core::writer::value::normalize_arrow_cell
+
+     0.42%  [.] <rust_xlsxwriter::format::Format as core::cmp::PartialEq>::eq                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                       -      -
+            |
+            ---<rust_xlsxwriter::format::Format as core::cmp::PartialEq>::eq
+
+     0.41%  [.] 0x00000000000033e2                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  -      -
+            |
+            ---0x7f837c0b33e2
+               0x7f837c0b4637
+               deflate
+               flate2::ffi::c::Deflate::compress_inner
+               0x7fff
+
+     0.41%  [.] 0x000000000000427c                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  -      -
+            |
+            ---0x7f837c0b427c
+               deflate
+               flate2::ffi::c::Deflate::compress_inner
+               0x7fff
+
+     0.38%  [.] 0x0000000000003333                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  -      -
+            |
+            ---0x7f837c0b3333
+               0x7f837c0b36ba
+               0x7f837c0b43a5
+               deflate
+               flate2::ffi::c::Deflate::compress_inner
+               0x7fff
+
+     0.38%  [.] <rust_xlsxwriter::format::Font as core::cmp::PartialEq>::eq                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                         -      -
+            |
+            ---<rust_xlsxwriter::format::Font as core::cmp::PartialEq>::eq
+
+     0.37%  [.] _RNvXs8_NtNtNtCs3BFokC4QLxY_4core3fmt3num3impmNtB9_7Display3fmt                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                     -      -
+            |
+            ---_RNvXs8_NtNtNtCs3BFokC4QLxY_4core3fmt3num3impmNtB9_7Display3fmt
+               |
+                --0.32%--_RNvNtCs3BFokC4QLxY_4core3fmt5write
+                          rust_xlsxwriter::worksheet::Worksheet::flush_data_row
+
+     0.34%  [.] __memcmp_avx2_movbe                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 -      -
+            |
+            ---__memcmp_avx2_movbe
+               |
+                --0.25%--<rust_xlsxwriter::format::Font as core::cmp::PartialEq>::eq
+
+     0.33%  [.] 0x000000000000455b                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  -      -
+            |
+            ---0x7f837c0b455b
+               deflate
+               flate2::ffi::c::Deflate::compress_inner
+               0x7fff
+
+     0.33%  [.] 0x0000000000003327                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  -      -
+            |
+            ---0x7f837c0b3327
+               0x7f837c0b36ba
+               0x7f837c0b43a5
+               deflate
+               flate2::ffi::c::Deflate::compress_inner
+               0x7fff
+
+     0.32%  [.] 0x000000000000456d                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  -      -
+            |
+            ---0x7f837c0b456d
+               deflate
+               flate2::ffi::c::Deflate::compress_inner
+               0x7fff
+
+     0.31%  [.] _RINvNtNtCs3BFokC4QLxY_4core3fmt5float32float_to_decimal_common_shortestdEB6_                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                       -      -
+            |
+            ---_RINvNtNtCs3BFokC4QLxY_4core3fmt5float32float_to_decimal_common_shortestdEB6_
+               _RNvNtCs3BFokC4QLxY_4core3fmt5write
+               rust_xlsxwriter::worksheet::Worksheet::flush_data_row
+               0x7f837d6b9a2f
+               0x3b
+
+     0.31%  [.] neatxlsx_core::writer::render::write_cell_with_format                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                               -      -
+            |
+            ---neatxlsx_core::writer::render::write_cell_with_format
+
+     0.31%  [.] 0x000000000000457a                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  -      -
+            |
+            ---0x7f837c0b457a
+               deflate
+               flate2::ffi::c::Deflate::compress_inner
+               0x7fff
+
+     0.31%  [.] rust_xlsxwriter::xmlwriter::escape_xml_escapes                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      -      -
+            |
+            ---rust_xlsxwriter::xmlwriter::escape_xml_escapes
+               |
+                --0.26%--0x7
+
+     0.30%  [.] _RNvMsa_NtCs3BFokC4QLxY_4core3fmtNtB5_9Formatter3pad                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                -      -
+            |
+            ---_RNvMsa_NtCs3BFokC4QLxY_4core3fmtNtB5_9Formatter3pad
+               |
+                --0.21%--_RNvNtCs3BFokC4QLxY_4core3fmt5write
+
+     0.30%  [.] 0x00000000000045ac                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  -      -
+            |
+            ---0x7f837c0b45ac
+               deflate
+               flate2::ffi::c::Deflate::compress_inner
+               0x7fff
+
+     0.30%  [.] 0x000000000000455f                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  -      -
+            |
+            ---0x7f837c0b455f
+               deflate
+               flate2::ffi::c::Deflate::compress_inner
+               0x7fff
+
+     0.29%  [.] <rust_xlsxwriter::format::Font as core::hash::Hash>::hash                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                           -      -
+            |
+            ---<rust_xlsxwriter::format::Font as core::hash::Hash>::hash
+
+     0.28%  [.] rust_xlsxwriter::worksheet::Worksheet::insert_cell                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  -      -
+            |
+            ---rust_xlsxwriter::worksheet::Worksheet::insert_cell
+
+     0.28%  [.] _RINvNvMs2_NtCs8y6E41fb8tc_5alloc7raw_vecINtB8_11RawVecInnerpE7reserve21do_reserve_and_handleNtNtBa_5alloc6GlobalEBa_                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                               -      -
+            |
+            ---_RINvNvMs2_NtCs8y6E41fb8tc_5alloc7raw_vecINtB8_11RawVecInnerpE7reserve21do_reserve_and_handleNtNtBa_5alloc6GlobalEBa_
+               _RNvXsZ_NtCs8y6E41fb8tc_5alloc6stringNtB5_6StringNtNtCs3BFokC4QLxY_4core3fmt5Write10write_char
+               _RNvNtCs3BFokC4QLxY_4core3fmt5write
+               _RNvNvNtCs8y6E41fb8tc_5alloc3fmt6format12format_inner
+               rust_xlsxwriter::utility::column_number_to_name
+
+     0.27%  [.] 0x00000000000045a4                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  -      -
+            |
+            ---0x7f837c0b45a4
+               deflate
+               flate2::ffi::c::Deflate::compress_inner
+               0x7fff
+
+     0.26%  [.] 0x0000000000003524                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  -      -
+            |
+            ---0x7f837c0b3524
+               0x7f837c0b4637
+               deflate
+               flate2::ffi::c::Deflate::compress_inner
+               0x7fff
+
+     0.25%  [.] 0x00000000000034bc                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  -      -
+            |
+            ---0x7f837c0b34bc
+               0x7f837c0b4637
+               deflate
+               flate2::ffi::c::Deflate::compress_inner
+               0x7fff
+
+     0.25%  [.] 0x0000000000004232                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  -      -
+            |
+            ---0x7f837c0b4232
+               deflate
+               flate2::ffi::c::Deflate::compress_inner
+               0x7fff
+
+     0.25%  [.] 0x0000000000004257                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  -      -
+            |
+            ---0x7f837c0b4257
+               deflate
+               flate2::ffi::c::Deflate::compress_inner
+               0x7fff
+
+     0.25%  [.] 0x0000000000003324                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  -      -
+            |
+            ---0x7f837c0b3324
+               0x7f837c0b36ba
+               0x7f837c0b43a5
+               deflate
+               flate2::ffi::c::Deflate::compress_inner
+               0x7fff
+
+     0.24%  [.] rust_xlsxwriter::worksheet::Worksheet::insert_cell_to_table                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                         -      -
+            |
+            ---rust_xlsxwriter::worksheet::Worksheet::insert_cell_to_table
+               |
+                --0.20%--0x12
+
+     0.24%  [.] 0x00000000000032ec                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  -      -
+            |
+            ---0x7f837c0b32ec
+               0x7f837c0b36ba
+               0x7f837c0b43a5
+               deflate
+               flate2::ffi::c::Deflate::compress_inner
+               0x7fff
+
+     0.23%  [.] 0x00000000000045a7                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  -      -
+            |
+            ---0x7f837c0b45a7
+               deflate
+               flate2::ffi::c::Deflate::compress_inner
+               0x7fff
+
+     0.23%  [.] polars_arrow::array::Array::is_null                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 -      -
+            |
+            ---polars_arrow::array::Array::is_null
+               0xc
+
+     0.22%  [.] crc32fast::specialized::pclmulqdq::calculate                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        -      -
+            |
+            ---crc32fast::specialized::pclmulqdq::calculate
+               0x2d
+
+     0.21%  [.] _RNvXsZ_NtCs8y6E41fb8tc_5alloc6stringNtB5_6StringNtNtCs3BFokC4QLxY_4core3fmt5Write10write_char                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      -      -
+            |
+            ---_RNvXsZ_NtCs8y6E41fb8tc_5alloc6stringNtB5_6StringNtNtCs3BFokC4QLxY_4core3fmt5Write10write_char
+
+     0.21%  [.] 0x0000000000003412                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  -      -
+            |
+            ---0x7f837c0b3412
+               0x7f837c0b4637
+               deflate
+               flate2::ffi::c::Deflate::compress_inner
+               0x7fff
+
+     0.21%  [.] 0x00000000000032fc                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  -      -
+            |
+            ---0x7f837c0b32fc
+               0x7f837c0b36ba
+               0x7f837c0b43a5
+               deflate
+               flate2::ffi::c::Deflate::compress_inner
+               0x7fff
+
+     0.21%  [.] inflate_fast.cold                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                   -      -
+     0.20%  [.] 0x00000000000032f9                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  -      -
+            |
+            ---0x7f837c0b32f9
+               0x7f837c0b36ba
+               0x7f837c0b43a5
+               deflate
+               flate2::ffi::c::Deflate::compress_inner
+               0x7fff
+
+     0.20%  [.] 0x00000000000042d1                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  -      -
+            |
+            ---0x7f837c0b42d1
+               deflate
+               flate2::ffi::c::Deflate::compress_inner
+               0x7fff
+
+     0.20%  [.] 0x00000000000045b2                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  -      -
+            |
+            ---0x7f837c0b45b2
+               deflate
+               flate2::ffi::c::Deflate::compress_inner
+               0x7fff
+
+     0.20%  [.] 0x0000000000004573                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  -      -
+            |
+            ---0x7f837c0b4573
+               deflate
+               flate2::ffi::c::Deflate::compress_inner
+               0x7fff
+
+     0.20%  [.] 0x00000000000033fd                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  -      -
+            |
+            ---0x7f837c0b33fd
+               0x7f837c0b4637
+               deflate
+               flate2::ffi::c::Deflate::compress_inner
+               0x7fff
+
+     0.20%  [.] 0x0000000000004271                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  -      -
+            |
+            ---0x7f837c0b4271
+               deflate
+               flate2::ffi::c::Deflate::compress_inner
+               0x7fff
+
+
+
+#
+# (Tip: Add -I to perf record to sample register values, which will be visible in perf report sample context.)
+#
