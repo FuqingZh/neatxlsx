@@ -96,6 +96,12 @@ structural evidence. Performance acceptance remains unmet, and this branch
 must not be promoted on a performance claim without a separately designed
 follow-up investigation.
 
+The subsequent [performance investigation](performance-investigation.md)
+separates writer and close costs, interleaves ABI 5/6 runs, measures pre-close
+RSS, and records CPU hotspots. It explains the unstable controls and finds
+writer-stage CPU and memory improvements, but does not retroactively change
+this frozen acceptance result.
+
 ## Excluded measurements
 
 The files prefixed `excluded-overlap-huge-` are retained for auditability but

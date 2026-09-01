@@ -35,7 +35,9 @@ records for their stated scope:
    for current commands, workloads, output checks, memory-measurement limits,
    and requirements for new baselines. The retained ABI v5/v6 measurements and
    their non-acceptance conclusion are in the
-   [single-pass comparison](benchmarks/results/20260901-single-pass-autofit/comparison.md).
+   [single-pass comparison](benchmarks/results/20260901-single-pass-autofit/comparison.md)
+   and its post-hoc
+   [performance investigation](benchmarks/results/20260901-single-pass-autofit/performance-investigation.md).
 11. [0.2.0 release notes](release-notes/20260811-v0.2.0-m1.md) for the M1 value
    semantics and additive row/header/body column-format controls included in
    the published release.
