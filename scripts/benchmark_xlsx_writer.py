@@ -1,8 +1,10 @@
 from __future__ import annotations
 
 import argparse
+import hashlib
 import importlib
 import json
+import os
 import platform
 import re
 import statistics
@@ -14,19 +16,67 @@ from dataclasses import asdict, dataclass, replace
 from datetime import UTC, datetime
 from importlib import metadata
 from pathlib import Path
-from time import perf_counter
+from time import perf_counter, process_time
 from typing import Any, Literal, cast
 
-import polars as pl
+try:
+    import resource
+except ImportError:  # pragma: no cover - unavailable on Windows.
+    resource = None  # type: ignore[assignment]
+
+CHECKOUT_ROOT_ENV = "NEATXLSX_BENCHMARK_CHECKOUT_ROOT"
+CPU_LIST_ENV = "NEATXLSX_BENCHMARK_CPU_LIST"
+
+
+def _parse_cpu_list(value: str) -> set[int]:
+    cpus: set[int] = set()
+    for part in value.split(","):
+        token = part.strip()
+        if not token:
+            raise ValueError("CPU list contains an empty item.")
+        if "-" in token:
+            start_text, stop_text = token.split("-", 1)
+            start = int(start_text)
+            stop = int(stop_text)
+            if start < 0 or stop < start:
+                raise ValueError(f"Invalid CPU range: {token!r}")
+            cpus.update(range(start, stop + 1))
+        else:
+            cpu = int(token)
+            if cpu < 0:
+                raise ValueError("CPU indexes must be nonnegative.")
+            cpus.add(cpu)
+    if not cpus:
+        raise ValueError("CPU list must select at least one CPU.")
+    return cpus
+
+
+def _apply_worker_affinity_from_environment() -> None:
+    value = os.environ.get(CPU_LIST_ENV)
+    if value is None:
+        return
+    if not hasattr(os, "sched_setaffinity"):
+        raise RuntimeError("CPU affinity is not supported on this platform.")
+    os.sched_setaffinity(0, _parse_cpu_list(value))
+
+
+_apply_worker_affinity_from_environment()
+
+import polars as pl  # noqa: E402
 
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
-SRC_DIR = PROJECT_ROOT / "python"
+WORKER_CHECKOUT_ROOT = Path(os.environ.get(CHECKOUT_ROOT_ENV, PROJECT_ROOT)).resolve()
+SRC_DIR = WORKER_CHECKOUT_ROOT / "python"
 if str(SRC_DIR) not in sys.path:
     sys.path.insert(0, str(SRC_DIR))
 
 from neatxlsx import Autofit, Workbook  # noqa: E402
 
-BenchmarkInput = Literal["dataframe", "parquet_lazyframe"]
+BenchmarkInput = Literal[
+    "dataframe",
+    "parquet_lazyframe",
+    "computed_parquet_lazyframe",
+]
 BenchmarkData = pl.DataFrame | pl.LazyFrame
 
 
@@ -40,6 +90,7 @@ class XlsxBenchmarkScenario:
     rule_autofit_columns: str = "header"
     input_kind: BenchmarkInput = "dataframe"
     chunk_size: int | None = 8_192
+    autofit_max_rows: int | None = 20_000
 
 
 @dataclass(frozen=True)
@@ -100,6 +151,11 @@ def parse_args() -> argparse.Namespace:
             "Override the scenario batch size. By default scenarios use 8192 rows; "
             "omit this option to retain that recorded default."
         ),
+    )
+    parser.add_argument(
+        "--single-run-config",
+        type=Path,
+        help=argparse.SUPPRESS,
     )
     return parser.parse_args()
 
@@ -383,6 +439,304 @@ def make_parquet_lazyframe(path_parquet: Path) -> pl.LazyFrame:
     )
 
 
+def make_computed_parquet_lazyframe(
+    path_parquet: Path,
+    *,
+    n_numeric_cols: int,
+) -> pl.LazyFrame:
+    """Build a fixed computational source used to expose replay costs."""
+    lazy = make_parquet_lazyframe(path_parquet)
+    numeric_names = [f"value_{index:02d}" for index in range(n_numeric_cols)]
+    for _ in range(3):
+        lazy = lazy.with_columns(
+            (
+                pl.col(name).fill_null(0.0).sin()
+                + pl.col(name).fill_null(0.0).cos()
+                + pl.col(name).fill_null(0.0).abs().sqrt()
+            ).alias(name)
+            for name in numeric_names
+        )
+    return lazy
+
+
+def _is_relative_to(path: Path, root: Path) -> bool:
+    try:
+        path.relative_to(root)
+    except ValueError:
+        return False
+    return True
+
+
+def _require_path_within(path: Path, root: Path, description: str) -> Path:
+    resolved_path = path.resolve()
+    resolved_root = root.resolve()
+    if not _is_relative_to(resolved_path, resolved_root):
+        raise RuntimeError(
+            f"{description} must be inside {resolved_root}, got {resolved_path}."
+        )
+    return resolved_path
+
+
+def _peak_rss() -> tuple[int | None, str | None]:
+    if resource is None:
+        return None, None
+    value = int(resource.getrusage(resource.RUSAGE_SELF).ru_maxrss)
+    unit = "bytes" if sys.platform == "darwin" else "KiB"
+    return value, unit
+
+
+def _load_average() -> list[float] | None:
+    try:
+        return list(os.getloadavg())
+    except (AttributeError, OSError):
+        return None
+
+
+def _current_affinity() -> list[int] | None:
+    if not hasattr(os, "sched_getaffinity"):
+        return None
+    return sorted(os.sched_getaffinity(0))
+
+
+def _sha256_file(path: Path) -> str:
+    digest = hashlib.sha256()
+    with path.open("rb") as stream:
+        for chunk in iter(lambda: stream.read(1024 * 1024), b""):
+            digest.update(chunk)
+    return digest.hexdigest()
+
+
+def _normalized_zip_member(name: str, data: bytes) -> tuple[bytes, str | None]:
+    if name != "docProps/core.xml":
+        return data, None
+    normalized = re.sub(
+        rb"(<dcterms:(?:created|modified)[^>]*>)[^<]*(</dcterms:(?:created|modified)>)",
+        rb"\1NORMALIZED-UTC\2",
+        data,
+    )
+    return normalized, "core-created-modified-utc"
+
+
+def build_zip_member_manifest(path_xlsx: Path) -> list[dict[str, Any]]:
+    """Hash uncompressed members so compressor changes cannot mask differences."""
+    manifest: list[dict[str, Any]] = []
+    with zipfile.ZipFile(path_xlsx) as archive:
+        for info in sorted(archive.infolist(), key=lambda item: item.filename):
+            data = archive.read(info.filename)
+            comparison_data, normalization = _normalized_zip_member(info.filename, data)
+            manifest.append(
+                {
+                    "name": info.filename,
+                    "size": len(data),
+                    "sha256": hashlib.sha256(data).hexdigest(),
+                    "comparison_sha256": hashlib.sha256(comparison_data).hexdigest(),
+                    "normalization": normalization,
+                }
+            )
+    return manifest
+
+
+def _worker_data(
+    scenario: XlsxBenchmarkScenario,
+    fixture_path: Path | None,
+) -> BenchmarkData:
+    if scenario.input_kind == "dataframe":
+        return build_dataframe(
+            n_rows=scenario.n_rows,
+            n_numeric_cols=scenario.n_numeric_cols,
+            n_text_cols=scenario.n_text_cols,
+        )
+    if fixture_path is None:
+        raise ValueError(f"{scenario.input_kind} requires a Parquet fixture.")
+    if scenario.input_kind == "computed_parquet_lazyframe":
+        return make_computed_parquet_lazyframe(
+            fixture_path,
+            n_numeric_cols=scenario.n_numeric_cols,
+        )
+    return make_parquet_lazyframe(fixture_path)
+
+
+def _native_metadata(checkout_root: Path) -> dict[str, Any]:
+    neatxlsx_module = importlib.import_module("neatxlsx")
+    native_module = importlib.import_module("neatxlsx._native")
+    package_path_value = getattr(neatxlsx_module, "__file__", None)
+    native_path_value = getattr(native_module, "__file__", None)
+    if not package_path_value or not native_path_value:
+        raise RuntimeError("Cannot resolve imported neatxlsx package/native paths.")
+
+    source_root = checkout_root / "python"
+    package_path = _require_path_within(
+        Path(package_path_value), source_root, "neatxlsx package"
+    )
+    native_path = _require_path_within(
+        Path(native_path_value), source_root, "neatxlsx native extension"
+    )
+    profile = getattr(native_module, "__build_profile__", None)
+    if profile != "release":
+        raise RuntimeError(
+            f"Benchmark worker requires a release backend, got {profile!r}."
+        )
+    abi = getattr(native_module, "__bridge_abi__", None)
+    contract = getattr(native_module, "__bridge_contract__", None)
+    transport = getattr(native_module, "__bridge_transport__", None)
+    if not isinstance(abi, int) or not isinstance(contract, str):
+        raise RuntimeError("Native backend does not expose bridge identity.")
+    return {
+        "package_path": str(package_path),
+        "native_path": str(native_path),
+        "native_sha256": _sha256_file(native_path),
+        "native_size": native_path.stat().st_size,
+        "build_profile": profile,
+        "bridge_abi": abi,
+        "bridge_contract": contract,
+        "bridge_transport": transport,
+    }
+
+
+def run_single_worker(config: dict[str, Any]) -> dict[str, Any]:
+    """Run one isolated sample and return its complete evidence record."""
+    checkout_root = Path(config["checkout_root"]).resolve()
+    if checkout_root != WORKER_CHECKOUT_ROOT:
+        raise RuntimeError(
+            f"Worker checkout mismatch: env={WORKER_CHECKOUT_ROOT}, "
+            f"config={checkout_root}."
+        )
+    scenario = XlsxBenchmarkScenario(**config["scenario"])
+    output_path = Path(config["output_path"]).resolve()
+    if output_path.exists():
+        raise FileExistsError(f"Worker output already exists: {output_path}")
+    output_path.parent.mkdir(parents=True, exist_ok=True)
+
+    fixture_value = config.get("fixture_path")
+    fixture_path = Path(fixture_value).resolve() if fixture_value else None
+    if fixture_path is not None and not fixture_path.is_file():
+        raise FileNotFoundError(f"Missing benchmark fixture: {fixture_path}")
+
+    native = _native_metadata(checkout_root)
+    prebuilt_data = (
+        _worker_data(scenario, fixture_path)
+        if scenario.input_kind == "dataframe"
+        else None
+    )
+    load_before = _load_average()
+    total_wall_start = perf_counter()
+    total_cpu_start = process_time()
+
+    input_wall_start = perf_counter()
+    input_cpu_start = process_time()
+    data = (
+        prebuilt_data
+        if prebuilt_data is not None
+        else _worker_data(scenario, fixture_path)
+    )
+    input_wall = perf_counter() - input_wall_start
+    input_cpu = process_time() - input_cpu_start
+
+    workbook_wall_start = perf_counter()
+    workbook_cpu_start = process_time()
+    workbook = Workbook(output_path, chunk_size=scenario.chunk_size)
+    workbook_wall = perf_counter() - workbook_wall_start
+    workbook_cpu = process_time() - workbook_cpu_start
+
+    mode = cast(
+        Literal["none", "header", "body", "all"],
+        scenario.rule_autofit_columns if scenario.should_autofit_columns else "none",
+    )
+    try:
+        write_wall_start = perf_counter()
+        write_cpu_start = process_time()
+        workbook.write_sheet(
+            data=data,
+            sheet_name="benchmark",
+            autofit=Autofit(mode=mode, max_rows=scenario.autofit_max_rows),
+        )
+        write_wall = perf_counter() - write_wall_start
+        write_cpu = process_time() - write_cpu_start
+        write_rss, rss_unit = _peak_rss()
+
+        close_wall_start = perf_counter()
+        close_cpu_start = process_time()
+        workbook.close()
+        close_wall = perf_counter() - close_wall_start
+        close_cpu = process_time() - close_cpu_start
+        close_rss, close_rss_unit = _peak_rss()
+    except BaseException:
+        try:
+            workbook.abort()
+        finally:
+            output_path.unlink(missing_ok=True)
+        raise
+
+    total_wall = perf_counter() - total_wall_start
+    total_cpu = process_time() - total_cpu_start
+    if rss_unit != close_rss_unit:
+        raise RuntimeError("RSS unit changed during one worker process.")
+
+    validate_xlsx_output(
+        path_xlsx_out=output_path,
+        expected_rows_total=scenario.n_rows + 1,
+        expected_cols_total=scenario.n_numeric_cols + scenario.n_text_cols + 1,
+    )
+    manifest = build_zip_member_manifest(output_path)
+    return {
+        "run_id": config["run_id"],
+        "variant": config["variant"],
+        "warmup": bool(config["warmup"]),
+        "block": config.get("block"),
+        "position": config.get("position"),
+        "pair_id": config.get("pair_id"),
+        "scenario": asdict(scenario),
+        "fixture_path": str(fixture_path) if fixture_path else None,
+        "output_size": output_path.stat().st_size,
+        "zip_members": manifest,
+        "timing": {
+            "input_plan_wall_s": input_wall,
+            "input_plan_cpu_s": input_cpu,
+            "workbook_setup_wall_s": workbook_wall,
+            "workbook_setup_cpu_s": workbook_cpu,
+            "write_wall_s": write_wall,
+            "write_cpu_s": write_cpu,
+            "close_wall_s": close_wall,
+            "close_cpu_s": close_cpu,
+            "total_wall_s": total_wall,
+            "total_cpu_s": total_cpu,
+        },
+        "memory": {
+            "write_peak_rss": write_rss,
+            "close_peak_rss": close_rss,
+            "unit": rss_unit,
+            "scope": "process-start-to-stage high-water mark",
+        },
+        "environment": {
+            "python": sys.executable,
+            "python_version": sys.version.split()[0],
+            "polars": pl.__version__,
+            "neatxlsx": detect_neatxlsx_version(),
+            "platform": platform.platform(),
+            "polars_max_threads": os.environ.get("POLARS_MAX_THREADS"),
+            "cpu_affinity": _current_affinity(),
+            "load_before": load_before,
+        },
+        "native": native,
+        "validation": "sheet1 dimensions and row tags checked after timing",
+    }
+
+
+def run_single_worker_from_file(config_path: Path) -> int:
+    config = json.loads(config_path.read_text(encoding="utf-8"))
+    result_path = Path(config["result_path"]).resolve()
+    if result_path.exists():
+        raise FileExistsError(f"Worker result already exists: {result_path}")
+    result = run_single_worker(config)
+    result_path.parent.mkdir(parents=True, exist_ok=True)
+    result_path.write_text(
+        json.dumps(result, ensure_ascii=False, sort_keys=True) + "\n",
+        encoding="utf-8",
+    )
+    print(result_path)
+    return 0
+
+
 def build_data_factory(
     *,
     scenario: XlsxBenchmarkScenario,
@@ -398,6 +752,11 @@ def build_data_factory(
 
     path_parquet = path_dir_tmp / f"fixture_{scenario.name}.parquet"
     df.write_parquet(path_parquet)
+    if scenario.input_kind == "computed_parquet_lazyframe":
+        return lambda: make_computed_parquet_lazyframe(
+            path_parquet,
+            n_numeric_cols=scenario.n_numeric_cols,
+        )
     return lambda: make_parquet_lazyframe(path_parquet)
 
 
@@ -558,6 +917,8 @@ def render_markdown_summary(payload: dict[str, Any]) -> str:
 
 def main() -> int:
     args = parse_args()
+    if args.single_run_config is not None:
+        return run_single_worker_from_file(args.single_run_config)
     if args.repeat < 1:
         raise ValueError("--repeat must be >= 1")
     if args.warmup < 0:
