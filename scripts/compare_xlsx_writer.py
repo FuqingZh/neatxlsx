@@ -496,8 +496,12 @@ def analyze_scenario(
         if policy == "zlib":
             write_median = write["median_ratio"] if write else float("inf")
             passed = median <= 0.95 and upper < 1.0 and write_median < 1.03
-            verdict = "passed" if passed else "inconclusive"
-            reason = "zlib_gate_met" if passed else "zlib_gate_unmet"
+            if passed:
+                verdict, reason = "passed", "zlib_gate_met"
+            elif total["ci95"][0] > 1.0:
+                verdict, reason = "rejected", "zlib_regression"
+            else:
+                verdict, reason = "inconclusive", "zlib_gate_unmet"
         elif scenario.input_kind == "dataframe":
             verdict, reason = "diagnostic", "dataframe_control"
         elif scenario.rule_autofit_columns in {"body", "all"}:

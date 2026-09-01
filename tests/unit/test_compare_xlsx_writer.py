@@ -203,3 +203,32 @@ def test_zlib_gate_requires_five_percent_total_and_write_guard() -> None:
         required_samples=8,
     )
     assert result["verdict"] == "passed"
+
+
+def test_zlib_gate_rejects_confident_regression() -> None:
+    scenario = comparison.benchmark.XlsxBenchmarkScenario(
+        name="zlib-regression",
+        n_rows=10,
+        n_numeric_cols=1,
+        n_text_cols=0,
+        rule_autofit_columns="all",
+        input_kind="parquet_lazyframe",
+    )
+    records = []
+    for pair in range(8):
+        records.extend(
+            [
+                _record(scenario, pair=pair, variant="baseline", total=1.0),
+                _record(scenario, pair=pair, variant="candidate", total=1.2),
+            ]
+        )
+    result = comparison.analyze_scenario(
+        scenario,
+        records,
+        policy="zlib",
+        analysis_seed=2,
+        bootstrap_resamples=100,
+        required_samples=8,
+    )
+    assert result["verdict"] == "rejected"
+    assert result["reason"] == "zlib_regression"
