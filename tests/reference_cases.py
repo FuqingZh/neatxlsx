@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from datetime import UTC, date, datetime, time, timedelta
 from decimal import Decimal
 from typing import Any
@@ -12,7 +12,7 @@ import polars as pl
 
 EXCEL_MAX_ROWS = 1_048_576
 EXCEL_MAX_COLUMNS = 16_384
-MANIFEST_SCHEMA_VERSION = 1
+MANIFEST_SCHEMA_VERSION = 2
 
 
 @dataclass(frozen=True, slots=True)
@@ -30,6 +30,7 @@ class ReferenceCase:
     """Source inputs and expected-gap metadata for one reference scenario."""
 
     scenario_id: str
+    workbook_kwargs: dict[str, Any] = field(default_factory=dict)
     sheets: tuple[SheetSpec, ...] = ()
     known_gaps: tuple[dict[str, str], ...] = ()
     split_planning: dict[str, Any] | None = None
@@ -42,6 +43,7 @@ def scenario_ids(*, include_large: bool = False) -> tuple[str, ...]:
         "mixed-dtype",
         "multi-level-header",
         "multi-sheet-pipeline",
+        "autofit-sampling",
         "split-planning",
     )
     if include_large:
@@ -56,6 +58,7 @@ def build_reference_case(scenario_id: str) -> ReferenceCase:
         "mixed-dtype": _mixed_dtype,
         "multi-level-header": _multi_level_header,
         "multi-sheet-pipeline": _multi_sheet_pipeline,
+        "autofit-sampling": _autofit_sampling,
         "split-planning": _split_planning,
         "large-row-split": _large_row_split,
     }
@@ -219,6 +222,70 @@ def _multi_sheet_pipeline() -> ReferenceCase:
                     "autofit": nx.Autofit(mode="body"),
                 },
                 sentinels=("A1", "B2"),
+            ),
+        ),
+    )
+
+
+def _autofit_sampling() -> ReferenceCase:
+    bounded = pl.DataFrame(
+        {
+            "value": ["a", "bb", "widest-included", "excluded-value-is-much-longer"],
+            "missing": ["x", None, "z", "tail"],
+        }
+    ).lazy()
+    unlimited = pl.DataFrame(
+        {"value": ["short", "medium", "the-longest-value-after-a-batch-boundary"]}
+    ).lazy()
+    return ReferenceCase(
+        scenario_id="autofit-sampling",
+        workbook_kwargs={
+            "chunk_size": 2,
+            "keep_missing_values": True,
+            "missing_value": "缺失",
+        },
+        sheets=(
+            SheetSpec(
+                name="None",
+                data=pl.DataFrame({"body-is-long": ["ignored-for-width"]}),
+                kwargs={"autofit": nx.Autofit(mode="none")},
+                sentinels=("A1", "A2"),
+            ),
+            SheetSpec(
+                name="Header",
+                data=pl.DataFrame({"wide-header-name": ["tiny"]}),
+                kwargs={"autofit": nx.Autofit(mode="header")},
+                sentinels=("A1", "A2"),
+            ),
+            SheetSpec(
+                name="Body Bounded",
+                data=bounded,
+                kwargs={"autofit": nx.Autofit(mode="body", max_rows=3)},
+                sentinels=("A2", "A4", "A5", "B3"),
+            ),
+            SheetSpec(
+                name="All Unlimited",
+                data=unlimited,
+                kwargs={"autofit": nx.Autofit(mode="all", max_rows=None)},
+                sentinels=("A1", "A4"),
+            ),
+            SheetSpec(
+                name="Empty Rows",
+                data=pl.DataFrame(schema={"empty": pl.String}),
+                kwargs={"autofit": nx.Autofit(mode="all")},
+                sentinels=("A1",),
+            ),
+            SheetSpec(
+                name="Duplicate",
+                data=pl.DataFrame({"value": [1]}),
+                kwargs={"autofit": nx.Autofit(mode="header")},
+                sentinels=(),
+            ),
+            SheetSpec(
+                name="Duplicate",
+                data=pl.DataFrame({"value": [2]}),
+                kwargs={"autofit": nx.Autofit(mode="body")},
+                sentinels=(),
             ),
         ),
     )

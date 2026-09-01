@@ -162,8 +162,8 @@ class Format:
 class Autofit:
     """Control how worksheet column widths are inferred.
 
-    ``body`` and ``all`` modes evaluate a LazyFrame twice; ``header`` and
-    ``none`` retain the single-pass write path.
+    All modes consume the input once. Body-derived widths are tracked online
+    and applied after the input stream is exhausted.
 
     Examples:
         >>> Autofit(mode="all", max_rows=5_000, max_width=48)

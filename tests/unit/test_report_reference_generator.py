@@ -34,6 +34,30 @@ def test_generator_does_not_replace_fixture_without_accept(tmp_path: Path) -> No
     assert fixture.read_bytes() == before
 
 
+def test_direct_accept_validates_frozen_baseline_before_writing(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    def reject_candidate() -> None:
+        raise RuntimeError("candidate is not the pinned baseline")
+
+    monkeypatch.setattr(
+        generate_report_reference, "_validate_baseline_acceptance", reject_candidate
+    )
+
+    fixture_dir = tmp_path / "fixtures"
+    output_dir = tmp_path / "output"
+    with pytest.raises(RuntimeError, match="not the pinned baseline"):
+        generate_report_reference.generate_scenario(
+            "ordinary-scientific",
+            output_dir=output_dir,
+            fixture_dir=fixture_dir,
+            accept=True,
+        )
+
+    assert not fixture_dir.exists()
+    assert not output_dir.exists()
+
+
 def test_generator_reports_field_level_manifest_mismatch(tmp_path: Path) -> None:
     fixture_dir = tmp_path / "fixtures"
     fixture_dir.mkdir()

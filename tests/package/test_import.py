@@ -39,6 +39,9 @@ def test_installed_distribution_and_extension_are_importable() -> None:
         for parameter in tuple(parameters.values())[3:]
     )
     assert _native.__build_profile__
-    assert _native.__bridge_abi__ == 5
-    assert _native.__bridge_contract__ == "neatxlsx.xlsx.writer.v5"
+    assert _native.__bridge_abi__ == 6
+    assert _native.__bridge_contract__ == "neatxlsx.xlsx.writer.v6"
     assert _native.__bridge_transport__ == "arrow_c_data"
+    assert hasattr(_native.XlsxWriter, "write_sheet_batches")
+    assert not hasattr(_native.XlsxWriter, "write_sheet")
+    assert not hasattr(_native.XlsxWriter, "write_sheet_batches_single_pass")

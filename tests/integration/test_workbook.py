@@ -40,16 +40,124 @@ def test_dataframe_write_is_readable_and_reports_physical_sheet(
     assert sheet.freeze_panes == "B2"
 
 
-def test_lazyframe_body_autofit_uses_supported_two_pass_path(tmp_path: Path) -> None:
-    output = tmp_path / "lazy.xlsx"
-    with nx.Workbook(output, chunk_size=2) as workbook:
+@pytest.mark.parametrize("mode", ["none", "header", "body", "all"])
+def test_all_autofit_modes_consume_lazyframe_batches_once(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    mode: str,
+) -> None:
+    output = tmp_path / f"lazy-{mode}.xlsx"
+    collect_calls = 0
+    sources: list[OneShotBatches] = []
+    real_collect_batches = writer_module.collect_batches
+
+    class OneShotBatches:
+        def __init__(self, batches: object) -> None:
+            self._batches = iter(batches)  # type: ignore[arg-type]
+            self.iter_calls = 0
+            self.exhausted = False
+
+        def __iter__(self) -> OneShotBatches:
+            self.iter_calls += 1
+            if self.iter_calls > 1:
+                raise AssertionError("batch source was replayed")
+            return self
+
+        def __next__(self) -> object:
+            try:
+                return next(self._batches)
+            except StopIteration:
+                self.exhausted = True
+                raise
+
+    def collect_once(frame: pl.LazyFrame, *, chunk_size: int) -> OneShotBatches:
+        nonlocal collect_calls
+        collect_calls += 1
+        source = OneShotBatches(real_collect_batches(frame, chunk_size=chunk_size))
+        sources.append(source)
+        return source
+
+    monkeypatch.setattr(writer_module, "collect_batches", collect_once)
+    with nx.Workbook(output, chunk_size=1) as workbook:
         workbook.write_sheet(
-            pl.LazyFrame({"label": ["short", "a much longer value"]}),
+            pl.LazyFrame(
+                {
+                    "label": [
+                        "short",
+                        "a much longer value after the autofit sample",
+                        "tail",
+                    ]
+                }
+            ),
             "Data",
-            autofit=nx.Autofit(mode="body"),
+            autofit=nx.Autofit(mode=mode, max_rows=1),  # type: ignore[arg-type]
         )
 
-    assert openpyxl.load_workbook(output)["Data"]["A3"].value == "a much longer value"
+    assert collect_calls == 1
+    assert len(sources) == 1
+    assert sources[0].iter_calls == 1
+    assert sources[0].exhausted is True
+    sheet = openpyxl.load_workbook(output)["Data"]
+    assert [sheet[f"A{row}"].value for row in range(2, 5)] == [
+        "short",
+        "a much longer value after the autofit sample",
+        "tail",
+    ]
+    if mode in {"body", "all"}:
+        assert sheet.column_dimensions["A"].width < 30
+
+
+@pytest.mark.parametrize("mode", ["none", "header", "body", "all"])
+def test_zero_row_nonempty_schema_succeeds_in_every_autofit_mode(
+    tmp_path: Path,
+    mode: str,
+) -> None:
+    output = tmp_path / f"empty-{mode}.xlsx"
+    with nx.Workbook(output, chunk_size=1) as workbook:
+        workbook.write_sheet(
+            pl.DataFrame(schema={"empty": pl.String}).lazy(),
+            "Empty",
+            autofit=nx.Autofit(mode=mode),  # type: ignore[arg-type]
+        )
+        report = workbook.report()
+
+    assert report == (
+        nx.SheetReport(
+            requested_name="Empty",
+            worksheets=(nx.WorksheetPart("Empty", 0, 0, 0, 1),),
+        ),
+    )
+    sheet = openpyxl.load_workbook(output)["Empty"]
+    assert sheet["A1"].value == "empty"
+    assert sheet.max_row == 1
+
+
+def test_zero_column_input_aborts_workbook(tmp_path: Path) -> None:
+    output = tmp_path / "zero-columns.xlsx"
+    workbook = nx.Workbook(output)
+
+    with pytest.raises(nx.WriteError, match="zero columns"):
+        workbook.write_sheet(pl.DataFrame(), "Zero")
+
+    with pytest.raises(nx.StateError, match="aborted"):
+        workbook.write_sheet(pl.DataFrame({"value": [1]}), "After")
+    with pytest.raises(nx.StateError, match="aborted"):
+        workbook.close()
+    assert output.exists() is False
+
+
+def test_internal_name_collisions_do_not_move_completed_sheets(tmp_path: Path) -> None:
+    output = tmp_path / "internal-name-collisions.xlsx"
+    requested_names = ["Before", "__nx_tmp_1", "__nx_stage_1", "Before"]
+    with nx.Workbook(output) as workbook:
+        for value, name in enumerate(requested_names):
+            workbook.write_sheet(pl.DataFrame({"value": [value]}), name)
+        report_names = [part.worksheets[0].name for part in workbook.report()]
+
+    assert report_names == ["Before", "__nx_tmp_1", "__nx_stage_1", "Before__2"]
+    book = openpyxl.load_workbook(output)
+    assert book.sheetnames == report_names
+    assert [book[name]["A2"].value for name in report_names] == [0, 1, 2, 3]
 
 
 def test_strings_that_look_like_formulas_remain_literal(tmp_path: Path) -> None:

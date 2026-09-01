@@ -9,7 +9,8 @@ import statistics
 import sys
 import tempfile
 import zipfile
-from dataclasses import asdict, dataclass
+from collections.abc import Callable
+from dataclasses import asdict, dataclass, replace
 from datetime import UTC, datetime
 from importlib import metadata
 from pathlib import Path
@@ -25,6 +26,9 @@ if str(SRC_DIR) not in sys.path:
 
 from neatxlsx import Autofit, Workbook  # noqa: E402
 
+BenchmarkInput = Literal["dataframe", "parquet_lazyframe"]
+BenchmarkData = pl.DataFrame | pl.LazyFrame
+
 
 @dataclass(frozen=True)
 class XlsxBenchmarkScenario:
@@ -34,6 +38,8 @@ class XlsxBenchmarkScenario:
     n_text_cols: int
     should_autofit_columns: bool = True
     rule_autofit_columns: str = "header"
+    input_kind: BenchmarkInput = "dataframe"
+    chunk_size: int | None = 8_192
 
 
 @dataclass(frozen=True)
@@ -86,6 +92,15 @@ def parse_args() -> argparse.Namespace:
         default="rust",
         help="Backend implementation to benchmark.",
     )
+    parser.add_argument(
+        "--chunk-size",
+        type=int,
+        default=None,
+        help=(
+            "Override the scenario batch size. By default scenarios use 8192 rows; "
+            "omit this option to retain that recorded default."
+        ),
+    )
     return parser.parse_args()
 
 
@@ -93,7 +108,7 @@ def build_scenarios(profile: str) -> list[XlsxBenchmarkScenario]:
     if profile == "default":
         return [
             XlsxBenchmarkScenario(
-                name="narrow_tall_default",
+                name="narrow_tall_dataframe_header",
                 n_rows=40_000,
                 n_numeric_cols=8,
                 n_text_cols=3,
@@ -101,18 +116,54 @@ def build_scenarios(profile: str) -> list[XlsxBenchmarkScenario]:
                 rule_autofit_columns="header",
             ),
             XlsxBenchmarkScenario(
-                name="wide_medium_autofit_all",
+                name="wide_medium_dataframe_all",
                 n_rows=10_000,
                 n_numeric_cols=24,
                 n_text_cols=12,
                 should_autofit_columns=True,
                 rule_autofit_columns="all",
             ),
+            XlsxBenchmarkScenario(
+                name="narrow_tall_parquet_lazyframe_none",
+                n_rows=40_000,
+                n_numeric_cols=8,
+                n_text_cols=3,
+                should_autofit_columns=False,
+                rule_autofit_columns="none",
+                input_kind="parquet_lazyframe",
+            ),
+            XlsxBenchmarkScenario(
+                name="narrow_tall_parquet_lazyframe_header",
+                n_rows=40_000,
+                n_numeric_cols=8,
+                n_text_cols=3,
+                should_autofit_columns=True,
+                rule_autofit_columns="header",
+                input_kind="parquet_lazyframe",
+            ),
+            XlsxBenchmarkScenario(
+                name="wide_medium_parquet_lazyframe_body",
+                n_rows=10_000,
+                n_numeric_cols=24,
+                n_text_cols=12,
+                should_autofit_columns=True,
+                rule_autofit_columns="body",
+                input_kind="parquet_lazyframe",
+            ),
+            XlsxBenchmarkScenario(
+                name="wide_medium_parquet_lazyframe_all",
+                n_rows=10_000,
+                n_numeric_cols=24,
+                n_text_cols=12,
+                should_autofit_columns=True,
+                rule_autofit_columns="all",
+                input_kind="parquet_lazyframe",
+            ),
         ]
 
     return [
         XlsxBenchmarkScenario(
-            name="huge_tall_header_autofit",
+            name="huge_tall_dataframe_header",
             n_rows=250_000,
             n_numeric_cols=10,
             n_text_cols=4,
@@ -120,12 +171,48 @@ def build_scenarios(profile: str) -> list[XlsxBenchmarkScenario]:
             rule_autofit_columns="header",
         ),
         XlsxBenchmarkScenario(
-            name="huge_wide_autofit_all",
+            name="huge_wide_dataframe_all",
             n_rows=50_000,
             n_numeric_cols=40,
             n_text_cols=20,
             should_autofit_columns=True,
             rule_autofit_columns="all",
+        ),
+        XlsxBenchmarkScenario(
+            name="huge_tall_parquet_lazyframe_none",
+            n_rows=250_000,
+            n_numeric_cols=10,
+            n_text_cols=4,
+            should_autofit_columns=False,
+            rule_autofit_columns="none",
+            input_kind="parquet_lazyframe",
+        ),
+        XlsxBenchmarkScenario(
+            name="huge_tall_parquet_lazyframe_header",
+            n_rows=250_000,
+            n_numeric_cols=10,
+            n_text_cols=4,
+            should_autofit_columns=True,
+            rule_autofit_columns="header",
+            input_kind="parquet_lazyframe",
+        ),
+        XlsxBenchmarkScenario(
+            name="huge_wide_parquet_lazyframe_body",
+            n_rows=50_000,
+            n_numeric_cols=40,
+            n_text_cols=20,
+            should_autofit_columns=True,
+            rule_autofit_columns="body",
+            input_kind="parquet_lazyframe",
+        ),
+        XlsxBenchmarkScenario(
+            name="huge_wide_parquet_lazyframe_all",
+            n_rows=50_000,
+            n_numeric_cols=40,
+            n_text_cols=20,
+            should_autofit_columns=True,
+            rule_autofit_columns="all",
+            input_kind="parquet_lazyframe",
         ),
     ]
 
@@ -286,23 +373,53 @@ def build_dataframe(
     return df
 
 
+def make_parquet_lazyframe(path_parquet: Path) -> pl.LazyFrame:
+    """Build the timed LazyFrame plan from a pre-generated deterministic fixture."""
+    return (
+        pl.scan_parquet(path_parquet)
+        .filter(pl.col("row_id") >= 0)
+        .with_columns((pl.col("row_id") + 0).alias("row_id"))
+        .select(pl.all())
+    )
+
+
+def build_data_factory(
+    *,
+    scenario: XlsxBenchmarkScenario,
+    path_dir_tmp: Path,
+) -> Callable[[], BenchmarkData]:
+    df = build_dataframe(
+        n_rows=scenario.n_rows,
+        n_numeric_cols=scenario.n_numeric_cols,
+        n_text_cols=scenario.n_text_cols,
+    )
+    if scenario.input_kind == "dataframe":
+        return lambda: df
+
+    path_parquet = path_dir_tmp / f"fixture_{scenario.name}.parquet"
+    df.write_parquet(path_parquet)
+    return lambda: make_parquet_lazyframe(path_parquet)
+
+
 def run_one_write(
     *,
     writer_cls: Any,
-    df: pl.DataFrame,
+    make_data: Callable[[], BenchmarkData],
     path_xlsx_out: Path,
     should_autofit_columns: bool,
     rule_autofit_columns: str,
+    chunk_size: int | None,
 ) -> float:
     n_t_start = perf_counter()
-    with writer_cls(path_xlsx_out) as inst_writer:
+    data = make_data()
+    with writer_cls(path_xlsx_out, chunk_size=chunk_size) as inst_writer:
         mode = cast(
             Literal["none", "header", "body", "all"],
             rule_autofit_columns if should_autofit_columns else "none",
         )
         autofit = Autofit(mode=mode)
         inst_writer.write_sheet(
-            data=df,
+            data=data,
             sheet_name="benchmark",
             autofit=autofit,
         )
@@ -317,21 +434,22 @@ def benchmark_scenario(
     repeat: int,
     warmup: int,
     path_dir_tmp: Path,
+    chunk_size: int | None,
 ) -> XlsxBenchmarkStats:
-    df = build_dataframe(
-        n_rows=scenario.n_rows,
-        n_numeric_cols=scenario.n_numeric_cols,
-        n_text_cols=scenario.n_text_cols,
+    make_data = build_data_factory(
+        scenario=scenario,
+        path_dir_tmp=path_dir_tmp,
     )
 
     for n_idx in range(warmup):
         path_file_out = path_dir_tmp / f"{backend}_{scenario.name}_warmup_{n_idx}.xlsx"
         run_one_write(
             writer_cls=writer_cls,
-            df=df,
+            make_data=make_data,
             path_xlsx_out=path_file_out,
             should_autofit_columns=scenario.should_autofit_columns,
             rule_autofit_columns=scenario.rule_autofit_columns,
+            chunk_size=chunk_size,
         )
         validate_xlsx_output(
             path_xlsx_out=path_file_out,
@@ -347,10 +465,11 @@ def benchmark_scenario(
         path_file_out = path_dir_tmp / f"{backend}_{scenario.name}_{n_idx}.xlsx"
         n_elapsed = run_one_write(
             writer_cls=writer_cls,
-            df=df,
+            make_data=make_data,
             path_xlsx_out=path_file_out,
             should_autofit_columns=scenario.should_autofit_columns,
             rule_autofit_columns=scenario.rule_autofit_columns,
+            chunk_size=chunk_size,
         )
         validate_xlsx_output(
             path_xlsx_out=path_file_out,
@@ -398,8 +517,8 @@ def render_markdown_summary(payload: dict[str, Any]) -> str:
         f"  - `neatxlsx`: `{payload['packages']['neatxlsx']}`",
         f"  - `polars`: `{payload['packages']['polars']}`",
         "",
-        "| backend | scenario | rows | cols | autofit | repeat | median_s | mean_s | min_s | max_s | stdev_s | mean_size_mb |",
-        "| --- | --- | ---: | ---: | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: |",
+        "| backend | scenario | input | rows | cols | chunk | autofit | repeat | median_s | mean_s | min_s | max_s | stdev_s | mean_size_mb |",
+        "| --- | --- | --- | ---: | ---: | ---: | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: |",
     ]
 
     for item in l_scenarios:
@@ -410,7 +529,8 @@ def render_markdown_summary(payload: dict[str, Any]) -> str:
         n_size_mb = float(item["output_size_bytes_mean"]) / (1024 * 1024)
         l_lines.append(
             "| "
-            f"{item['backend']} | {cfg['name']} | {cfg['n_rows']} | {item['n_cols']} | "
+            f"{item['backend']} | {cfg['name']} | {cfg['input_kind']} | "
+            f"{cfg['n_rows']} | {item['n_cols']} | {cfg['chunk_size']} | "
             f"{cfg['should_autofit_columns']} ({cfg['rule_autofit_columns']}) | "
             f"{item['repeats']} | {item['median_seconds']:.3f} | "
             f"{item['mean_seconds']:.3f} | {item['min_seconds']:.3f} | "
@@ -442,8 +562,14 @@ def main() -> int:
         raise ValueError("--repeat must be >= 1")
     if args.warmup < 0:
         raise ValueError("--warmup must be >= 0")
+    if args.chunk_size is not None and args.chunk_size < 1:
+        raise ValueError("--chunk-size must be >= 1 when provided")
 
     l_scenarios = build_scenarios(args.profile)
+    if args.chunk_size is not None:
+        l_scenarios = [
+            replace(scenario, chunk_size=args.chunk_size) for scenario in l_scenarios
+        ]
     l_backends: list[tuple[str, Any]] = [("rust", Workbook)]
     path_file_backend_rs = enforce_release_rust_backend()
 
@@ -464,6 +590,7 @@ def main() -> int:
                         repeat=args.repeat,
                         warmup=args.warmup,
                         path_dir_tmp=path_dir_tmp,
+                        chunk_size=cfg_scenario.chunk_size,
                     )
                 )
 
@@ -478,6 +605,11 @@ def main() -> int:
         },
         "rust_backend_binary": str(path_file_backend_rs),
         "validation_policy": "enforce_release_backend + validate sheet1 dimension/rows/cols",
+        "input_timing_policy": (
+            "DataFrame construction and Parquet fixture generation are excluded. "
+            "Parquet LazyFrame timing starts before scan_parquet/filter/expression/"
+            "projection plan construction and ends after XLSX save."
+        ),
         "repeat": args.repeat,
         "warmup": args.warmup,
         "profile": args.profile,

@@ -1237,7 +1237,6 @@ name = "neatxlsx-core"
 version = "0.2.0"
 dependencies = [
  "chrono",
- "polars",
  "polars-arrow",
  "rust_xlsxwriter",
 ]

@@ -1,0 +1,117 @@
+{
+  "timestamp_utc": "2026-02-12T07:46:44.105635+00:00",
+  "command": "scripts/benchmark_xlsx_writer.py --backend both --profile default --repeat 3 --warmup 1",
+  "platform": "Linux-6.6.87.2-microsoft-standard-WSL2-x86_64-with-glibc2.39",
+  "python_version": "3.13.2",
+  "packages": {
+    "axiomkit": "local-src",
+    "polars": "1.38.1",
+    "xlsxwriter": "3.2.9"
+  },
+  "repeat": 3,
+  "warmup": 1,
+  "profile": "default",
+  "backend": "both",
+  "scenarios": [
+    {
+      "backend": "rust",
+      "scenario": {
+        "name": "narrow_tall_default",
+        "n_rows": 40000,
+        "n_numeric_cols": 8,
+        "n_text_cols": 3,
+        "if_autofit_columns": true,
+        "rule_autofit_columns": "header"
+      },
+      "n_cols": 12,
+      "repeats": 3,
+      "warmup_runs": 1,
+      "times_seconds": [
+        3.49378131100093,
+        3.4659475420012313,
+        3.451703736001946
+      ],
+      "mean_seconds": 3.470477529668036,
+      "median_seconds": 3.4659475420012313,
+      "min_seconds": 3.451703736001946,
+      "max_seconds": 3.49378131100093,
+      "stdev_seconds": 0.021401429172951004,
+      "output_size_bytes_mean": 2901730
+    },
+    {
+      "backend": "rust",
+      "scenario": {
+        "name": "wide_medium_autofit_all",
+        "n_rows": 10000,
+        "n_numeric_cols": 24,
+        "n_text_cols": 12,
+        "if_autofit_columns": true,
+        "rule_autofit_columns": "all"
+      },
+      "n_cols": 37,
+      "repeats": 3,
+      "warmup_runs": 1,
+      "times_seconds": [
+        2.6906943319991115,
+        2.6075067070014484,
+        2.6190886259973922
+      ],
+      "mean_seconds": 2.6390965549993175,
+      "median_seconds": 2.6190886259973922,
+      "min_seconds": 2.6075067070014484,
+      "max_seconds": 2.6906943319991115,
+      "stdev_seconds": 0.04505866348880659,
+      "output_size_bytes_mean": 2253829
+    },
+    {
+      "backend": "python",
+      "scenario": {
+        "name": "narrow_tall_default",
+        "n_rows": 40000,
+        "n_numeric_cols": 8,
+        "n_text_cols": 3,
+        "if_autofit_columns": true,
+        "rule_autofit_columns": "header"
+      },
+      "n_cols": 12,
+      "repeats": 3,
+      "warmup_runs": 1,
+      "times_seconds": [
+        2.6973652269989543,
+        2.7734473009986687,
+        2.762841625000874
+      ],
+      "mean_seconds": 2.744551384332832,
+      "median_seconds": 2.762841625000874,
+      "min_seconds": 2.6973652269989543,
+      "max_seconds": 2.7734473009986687,
+      "stdev_seconds": 0.04120704034258791,
+      "output_size_bytes_mean": 2901755
+    },
+    {
+      "backend": "python",
+      "scenario": {
+        "name": "wide_medium_autofit_all",
+        "n_rows": 10000,
+        "n_numeric_cols": 24,
+        "n_text_cols": 12,
+        "if_autofit_columns": true,
+        "rule_autofit_columns": "all"
+      },
+      "n_cols": 37,
+      "repeats": 3,
+      "warmup_runs": 1,
+      "times_seconds": [
+        2.292062206000992,
+        2.4049632730020676,
+        2.336354430997744
+      ],
+      "mean_seconds": 2.3444599700002677,
+      "median_seconds": 2.336354430997744,
+      "min_seconds": 2.292062206000992,
+      "max_seconds": 2.4049632730020676,
+      "stdev_seconds": 0.05688530174294957,
+      "output_size_bytes_mean": 2253860
+    }
+  ]
+}
