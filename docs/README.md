@@ -15,33 +15,36 @@ records for their stated scope:
    inventory, tests, benchmarks, and rollback gates. It records completed
    functional evidence and the unmet performance gate; it is not the
    caller-facing behavior authority.
-5. [Caller migration guide](how-to-guides/20260831-v1.0-migrate-axiomkit-xlsx.md)
+5. [Interleaved benchmark and native zlib validation plan](implementation-plan/20260901-v1.0-interleaved-benchmark-zlib-validation-plan.md)
+   for the fixed dual-environment comparison harness, paired verdict rules,
+   compressor-identity stop gate, and wheel portability boundary.
+6. [Caller migration guide](how-to-guides/20260831-v1.0-migrate-axiomkit-xlsx.md)
    for mapping axiomkit XLSX calls to the current API, lifecycle, and ZIP64
    reader compatibility.
-6. [Future optimization plan](implementation-plan/20260810-v1.0-neatxlsx-future-optimization-implementation-plan.md)
+7. [Future optimization plan](implementation-plan/20260810-v1.0-neatxlsx-future-optimization-implementation-plan.md)
    for the accepted product priorities, phased delivery, decision gates, and
    acceptance criteria. It records future direction, not current API behavior.
-7. [M0/M1 report-trust design proposal](architecture/20260811-v1.0-neatxlsx-m0-m1-report-trust-design-proposal.md)
+8. [M0/M1 report-trust design proposal](architecture/20260811-v1.0-neatxlsx-m0-m1-report-trust-design-proposal.md)
    for the recommended value, dtype, temporal, warning, format, and reference
    artifact semantics. M0 and the M1 implementation are landed; release
    publication remains a separate authorized step.
-8. [M0/M1 report-trust implementation plan](implementation-plan/20260811-v1.0-neatxlsx-m0-m1-report-trust-implementation-plan.md)
+9. [M0/M1 report-trust implementation plan](implementation-plan/20260811-v1.0-neatxlsx-m0-m1-report-trust-implementation-plan.md)
    for the ordered delivery slices, affected components, validation, acceptance,
    and rollback gates. M0 and M1 implementation are complete locally; CI and
    release publication remain separate gates.
-9. [Test plan](testing/20260728-v1.0-neatxlsx-test-plan.md) for test layers,
+10. [Test plan](testing/20260728-v1.0-neatxlsx-test-plan.md) for test layers,
    oracles, CI lanes, and release evidence.
-10. [Benchmark protocol](benchmarks/20260831-v1.0-xlsx-writer-benchmark-protocol.md)
+11. [Benchmark protocol](benchmarks/20260831-v1.0-xlsx-writer-benchmark-protocol.md)
    for current commands, workloads, output checks, memory-measurement limits,
    and requirements for new baselines. The retained ABI v5/v6 measurements and
    their non-acceptance conclusion are in the
    [single-pass comparison](benchmarks/results/20260901-single-pass-autofit/comparison.md)
    and its post-hoc
    [performance investigation](benchmarks/results/20260901-single-pass-autofit/performance-investigation.md).
-11. [0.2.0 release notes](release-notes/20260811-v0.2.0-m1.md) for the M1 value
+12. [0.2.0 release notes](release-notes/20260811-v0.2.0-m1.md) for the M1 value
    semantics and additive row/header/body column-format controls included in
    the published release.
-12. [Completed extraction migration](implementation-plan/20260728-v1.0-axiomkit-xlsx-extraction-migration-plan.md)
+13. [Completed extraction migration](implementation-plan/20260728-v1.0-axiomkit-xlsx-extraction-migration-plan.md)
    for historical extraction checkpoints and the independence boundary.
 
 ## Historical source material
