@@ -1,6 +1,6 @@
 # Windows Excel acceptance for 0.2.1
 
-Status: prepared; desktop Excel validation pending.
+Status: user-reported desktop Excel validation passed on 2026-09-08.
 
 neatxlsx 0.2.1 — Windows Excel 验证（不需要安装 Python）
 
@@ -41,3 +41,16 @@ sheets, and have A2=1234.56 with bestFit metadata on column A. This does not
 establish desktop display or editing behavior. The short numeric header and
 15-significant-digit edit value avoid pre-widening the column or testing
 Excel precision loss instead of width behavior.
+
+## Reported desktop result
+
+The user tested Microsoft Excel 16.0.20326.20132 and reported:
+
+- default ZIP64 workbook opens normally;
+- original text and numeric display is normal;
+- changing A2 automatically widens the column; and
+- saved output closes and reopens normally.
+
+These are user-observed results for the supplied candidate workbook. The
+non-ZIP64 diagnostic was not needed; no agent-operated desktop or universal
+font/platform validation is claimed.

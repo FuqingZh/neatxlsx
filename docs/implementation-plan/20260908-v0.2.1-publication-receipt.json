@@ -1,0 +1,74 @@
+{
+  "version": "0.2.1",
+  "verified": true,
+  "source_commit": "4de8385ee1a6bb8b7d88159644adef1d6060df6f",
+  "merge_commit": "d1fc83ea8778ffd03c48d632787a31f48fad4b0f",
+  "pr": 8,
+  "ci_run": 34188062381,
+  "compatibility_run": 34188801937,
+  "build_run": 34188099424,
+  "publish_run": 34189463277,
+  "published_at": "2026-09-08T05:08:29Z",
+  "files": [
+    {
+      "name": "neatxlsx-0.2.1-cp311-abi3-macosx_10_12_x86_64.whl",
+      "sha256": "65dc3264590f0bc6ff1568031cd31594a441ab91b8faee4364bb750ca007483c"
+    },
+    {
+      "name": "neatxlsx-0.2.1-cp311-abi3-macosx_11_0_arm64.whl",
+      "sha256": "f9d72b20f101f7c7deb94c127cd7555eea7567d59d835e40f4c1e361f5650fb7"
+    },
+    {
+      "name": "neatxlsx-0.2.1-cp311-abi3-manylinux_2_28_aarch64.whl",
+      "sha256": "329f89851835458bd0f34b96f317837eb3829c4165cd0c0c0ea935306069d2f8"
+    },
+    {
+      "name": "neatxlsx-0.2.1-cp311-abi3-manylinux_2_28_x86_64.whl",
+      "sha256": "eed1fc963332b87c95ddb008b3a7b7d01a5ef32c1baa911875d9e56d995dd8a3"
+    },
+    {
+      "name": "neatxlsx-0.2.1-cp311-abi3-win_amd64.whl",
+      "sha256": "71fd5177af5354148c745f563c5cb2b2455ad5f9ecfa222222036811f00db3fe"
+    },
+    {
+      "name": "neatxlsx-0.2.1.tar.gz",
+      "sha256": "77aef84e184e321595f45058452c2ceaaab7054fed118af01b0c9bc724c8580b"
+    }
+  ],
+  "public_smoke": {
+    "version": "0.2.1",
+    "polars": "1.43.1",
+    "module": "/tmp/neatxlsx-021-public-install/lib/python3.13/site-packages/neatxlsx/__init__.py",
+    "bridge": 6,
+    "build": "release",
+    "results": [
+      {
+        "autofit": "none",
+        "xlsx_readback": "passed"
+      },
+      {
+        "autofit": "header",
+        "xlsx_readback": "passed"
+      },
+      {
+        "autofit": "body",
+        "xlsx_readback": "passed"
+      },
+      {
+        "autofit": "all",
+        "xlsx_readback": "passed"
+      }
+    ],
+    "dependency_provenance": "Polars 1.43.1 copied from locally validated environment; neatxlsx installed from cached PyPI download"
+  },
+  "windows_excel": {
+    "version": "16.0.20326.20132",
+    "observer": "user",
+    "zip64_open": "normal",
+    "original_display": "normal",
+    "edited_column_width": "automatically widened",
+    "save_reopen": "normal"
+  },
+  "performance": "original budgets unmet; observed costs explicitly accepted by user",
+  "manifest_retrieval": "artifact ZIP range retrieval and CRC verification; public distribution digests matched manifest"
+}
