@@ -1,0 +1,31 @@
+{
+  "source_id": "ab843776df868033",
+  "candidate_python": "recorded in report.md provenance",
+  "neatxlsx_module": "recorded in report.md provenance",
+  "default_zip64": {
+    "path": "display-autofit-acceptance.xlsx",
+    "sha256": "b2e70bba990c70defb35e1a2e7239be5a6bd687ec59300c7c685922be0ce745c"
+  },
+  "nonzip64": {
+    "path": "display-autofit-acceptance-nonzip64.xlsx",
+    "sha256": "5db45a7f60371663c29ca4651c0016d67a7d63c9df42711e6a781b289af55488"
+  },
+  "covered": [
+    "Latin W/i",
+    "Chinese",
+    "Japanese 日本語の列幅検証",
+    "Korean",
+    "fullwidth",
+    "emoji",
+    "number/time",
+    "missing",
+    "bounds",
+    "sampling",
+    "merged header",
+    "bestFit"
+  ],
+  "not_covered": [
+    "real Excel-limit pagination",
+    "Windows Excel bestFit edit"
+  ]
+}

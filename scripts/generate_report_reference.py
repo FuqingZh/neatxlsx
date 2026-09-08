@@ -29,6 +29,7 @@ from tests.reference_cases import (  # noqa: E402
 from tests.reference_manifest import (  # noqa: E402
     BASELINE_PROVENANCE,
     manifest_from_workbook,
+    v5_compatibility_projection,
 )
 
 
@@ -125,13 +126,18 @@ def generate_scenario(
             f"Missing expected fixture {expected_path}; rerun with --accept."
         )
     else:
-        expected = expected_path.read_text(encoding="utf-8").splitlines(keepends=True)
-        actual = actual_path.read_text(encoding="utf-8").splitlines(keepends=True)
-        if expected != actual:
+        expected = json.loads(expected_path.read_text(encoding="utf-8"))
+        expected_lines = json.dumps(
+            v5_compatibility_projection(expected), indent=2, sort_keys=True
+        ).splitlines(keepends=True)
+        actual_lines = json.dumps(
+            v5_compatibility_projection(manifest), indent=2, sort_keys=True
+        ).splitlines(keepends=True)
+        if expected_lines != actual_lines:
             diff = "".join(
                 difflib.unified_diff(
-                    expected,
-                    actual,
+                    expected_lines,
+                    actual_lines,
                     fromfile=str(expected_path),
                     tofile=str(actual_path),
                 )

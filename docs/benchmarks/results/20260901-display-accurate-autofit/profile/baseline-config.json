@@ -1,0 +1,15 @@
+{
+  "block": null,
+  "checkout_root": "/tmp/neatxlsx-display-autofit-eval/baseline-single-pass",
+  "fixture_path": "/tmp/neatxlsx-display-autofit-eval/results/huge-single-pass-vs-ab843776df868033-clean1/fixtures/rows-50000-numeric-40-text-20.parquet",
+  "output_contract": "worksheet-cols-only",
+  "output_path": "/tmp/neatxlsx-display-autofit-eval/profiles/display-autofit-ab843776df868033/baseline.xlsx",
+  "pair_id": null,
+  "position": null,
+  "result_path": "/tmp/neatxlsx-display-autofit-eval/profiles/display-autofit-ab843776df868033/baseline-result.json",
+  "run_id": "display-autofit-profile-baseline",
+  "scenario": {"autofit_max_rows": null, "chunk_size": 8192, "input_kind": "parquet_lazyframe", "n_numeric_cols": 40, "n_rows": 50000, "n_text_cols": 20, "name": "huge_wide_parquet_lazyframe_body_full_scan", "rule_autofit_columns": "body", "should_autofit_columns": true},
+  "scenario_name": "huge_wide_parquet_lazyframe_body_full_scan",
+  "variant": "baseline",
+  "warmup": false
+}

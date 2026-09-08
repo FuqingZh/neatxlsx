@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import copy
 import math
 import xml.etree.ElementTree as ET
 import zipfile
@@ -28,6 +29,66 @@ _MAIN_NS = "http://schemas.openxmlformats.org/spreadsheetml/2006/main"
 _DOCUMENT_REL_NS = "http://schemas.openxmlformats.org/officeDocument/2006/relationships"
 _PACKAGE_REL_NS = "http://schemas.openxmlformats.org/package/2006/relationships"
 _NS = {"m": _MAIN_NS, "r": _DOCUMENT_REL_NS, "pr": _PACKAGE_REL_NS}
+
+
+def v5_compatibility_projection(manifest: dict[str, Any]) -> dict[str, Any]:
+    """Project a full manifest onto the immutable v5 compatibility contract.
+
+    Display-accurate v6 autofit intentionally changes rendered column widths
+    and adds ``bestFit``. All other worksheet, OOXML, report, style, and
+    sentinel fields remain part of the v5 oracle. Grouped OOXML column ranges
+    are expanded to one entry per index so a producer changing grouping cannot
+    hide a moved column, style, hidden state, or ``customWidth`` change.
+    """
+    projected = copy.deepcopy(manifest)
+    if projected.get("kind") != "workbook":
+        return projected
+
+    for worksheet in projected.get("worksheets", []):
+        worksheet.pop("widths", None)
+
+    ooxml = projected.get("ooxml")
+    if not isinstance(ooxml, dict):
+        return projected
+    worksheets = ooxml.get("worksheets")
+    if not isinstance(worksheets, list):
+        return projected
+    for worksheet in worksheets:
+        columns = worksheet.get("columns")
+        if not isinstance(columns, list):
+            continue
+        canonical_columns: list[dict[str, str]] = []
+        for column in columns:
+            if not isinstance(column, dict):
+                canonical_columns.append(column)
+                continue
+            normalized = {
+                key: value
+                for key, value in column.items()
+                if key not in {"width", "bestFit"}
+            }
+            try:
+                start = int(normalized["min"])
+                end = int(normalized["max"])
+            except (KeyError, TypeError, ValueError):
+                canonical_columns.append(normalized)
+                continue
+            if start > end:
+                canonical_columns.append(normalized)
+                continue
+            for index in range(start, end + 1):
+                canonical_columns.append(
+                    {**normalized, "min": str(index), "max": str(index)}
+                )
+        worksheet["columns"] = sorted(
+            canonical_columns,
+            key=lambda column: (
+                int(column.get("min", "0")) if isinstance(column, dict) else 0,
+                int(column.get("max", "0")) if isinstance(column, dict) else 0,
+                tuple(sorted(column.items())) if isinstance(column, dict) else (),
+            ),
+        )
+    return projected
 
 
 def _canonical_value(value: Any) -> Any:

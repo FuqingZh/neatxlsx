@@ -6,7 +6,7 @@ from pathlib import Path
 import neatxlsx as nx
 import pytest
 from reference_cases import build_reference_case, scenario_ids
-from reference_manifest import manifest_from_workbook
+from reference_manifest import manifest_from_workbook, v5_compatibility_projection
 
 ROOT = Path(__file__).parents[2]
 FIXTURE_DIR = ROOT / "tests" / "fixtures" / "report-reference"
@@ -29,7 +29,8 @@ def test_reference_workbook_matches_manifest(tmp_path: Path, scenario_id: str) -
             workbook.write_sheet(sheet.data, sheet.name, **sheet.kwargs)
         reports = workbook.report()
 
-    assert manifest_from_workbook(output, case, reports) == expected
+    actual = manifest_from_workbook(output, case, reports)
+    assert v5_compatibility_projection(actual) == v5_compatibility_projection(expected)
 
 
 def test_split_planning_manifest_is_compact_and_columns_first() -> None:

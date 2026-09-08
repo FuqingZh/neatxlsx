@@ -1,10 +1,12 @@
 //! Canonical one-pass RecordBatch XLSX writing.
 
 use std::collections::{BTreeMap, BTreeSet};
+use std::rc::Rc;
 
 use arrow::array::Array as ArrowArray;
 use arrow::record_batch::RecordBatchT;
-use rust_xlsxwriter::{Format, Workbook};
+use rust_xlsxwriter::{Format, Workbook, cell_autofit_width};
+use ssfmt::{FormatOptions, NumberFormat};
 
 use crate::constant::{NCOLS_SHEET_MAX, NROWS_SHEET_MAX};
 use crate::spec::{
@@ -41,10 +43,114 @@ struct XlsxSheetRuntime {
     sheet_slice: SheetSlice,
     data_formats_by_col: Vec<Format>,
     scientific_formats_by_col: Vec<Format>,
+    data_width_formats_by_col: Vec<WidthFormat>,
+    scientific_width_formats_by_col: Vec<WidthFormat>,
     numeric_cols_idx: BTreeSet<usize>,
     integer_cols_idx: BTreeSet<usize>,
     decimal_cols_idx: BTreeSet<usize>,
     is_decimal_explicit: bool,
+}
+
+/// Parsed display format paired with the exact `Format` selected for a cell.
+#[derive(Debug, Clone)]
+enum WidthFormat {
+    /// No number-format string was selected for this column.
+    Plain,
+    /// A parsed Excel number format reused for every sampled cell in the column.
+    ExcelNumberFormat(Rc<NumberFormat>),
+    /// The selected format isn't supported by `ssfmt`; retain legacy estimation.
+    Fallback,
+}
+
+/// Per-write cache for parsed and unsupported number formats.
+#[derive(Default)]
+struct DisplayWidthEstimator {
+    parsed_formats: BTreeMap<String, Option<Rc<NumberFormat>>>,
+    format_options: FormatOptions,
+}
+
+impl DisplayWidthEstimator {
+    fn width_format(&mut self, patch: &crate::spec::CellFormatPatch) -> WidthFormat {
+        let code = patch.num_format.as_deref().unwrap_or("General");
+        let parsed = self
+            .parsed_formats
+            .entry(code.to_string())
+            .or_insert_with(|| NumberFormat::parse(code).ok().map(Rc::new));
+        parsed.as_ref().map_or(WidthFormat::Fallback, |format| {
+            WidthFormat::ExcelNumberFormat(Rc::clone(format))
+        })
+    }
+
+    fn width_pixels(
+        &mut self,
+        cell: &NormalizedCell,
+        width_format: &WidthFormat,
+        should_keep_missing_values: bool,
+        value_policy: &XlsxValuePolicy,
+    ) -> u16 {
+        let display = match (&cell.value, width_format) {
+            (crate::spec::CellValue::String(value), _) => Some(value.as_str()),
+            (crate::spec::CellValue::Boolean(value), _) => {
+                Some(if *value { "TRUE" } else { "FALSE" })
+            }
+            (crate::spec::CellValue::Number(value), WidthFormat::ExcelNumberFormat(format)) => {
+                return match format.try_format(*value, &self.format_options) {
+                    Ok(display) => measured_east_asian_display_width_pixels(&display),
+                    Err(_) => legacy_width_to_pixels(
+                        cell.estimated_width(should_keep_missing_values, value_policy),
+                    ),
+                };
+            }
+            (crate::spec::CellValue::Blank, _) if should_keep_missing_values => {
+                Some(value_policy.missing_value_str.as_str())
+            }
+            _ => None,
+        };
+        display.map_or_else(
+            || {
+                legacy_width_to_pixels(
+                    cell.estimated_width(should_keep_missing_values, value_policy),
+                )
+            },
+            measured_east_asian_display_width_pixels,
+        )
+    }
+}
+
+/// Measure display text with the upstream Calibri 11 metric plus the narrow
+/// East Asian floor measured against LibreOffice 6.4 bounding boxes.
+///
+/// This deliberately isn't a general CJK or Unicode-width implementation. It
+/// applies only to the scalar ranges covered by that measurement; emoji,
+/// accented Latin, CJK extensions, and compatibility ideographs retain the
+/// upstream generic non-ASCII width.
+fn measured_east_asian_display_width_pixels(text: &str) -> u16 {
+    let adjustment = text.chars().fold(0_u16, |pixels, character| {
+        if is_measured_east_asian_scalar(character) {
+            pixels.saturating_add(4)
+        } else {
+            pixels
+        }
+    });
+    cell_autofit_width(text).saturating_add(adjustment)
+}
+
+fn is_measured_east_asian_scalar(character: char) -> bool {
+    matches!(
+        character as u32,
+        0x3000..=0x303F
+            | 0x3040..=0x30FF
+            | 0x4E00..=0x9FFF
+            | 0xAC00..=0xD7AF
+            | 0xFF01..=0xFF60
+    )
+}
+
+fn legacy_width_to_pixels(width: usize) -> u16 {
+    (width as u32)
+        .saturating_mul(7)
+        .saturating_add(5)
+        .min(u32::from(u16::MAX)) as u16
 }
 
 struct XlsxSinglePassPlan {
@@ -61,8 +167,15 @@ struct XlsxSinglePassPlan {
 struct LogicalAutofitTracker {
     mode: AutofitMode,
     max_rows: Option<usize>,
-    header_widths_by_col: Vec<usize>,
-    body_widths_by_col: Vec<usize>,
+    header_widths_by_col: Vec<u16>,
+    body_widths_by_col: Vec<u16>,
+}
+
+struct LogicalAutofitObservation<'a> {
+    row_abs: usize,
+    col_abs: usize,
+    cell: &'a NormalizedCell,
+    width_format: &'a WidthFormat,
 }
 
 impl LogicalAutofitTracker {
@@ -70,8 +183,8 @@ impl LogicalAutofitTracker {
         width: usize,
         header_grid: &[Vec<String>],
         policy: &AutofitPolicy,
-        should_keep_missing_values: bool,
-        value_policy: &XlsxValuePolicy,
+        _should_keep_missing_values: bool,
+        _value_policy: &XlsxValuePolicy,
     ) -> Self {
         let mut tracker = Self {
             mode: policy.mode,
@@ -82,9 +195,8 @@ impl LogicalAutofitTracker {
         if matches!(tracker.mode, AutofitMode::Header | AutofitMode::All) {
             for row in header_grid {
                 for (col_abs, value) in row.iter().enumerate() {
-                    let normalized = NormalizedCell::from_header(value.clone());
                     tracker.header_widths_by_col[col_abs] = tracker.header_widths_by_col[col_abs]
-                        .max(normalized.estimated_width(should_keep_missing_values, value_policy));
+                        .max(measured_east_asian_display_width_pixels(value));
                 }
             }
         }
@@ -93,19 +205,28 @@ impl LogicalAutofitTracker {
 
     fn observe(
         &mut self,
-        row_abs: usize,
-        col_abs: usize,
-        cell: &NormalizedCell,
+        observation: LogicalAutofitObservation<'_>,
+        estimator: &mut Option<DisplayWidthEstimator>,
         should_keep_missing_values: bool,
         value_policy: &XlsxValuePolicy,
     ) {
         if !matches!(self.mode, AutofitMode::Body | AutofitMode::All)
-            || self.max_rows.is_some_and(|max_rows| row_abs >= max_rows)
+            || self
+                .max_rows
+                .is_some_and(|max_rows| observation.row_abs >= max_rows)
         {
             return;
         }
-        self.body_widths_by_col[col_abs] = self.body_widths_by_col[col_abs]
-            .max(cell.estimated_width(should_keep_missing_values, value_policy));
+        let estimator = estimator
+            .as_mut()
+            .expect("body autofit must initialize its display width estimator");
+        self.body_widths_by_col[observation.col_abs] = self.body_widths_by_col[observation.col_abs]
+            .max(estimator.width_pixels(
+                observation.cell,
+                observation.width_format,
+                should_keep_missing_values,
+                value_policy,
+            ));
     }
 }
 
@@ -272,6 +393,7 @@ impl XlsxWriter {
             plan.should_keep_missing_values,
             &self.options_write.value_policy,
         );
+        let mut width_estimator = None;
         let mut registry = PhysicalSheetRegistry::default();
         let mut runtime_sheets: Vec<XlsxSinglePassRuntimeSheet> = vec![];
         let mut active_row_start: Option<usize> = None;
@@ -292,6 +414,7 @@ impl XlsxWriter {
             &mut runtime_sheets,
             &mut registry,
             &mut tracker,
+            &mut width_estimator,
             &mut report,
         )?;
         rows_written += first_batch.len();
@@ -311,6 +434,7 @@ impl XlsxWriter {
                 &mut runtime_sheets,
                 &mut registry,
                 &mut tracker,
+                &mut width_estimator,
                 &mut report,
             )?;
             rows_written += batch.len();
@@ -327,6 +451,7 @@ impl XlsxWriter {
                 &mut occupied_temporary_names,
                 &mut runtime_sheets,
                 &mut registry,
+                &mut width_estimator,
             )?;
         }
 
@@ -433,6 +558,7 @@ impl XlsxWriter {
         runtime_sheets: &mut Vec<XlsxSinglePassRuntimeSheet>,
         registry: &mut PhysicalSheetRegistry,
         tracker: &mut LogicalAutofitTracker,
+        width_estimator: &mut Option<DisplayWidthEstimator>,
         report: &mut XlsxReport,
     ) -> Result<(), String> {
         let batch_col_names = batch
@@ -459,6 +585,7 @@ impl XlsxWriter {
                 occupied_temporary_names,
                 runtime_sheets,
                 registry,
+                width_estimator,
             )?;
 
             for runtime in runtime_sheets.iter() {
@@ -473,6 +600,7 @@ impl XlsxWriter {
                     &options.policy_scientific,
                     &options.value_plans,
                     tracker,
+                    width_estimator,
                     report,
                 )?;
                 let overlap_end = batch_end.min(runtime.runtime.sheet_slice.row_end_exclusive);
@@ -498,6 +626,7 @@ impl XlsxWriter {
         occupied_temporary_names: &mut BTreeSet<String>,
         runtime_sheets: &mut Vec<XlsxSinglePassRuntimeSheet>,
         registry: &mut PhysicalSheetRegistry,
+        width_estimator: &mut Option<DisplayWidthEstimator>,
     ) -> Result<(), String> {
         if active_row_start.is_some_and(|value| value == row_part_start) {
             return Ok(());
@@ -563,14 +692,37 @@ impl XlsxWriter {
                 .iter()
                 .map(create_rust_xlsx_format)
                 .collect::<Vec<_>>();
-            let scientific_formats_by_col = plan_scientific_formats(
+            let scientific_format_patches = plan_scientific_formats(
                 column_format_plan.fmts_by_col.len(),
                 &self.fmt_scientific,
                 &column_formats_slice,
-            )
-            .iter()
-            .map(create_rust_xlsx_format)
-            .collect::<Vec<_>>();
+            );
+            let scientific_formats_by_col = scientific_format_patches
+                .iter()
+                .map(create_rust_xlsx_format)
+                .collect::<Vec<_>>();
+            let (data_width_formats_by_col, scientific_width_formats_by_col) = if matches!(
+                options.policy_autofit.mode,
+                AutofitMode::Body | AutofitMode::All
+            ) {
+                let estimator = width_estimator.get_or_insert_default();
+                (
+                    column_format_plan
+                        .fmts_by_col
+                        .iter()
+                        .map(|patch| estimator.width_format(patch))
+                        .collect::<Vec<_>>(),
+                    scientific_format_patches
+                        .iter()
+                        .map(|patch| estimator.width_format(patch))
+                        .collect::<Vec<_>>(),
+                )
+            } else {
+                (
+                    vec![WidthFormat::Plain; data_formats_by_col.len()],
+                    vec![WidthFormat::Plain; scientific_formats_by_col.len()],
+                )
+            };
             let fmt_headers = plan_header_formats(
                 &self.fmt_header,
                 &options.header_row_formats,
@@ -621,6 +773,8 @@ impl XlsxWriter {
                     },
                     data_formats_by_col,
                     scientific_formats_by_col,
+                    data_width_formats_by_col,
+                    scientific_width_formats_by_col,
                     numeric_cols_idx: cols_idx_numeric_slice.iter().copied().collect(),
                     integer_cols_idx: cols_idx_integer_slice.iter().copied().collect(),
                     decimal_cols_idx: cols_idx_decimal_slice.iter().copied().collect(),
@@ -778,6 +932,7 @@ fn write_arrow_record_batch_to_runtime_sheet(
     policy_scientific: &ScientificPolicy,
     value_plans: &[crate::spec::ColumnValuePlan],
     tracker: &mut LogicalAutofitTracker,
+    width_estimator: &mut Option<DisplayWidthEstimator>,
     report: &mut XlsxReport,
 ) -> Result<(), String> {
     let batch_start = row_offset;
@@ -820,18 +975,28 @@ fn write_arrow_record_batch_to_runtime_sheet(
             {
                 add_conversion_warning(report, col_abs, &plan.name, warning);
             }
+            let (fmt_cell, width_format) = if normalized.should_use_scientific {
+                (
+                    &runtime.scientific_formats_by_col[col_idx],
+                    &runtime.scientific_width_formats_by_col[col_idx],
+                )
+            } else {
+                (
+                    &runtime.data_formats_by_col[col_idx],
+                    &runtime.data_width_formats_by_col[col_idx],
+                )
+            };
             tracker.observe(
-                row_abs,
-                col_abs,
-                &normalized,
+                LogicalAutofitObservation {
+                    row_abs,
+                    col_abs,
+                    cell: &normalized,
+                    width_format,
+                },
+                width_estimator,
                 should_keep_missing_values,
                 value_policy,
             );
-            let fmt_cell = if normalized.should_use_scientific {
-                &runtime.scientific_formats_by_col[col_idx]
-            } else {
-                &runtime.data_formats_by_col[col_idx]
-            };
             write_cell_with_format(
                 worksheet,
                 header_row_count + row_local_in_sheet,
@@ -960,19 +1125,216 @@ mod tests {
         let value_policy = XlsxValuePolicy::default();
         let mut tracker =
             LogicalAutofitTracker::new(1, &[vec!["header".into()]], &policy, false, &value_policy);
+        let mut estimator = Some(DisplayWidthEstimator::default());
+        let width_format = WidthFormat::Plain;
 
-        tracker.observe(0, 0, &normalized("a"), false, &value_policy);
-        tracker.observe(1, 0, &normalized("included"), false, &value_policy);
         tracker.observe(
-            2,
-            0,
-            &normalized("excluded-and-longer"),
+            LogicalAutofitObservation {
+                row_abs: 0,
+                col_abs: 0,
+                cell: &normalized("a"),
+                width_format: &width_format,
+            },
+            &mut estimator,
+            false,
+            &value_policy,
+        );
+        tracker.observe(
+            LogicalAutofitObservation {
+                row_abs: 1,
+                col_abs: 0,
+                cell: &normalized("included"),
+                width_format: &width_format,
+            },
+            &mut estimator,
+            false,
+            &value_policy,
+        );
+        tracker.observe(
+            LogicalAutofitObservation {
+                row_abs: 2,
+                col_abs: 0,
+                cell: &normalized("excluded-and-longer"),
+                width_format: &width_format,
+            },
+            &mut estimator,
             false,
             &value_policy,
         );
 
         assert_eq!(tracker.header_widths_by_col, [0]);
-        assert_eq!(tracker.body_widths_by_col, [8]);
+        assert_eq!(tracker.body_widths_by_col, [cell_autofit_width("included")]);
+    }
+
+    #[test]
+    fn measured_east_asian_display_width_adjusts_only_the_evidence_ranges() {
+        let text = "A中あ한Ａ。😀é";
+        assert_eq!(
+            measured_east_asian_display_width_pixels(text),
+            cell_autofit_width(text).saturating_add(5 * 4)
+        );
+        for excluded in ["😀", "é", "𠀀", "豈"] {
+            assert_eq!(
+                measured_east_asian_display_width_pixels(excluded),
+                cell_autofit_width(excluded),
+                "{excluded:?} must retain the upstream non-ASCII metric"
+            );
+        }
+    }
+
+    #[test]
+    fn measured_east_asian_scalar_ranges_have_exact_boundaries() {
+        for codepoint in [
+            0x3000, 0x303F, 0x3040, 0x30FF, 0x4E00, 0x9FFF, 0xAC00, 0xD7AF, 0xFF01, 0xFF60,
+        ] {
+            let character = char::from_u32(codepoint).expect("test codepoint must be valid");
+            assert!(
+                is_measured_east_asian_scalar(character),
+                "U+{codepoint:04X}"
+            );
+        }
+        for codepoint in [
+            0x2FFF, 0x3100, 0x3400, 0x4DFF, 0xA000, 0xABFF, 0xD7B0, 0xFF00, 0xFF61, 0xF900, 0x20000,
+        ] {
+            let character = char::from_u32(codepoint).expect("test codepoint must be valid");
+            assert!(
+                !is_measured_east_asian_scalar(character),
+                "U+{codepoint:04X} must remain excluded"
+            );
+        }
+    }
+
+    #[test]
+    fn header_and_body_share_the_measured_east_asian_display_helper() {
+        let policy = AutofitPolicy {
+            mode: AutofitMode::All,
+            ..AutofitPolicy::default()
+        };
+        let value_policy = XlsxValuePolicy::default();
+        let mut tracker =
+            LogicalAutofitTracker::new(1, &[vec!["中".to_string()]], &policy, false, &value_policy);
+        let mut estimator = Some(DisplayWidthEstimator::default());
+        let body_cell = normalized("中");
+        let width_format = WidthFormat::Plain;
+        tracker.observe(
+            LogicalAutofitObservation {
+                row_abs: 0,
+                col_abs: 0,
+                cell: &body_cell,
+                width_format: &width_format,
+            },
+            &mut estimator,
+            false,
+            &value_policy,
+        );
+        let expected = measured_east_asian_display_width_pixels("中");
+        assert_eq!(tracker.header_widths_by_col, [expected]);
+        assert_eq!(tracker.body_widths_by_col, [expected]);
+    }
+
+    #[test]
+    fn display_width_estimator_uses_general_and_final_number_format() {
+        let mut estimator = DisplayWidthEstimator::default();
+        let numeric = NormalizedCell {
+            value: CellValue::Number(1234.5),
+            warning: None,
+            is_numeric_col: true,
+            is_integer_col: false,
+            should_use_scientific: false,
+        };
+        let general = estimator.width_format(&CellFormatPatch::default());
+        assert_eq!(
+            estimator.width_pixels(&numeric, &general, false, &XlsxValuePolicy::default()),
+            cell_autofit_width("1234.5")
+        );
+
+        let decimal = estimator.width_format(&CellFormatPatch {
+            num_format: Some("#,##0.00".to_string()),
+            ..Default::default()
+        });
+        assert_eq!(
+            estimator.width_pixels(&numeric, &decimal, false, &XlsxValuePolicy::default()),
+            cell_autofit_width("1,234.50")
+        );
+
+        for (value, code, display) in [
+            (1.2345e20, "0.00E+00", "1.23E+20"),
+            (46031.0, "yyyy-mm-dd", "2026-01-09"),
+            (0.5, "hh:mm:ss.000", "12:00:00.000"),
+            (1.5, "[h]:mm:ss.000", "36:00:00.000"),
+        ] {
+            let format = estimator.width_format(&CellFormatPatch {
+                num_format: Some(code.to_string()),
+                ..Default::default()
+            });
+            let cell = NormalizedCell {
+                value: CellValue::Number(value),
+                ..numeric.clone()
+            };
+            assert_eq!(
+                estimator.width_pixels(&cell, &format, false, &XlsxValuePolicy::default()),
+                cell_autofit_width(display),
+                "{code}"
+            );
+        }
+
+        let east_asian_literal = estimator.width_format(&CellFormatPatch {
+            num_format: Some("\"中\"0".to_string()),
+            ..Default::default()
+        });
+        let literal_cell = NormalizedCell {
+            value: CellValue::Number(12.0),
+            ..numeric
+        };
+        assert_eq!(
+            estimator.width_pixels(
+                &literal_cell,
+                &east_asian_literal,
+                false,
+                &XlsxValuePolicy::default()
+            ),
+            measured_east_asian_display_width_pixels("中12")
+        );
+    }
+
+    #[test]
+    fn display_width_estimator_uses_missing_value_text_and_parse_fallback() {
+        let value_policy = XlsxValuePolicy {
+            missing_value_str: "MISSING".to_string(),
+            ..Default::default()
+        };
+        let blank = NormalizedCell {
+            value: CellValue::Blank,
+            warning: None,
+            is_numeric_col: false,
+            is_integer_col: false,
+            should_use_scientific: false,
+        };
+        let mut estimator = DisplayWidthEstimator::default();
+        assert_eq!(
+            estimator.width_pixels(&blank, &WidthFormat::Plain, true, &value_policy),
+            cell_autofit_width("MISSING")
+        );
+        let east_asian_missing_policy = XlsxValuePolicy {
+            missing_value_str: "中".to_string(),
+            ..Default::default()
+        };
+        assert_eq!(
+            estimator.width_pixels(
+                &blank,
+                &WidthFormat::Plain,
+                true,
+                &east_asian_missing_policy
+            ),
+            measured_east_asian_display_width_pixels("中")
+        );
+        assert!(matches!(
+            estimator.width_format(&CellFormatPatch {
+                num_format: Some("[unterminated".to_string()),
+                ..Default::default()
+            }),
+            WidthFormat::Fallback
+        ));
     }
 
     #[test]

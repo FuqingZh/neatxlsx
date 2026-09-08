@@ -1,0 +1,15 @@
+build_profile=release
+python_path=/tmp/neatxlsx-display-autofit-eval/candidate-cjk-ab843776df868033/.venv/bin/python
+package_path=/tmp/neatxlsx-display-autofit-eval/candidate-cjk-ab843776df868033/python/neatxlsx/__init__.py
+package_version=0.2.0
+bridge_abi=6
+native_path=/tmp/neatxlsx-display-autofit-eval/candidate-cjk-ab843776df868033/python/neatxlsx/_native.abi3.so
+native_sha256=449bbe218c8c33f092a51bdf6db04914751327b2b58f98ee7136898f989f72e1
+release_native_path=/tmp/neatxlsx-display-autofit-eval/candidate-cjk-ab843776df868033/target/release/lib_native.so
+release_native_sha256=449bbe218c8c33f092a51bdf6db04914751327b2b58f98ee7136898f989f72e1
+cargo_lock_sha256=d31b3f4f7c3604d1824a4a61362d0bd075929555f034efbaa40e78355f84d00f
+benchmark_worker_path=/tmp/neatxlsx-display-autofit-eval/candidate-cjk-ab843776df868033/scripts/benchmark_xlsx_writer.py
+benchmark_worker_sha256=a28d4a8cecd3ff16a9457320675639cd1b03f034e6c8e69c049672c11389633e
+source_snapshot_archive_sha256=ab843776df868033b868210e907f8bdfb1f5a130e4d2e5f1d8ffbad43c677a6c
+sync_command=pdm sync -G dev
+build_command=pdm run develop --release

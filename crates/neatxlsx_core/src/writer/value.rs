@@ -311,16 +311,6 @@ pub(super) struct NormalizedCell {
 }
 
 impl NormalizedCell {
-    pub(super) fn from_header(value: String) -> Self {
-        Self {
-            value: CellValue::String(value),
-            warning: None,
-            is_numeric_col: false,
-            is_integer_col: false,
-            should_use_scientific: false,
-        }
-    }
-
     pub(super) fn estimated_width(
         &self,
         should_keep_missing_values: bool,

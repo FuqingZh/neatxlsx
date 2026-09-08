@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import importlib.util
+import json
 from pathlib import Path
 
 import pytest
@@ -32,6 +33,11 @@ def test_generator_does_not_replace_fixture_without_accept(tmp_path: Path) -> No
     )
 
     assert fixture.read_bytes() == before
+    actual = json.loads(
+        (tmp_path / "output" / "ordinary-scientific.json").read_text(encoding="utf-8")
+    )
+    assert actual["worksheets"][0]["widths"]
+    assert actual["ooxml"]["worksheets"][0]["columns"][0]["width"]
 
 
 def test_direct_accept_validates_frozen_baseline_before_writing(

@@ -11,3 +11,4 @@ publish = false
 arrow = { package = "polars-arrow", version = "0.51.0", default-features = false }
 chrono = { version = "0.4.43", default-features = false }
 rust_xlsxwriter = { version = "0.90.2", features = ["constant_memory"] }
+ssfmt = { version = "0.1.2", default-features = false }

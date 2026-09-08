@@ -16,7 +16,7 @@ from typing import Any, Literal
 import benchmark_xlsx_writer as benchmark
 
 Variant = Literal["baseline", "candidate"]
-VerdictPolicy = Literal["single-pass", "zlib"]
+VerdictPolicy = Literal["single-pass", "zlib", "display-autofit"]
 
 
 @dataclass(frozen=True)
@@ -67,7 +67,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--include-computed", action="store_true")
     parser.add_argument(
         "--verdict-policy",
-        choices=("single-pass", "zlib"),
+        choices=("single-pass", "zlib", "display-autofit"),
         default="single-pass",
     )
     parser.add_argument("--allow-identical-native", action="store_true")
@@ -126,14 +126,21 @@ def build_comparison_scenarios(
         if scenario.input_kind == "parquet_lazyframe"
         and scenario.rule_autofit_columns == "all"
     )
+    body_lazy = next(
+        scenario
+        for scenario in scenarios
+        if scenario.input_kind == "parquet_lazyframe"
+        and scenario.rule_autofit_columns == "body"
+    )
     if include_full_scan:
-        scenarios.append(
-            replace(
-                all_lazy,
-                name=f"{all_lazy.name}_full_scan",
-                autofit_max_rows=None,
+        for scenario in (body_lazy, all_lazy):
+            scenarios.append(
+                replace(
+                    scenario,
+                    name=f"{scenario.name}_full_scan",
+                    autofit_max_rows=None,
+                )
             )
-        )
     if include_computed:
         scenarios.append(
             replace(
@@ -303,6 +310,7 @@ def invoke_worker(
     polars_threads: int,
     timeout_seconds: float,
     keep_workbook: bool,
+    output_contract: Literal["exact", "worksheet-cols-only"],
 ) -> dict[str, Any]:
     config_dir = result_dir / "configs"
     worker_dir = result_dir / "workers"
@@ -319,6 +327,7 @@ def invoke_worker(
         "fixture_path": str(fixture_path) if fixture_path else None,
         "output_path": str(workbook_path),
         "result_path": str(worker_result_path),
+        "output_contract": output_contract,
     }
     _write_json(config_path, config)
 
@@ -368,8 +377,19 @@ def invoke_worker(
     result = json.loads(worker_result_path.read_text(encoding="utf-8"))
     if result["run_id"] != run.run_id or result["variant"] != variant.label:
         raise RuntimeError(f"Worker identity mismatch for {run.run_id}.")
+    for field in ("warmup", "block", "position", "pair_id"):
+        if result.get(field) != getattr(run, field):
+            raise RuntimeError(
+                f"Worker run metadata mismatch for {run.run_id}: {field} expected "
+                f"{getattr(run, field)!r}, got {result.get(field)!r}."
+            )
     if result["scenario"] != asdict(scenario):
         raise RuntimeError(f"Worker scenario mismatch for {run.run_id}.")
+    if result.get("output_contract") != output_contract:
+        raise RuntimeError(
+            f"Worker output contract mismatch for {run.run_id}: expected "
+            f"{output_contract!r}, got {result.get('output_contract')!r}."
+        )
     if not keep_workbook:
         workbook_path.unlink(missing_ok=True)
     return {
@@ -411,7 +431,7 @@ def _member_manifest_equal(
         return [
             {
                 "name": item["name"],
-                "size": item["size"],
+                "comparison_size": item.get("comparison_size", item["size"]),
                 "comparison_sha256": item["comparison_sha256"],
                 "normalization": item["normalization"],
             }
@@ -438,17 +458,25 @@ def analyze_scenario(
         and item["result"]["scenario"]["name"] == scenario.name
     ]
     by_pair: dict[str, dict[str, dict[str, Any]]] = {}
+    duplicate_pair_record = False
     for result in successful:
         pair_id = result["pair_id"]
         if not isinstance(pair_id, str):
             continue
         pair = by_pair.setdefault(pair_id, {})
+        if result["variant"] in pair:
+            duplicate_pair_record = True
         pair[result["variant"]] = result
 
     paired = [
         pair for pair in by_pair.values() if set(pair) == {"baseline", "candidate"}
     ]
-    manifest_equal = all(
+    output_contracts_equal = all(
+        pair["baseline"].get("output_contract", "exact")
+        == pair["candidate"].get("output_contract", "exact")
+        for pair in paired
+    )
+    manifest_equal = output_contracts_equal and all(
         _member_manifest_equal(
             pair["baseline"]["zip_members"], pair["candidate"]["zip_members"]
         )
@@ -487,8 +515,15 @@ def analyze_scenario(
     reason = "insufficient_samples"
     total = metrics.get("total_wall_s")
     write = metrics.get("write_wall_s")
-    enough = all(value >= required_samples for value in samples_by_variant.values())
-    if not manifest_equal:
+    enough = (
+        all(value >= required_samples for value in samples_by_variant.values())
+        and len(paired) >= required_samples
+    )
+    if duplicate_pair_record:
+        verdict, reason = "failed", "duplicate_pair_id"
+    elif not output_contracts_equal:
+        verdict, reason = "failed", "output_contract_mismatch"
+    elif not manifest_equal:
         verdict, reason = "failed", "zip_member_mismatch"
     elif enough and total is not None:
         median = total["median_ratio"]
@@ -504,6 +539,15 @@ def analyze_scenario(
                 verdict, reason = "inconclusive", "zlib_gate_unmet"
         elif scenario.input_kind == "dataframe":
             verdict, reason = "diagnostic", "dataframe_control"
+        elif policy == "display-autofit":
+            if scenario.autofit_max_rows is None:
+                passed = median <= 1.10 and upper <= 1.15
+                verdict = "passed" if passed else "failed"
+                reason = "full_scan_gate_met" if passed else "full_scan_regression"
+            else:
+                passed = upper < 1.03
+                verdict = "passed" if passed else "failed"
+                reason = "display_gate_met" if passed else "display_regression"
         elif scenario.rule_autofit_columns in {"body", "all"}:
             passed = median <= 0.97 and upper < 1.0
             verdict = "passed" if passed else "inconclusive"
@@ -525,12 +569,19 @@ def analyze_scenario(
 
 
 def render_markdown(payload: dict[str, Any]) -> str:
+    acceptance = payload["acceptance_passed"]
+    acceptance_text = (
+        "n/a (non-acceptance override)"
+        if acceptance is None
+        else str(acceptance).lower()
+    )
     lines = [
         "# Interleaved XLSX Comparison",
         "",
         f"- Status: `{payload['status']}`",
         f"- Timestamp: `{payload['timestamp_utc']}`",
         f"- Verdict policy: `{payload['verdict_policy']}`",
+        f"- Acceptance passed: `{acceptance_text}`",
         f"- Order seed: `{payload['order_seed']}`",
         f"- Analysis seed: `{payload['analysis_seed']}`",
         "",
@@ -555,6 +606,38 @@ def render_markdown(payload: dict[str, Any]) -> str:
         ]
     )
     return "\n".join(lines) + "\n"
+
+
+def finalize_comparison(
+    *,
+    out_dir: Path,
+    planned_payload: dict[str, Any],
+    verdict_policy: VerdictPolicy,
+    analysis: list[dict[str, Any]],
+    records: list[dict[str, Any]],
+    worker_failed: bool,
+) -> int:
+    """Write the final comparison payload and return its process exit status."""
+    acceptance_eligible = planned_payload["acceptance_eligible"]
+    if acceptance_eligible:
+        acceptance_passed: bool | None = not worker_failed and all(
+            item["verdict"] in {"passed", "diagnostic"} for item in analysis
+        )
+    else:
+        acceptance_passed = None
+    payload = {
+        **planned_payload,
+        "status": "incomplete" if worker_failed else "complete",
+        "acceptance_passed": acceptance_passed,
+        "verdict_policy": verdict_policy,
+        "analysis": analysis,
+        "raw_record_count": len(records),
+    }
+    _write_json(out_dir / "comparison.json", payload)
+    (out_dir / "comparison.md").write_text(render_markdown(payload), encoding="utf-8")
+    print(out_dir / "comparison.json")
+    print(out_dir / "comparison.md")
+    return 0 if not worker_failed and acceptance_passed is not False else 1
 
 
 def main() -> int:
@@ -664,6 +747,12 @@ def main() -> int:
                 polars_threads=args.polars_threads,
                 timeout_seconds=args.timeout_seconds,
                 keep_workbook=args.keep_workbooks,
+                output_contract=(
+                    "worksheet-cols-only"
+                    if args.verdict_policy == "display-autofit"
+                    and scenario.rule_autofit_columns != "none"
+                    else "exact"
+                ),
             )
             _append_jsonl(raw_path, record)
             records.append(record)
@@ -706,19 +795,14 @@ def main() -> int:
             item["unadjusted_reason"] = item["reason"]
             item["verdict"] = "diagnostic"
             item["reason"] = "non_acceptance_override"
-    status = "incomplete" if failed else "complete"
-    payload = {
-        **planned_payload,
-        "status": status,
-        "verdict_policy": args.verdict_policy,
-        "analysis": analysis,
-        "raw_record_count": len(records),
-    }
-    _write_json(out_dir / "comparison.json", payload)
-    (out_dir / "comparison.md").write_text(render_markdown(payload), encoding="utf-8")
-    print(out_dir / "comparison.json")
-    print(out_dir / "comparison.md")
-    return 1 if failed else 0
+    return finalize_comparison(
+        out_dir=out_dir,
+        planned_payload=planned_payload,
+        verdict_policy=args.verdict_policy,
+        analysis=analysis,
+        records=records,
+        worker_failed=failed,
+    )
 
 
 if __name__ == "__main__":

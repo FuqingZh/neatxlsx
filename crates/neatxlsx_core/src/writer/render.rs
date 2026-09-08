@@ -62,35 +62,55 @@ pub(super) fn inferred_num_formats(plans: &[ColumnValuePlan]) -> Vec<Option<Stri
 pub(super) fn apply_column_widths(
     worksheet: &mut Worksheet,
     policy_autofit: &AutofitPolicy,
-    header_widths_by_col: &[usize],
-    body_widths_by_col: &[usize],
+    header_widths_by_col: &[u16],
+    body_widths_by_col: &[u16],
 ) -> Result<(), String> {
     if matches!(policy_autofit.mode, AutofitMode::None) || header_widths_by_col.is_empty() {
         return Ok(());
     }
-
-    let width_min = usize::max(1, policy_autofit.width_cell_min);
-    let width_max = usize::min(255, usize::max(width_min, policy_autofit.width_cell_max));
-    let width_padding = policy_autofit.width_cell_padding;
 
     for col_idx in 0..header_widths_by_col.len() {
         let width_recorded = match policy_autofit.mode {
             AutofitMode::Header => header_widths_by_col[col_idx],
             AutofitMode::Body => body_widths_by_col[col_idx],
             AutofitMode::All => {
-                usize::max(header_widths_by_col[col_idx], body_widths_by_col[col_idx])
+                u16::max(header_widths_by_col[col_idx], body_widths_by_col[col_idx])
             }
             AutofitMode::None => header_widths_by_col[col_idx],
         };
-        let width_final = usize::min(
-            width_max,
-            usize::max(width_min, width_recorded + width_padding),
-        );
+        let width_final = apply_autofit_pixel_policy(policy_autofit, width_recorded);
         worksheet
-            .set_column_width(cast_col_num(col_idx)?, width_final as f64)
+            .set_column_autofit_width(cast_col_num(col_idx)?, width_final)
             .map_err(format_xlsx_error_text)?;
     }
     Ok(())
+}
+
+fn apply_autofit_pixel_policy(policy_autofit: &AutofitPolicy, recorded: u16) -> u16 {
+    let width_min_chars = policy_autofit.width_cell_min.clamp(1, 255);
+    let width_max_chars = policy_autofit.width_cell_max.clamp(width_min_chars, 255);
+    let width_min = excel_width_to_pixels(width_min_chars);
+    let width_max = excel_width_to_pixels(width_max_chars);
+    // `cell_autofit_width()` already includes Excel's seven-pixel cell padding.
+    // The public padding remains in Excel character units, so it contributes
+    // only the additional max-digit-width pixels here.
+    let width_padding = u32::try_from(policy_autofit.width_cell_padding)
+        .unwrap_or(u32::MAX)
+        .saturating_mul(7)
+        .min(u32::from(u16::MAX)) as u16;
+    recorded
+        .saturating_add(width_padding)
+        .clamp(width_min, width_max)
+}
+
+/// Convert an Excel character-unit column width into the matching Calibri 11
+/// pixel width accepted by `Worksheet::set_column_autofit_width()`.
+pub(super) fn excel_width_to_pixels(width: usize) -> u16 {
+    u32::try_from(width)
+        .unwrap_or(u32::MAX)
+        .saturating_mul(7)
+        .saturating_add(5)
+        .min(u32::from(u16::MAX)) as u16
 }
 
 /// Build per-column base/final format plans for current sheet slice.
@@ -506,11 +526,34 @@ pub(super) fn format_xlsx_error_text(err: XlsxError) -> String {
 #[cfg(test)]
 mod tests {
     use super::{
-        ColumnFormatPlanOptions, plan_column_formats, plan_header_formats, plan_scientific_formats,
+        ColumnFormatPlanOptions, apply_autofit_pixel_policy, excel_width_to_pixels,
+        plan_column_formats, plan_header_formats, plan_scientific_formats,
         slice_column_format_overrides,
     };
     use crate::spec::CellFormatPatch;
     use std::collections::BTreeMap;
+
+    #[test]
+    fn excel_width_pixel_conversion_matches_autofit_column_units() {
+        assert_eq!(excel_width_to_pixels(1), 12);
+        assert_eq!(excel_width_to_pixels(8), 61);
+        assert_eq!(excel_width_to_pixels(60), 425);
+        assert_eq!(excel_width_to_pixels(usize::MAX), u16::MAX);
+    }
+
+    #[test]
+    fn autofit_pixel_policy_clamps_extreme_configuration_without_overflow() {
+        let policy = crate::spec::AutofitPolicy {
+            width_cell_min: usize::MAX,
+            width_cell_max: 0,
+            width_cell_padding: usize::MAX,
+            ..Default::default()
+        };
+        assert_eq!(
+            apply_autofit_pixel_policy(&policy, 0),
+            excel_width_to_pixels(255)
+        );
+    }
 
     #[test]
     fn column_rule_wins_after_inferred_and_workbook_role_formats() {

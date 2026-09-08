@@ -486,6 +486,35 @@ def test_omitted_column_formats_keep_the_original_scientific_style(
     assert font.find("m:b", NS) is None
 
 
+def test_body_autofit_uses_the_selected_scientific_format_for_width(
+    tmp_path: Path,
+) -> None:
+    widths: dict[str, float] = {}
+    for label, num_format in {
+        "compact": "0.0E+0",
+        "expanded": "0.000000000E+00",
+    }.items():
+        output = tmp_path / f"scientific-width-{label}.xlsx"
+        with nx.Workbook(
+            output,
+            scientific_format=nx.Format(num_format=num_format),
+            use_zip64=False,
+        ) as workbook:
+            workbook.write_sheet(
+                pl.LazyFrame({"score": [0.00000001]}),
+                "Data",
+                scientific_notation=nx.ScientificNotation(scope="decimal"),
+                autofit=nx.Autofit(mode="body", min_width=1, padding=0),
+            )
+        with zipfile.ZipFile(output) as archive:
+            worksheet = ET.fromstring(archive.read("xl/worksheets/sheet1.xml"))
+        column = worksheet.find("m:cols/m:col", NS)
+        assert column is not None
+        widths[label] = float(column.attrib["width"])
+
+    assert widths["expanded"] > widths["compact"]
+
+
 @pytest.mark.skipif(
     os.environ.get("NEATXLSX_INCLUDE_LARGE") != "1",
     reason="real Excel-limit pagination runs only in the explicit release gate",

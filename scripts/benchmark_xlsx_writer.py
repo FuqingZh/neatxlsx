@@ -10,6 +10,7 @@ import re
 import statistics
 import sys
 import tempfile
+import xml.etree.ElementTree as ET
 import zipfile
 from collections.abc import Callable
 from dataclasses import asdict, dataclass, replace
@@ -506,28 +507,46 @@ def _sha256_file(path: Path) -> str:
     return digest.hexdigest()
 
 
-def _normalized_zip_member(name: str, data: bytes) -> tuple[bytes, str | None]:
-    if name != "docProps/core.xml":
-        return data, None
-    normalized = re.sub(
-        rb"(<dcterms:(?:created|modified)[^>]*>)[^<]*(</dcterms:(?:created|modified)>)",
-        rb"\1NORMALIZED-UTC\2",
-        data,
-    )
-    return normalized, "core-created-modified-utc"
+def _normalized_zip_member(
+    name: str, data: bytes, *, worksheet_cols_only: bool = False
+) -> tuple[bytes, str | None]:
+    if name == "docProps/core.xml":
+        normalized = re.sub(
+            rb"(<dcterms:(?:created|modified)[^>]*>)[^<]*(</dcterms:(?:created|modified)>)",
+            rb"\1NORMALIZED-UTC\2",
+            data,
+        )
+        return normalized, "core-created-modified-utc"
+    if (
+        worksheet_cols_only
+        and name.startswith("xl/worksheets/")
+        and name.endswith(".xml")
+    ):
+        root = ET.fromstring(data)
+        namespace = "{http://schemas.openxmlformats.org/spreadsheetml/2006/main}"
+        columns = root.find(f"{namespace}cols")
+        if columns is not None:
+            root.remove(columns)
+        return ET.tostring(root, encoding="utf-8"), "worksheet-cols-only"
+    return data, None
 
 
-def build_zip_member_manifest(path_xlsx: Path) -> list[dict[str, Any]]:
+def build_zip_member_manifest(
+    path_xlsx: Path, *, worksheet_cols_only: bool = False
+) -> list[dict[str, Any]]:
     """Hash uncompressed members so compressor changes cannot mask differences."""
     manifest: list[dict[str, Any]] = []
     with zipfile.ZipFile(path_xlsx) as archive:
         for info in sorted(archive.infolist(), key=lambda item: item.filename):
             data = archive.read(info.filename)
-            comparison_data, normalization = _normalized_zip_member(info.filename, data)
+            comparison_data, normalization = _normalized_zip_member(
+                info.filename, data, worksheet_cols_only=worksheet_cols_only
+            )
             manifest.append(
                 {
                     "name": info.filename,
                     "size": len(data),
+                    "comparison_size": len(comparison_data),
                     "sha256": hashlib.sha256(data).hexdigest(),
                     "comparison_sha256": hashlib.sha256(comparison_data).hexdigest(),
                     "normalization": normalization,
@@ -677,7 +696,12 @@ def run_single_worker(config: dict[str, Any]) -> dict[str, Any]:
         expected_rows_total=scenario.n_rows + 1,
         expected_cols_total=scenario.n_numeric_cols + scenario.n_text_cols + 1,
     )
-    manifest = build_zip_member_manifest(output_path)
+    output_contract = config.get("output_contract", "exact")
+    if output_contract not in {"exact", "worksheet-cols-only"}:
+        raise ValueError(f"Unknown output contract: {output_contract!r}")
+    manifest = build_zip_member_manifest(
+        output_path, worksheet_cols_only=output_contract == "worksheet-cols-only"
+    )
     return {
         "run_id": config["run_id"],
         "variant": config["variant"],
@@ -689,6 +713,7 @@ def run_single_worker(config: dict[str, Any]) -> dict[str, Any]:
         "fixture_path": str(fixture_path) if fixture_path else None,
         "output_size": output_path.stat().st_size,
         "zip_members": manifest,
+        "output_contract": output_contract,
         "timing": {
             "input_plan_wall_s": input_wall,
             "input_plan_cpu_s": input_cpu,

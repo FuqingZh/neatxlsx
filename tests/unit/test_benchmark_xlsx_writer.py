@@ -97,6 +97,7 @@ def test_zip_member_manifest_hashes_uncompressed_content(tmp_path: Path) -> None
         {
             "name": "a.txt",
             "size": 5,
+            "comparison_size": 5,
             "sha256": "a7937b64b8caa58f03721bb6bacf5c78cb235febe0e70b1b84cd99541461a08e",
             "comparison_sha256": "a7937b64b8caa58f03721bb6bacf5c78cb235febe0e70b1b84cd99541461a08e",
             "normalization": None,
@@ -104,6 +105,7 @@ def test_zip_member_manifest_hashes_uncompressed_content(tmp_path: Path) -> None
         {
             "name": "b.txt",
             "size": 6,
+            "comparison_size": 6,
             "sha256": "16367aacb67a4a017c8da8ab95682ccb390863780f7114dda0a0e0c55644c7c4",
             "comparison_sha256": "16367aacb67a4a017c8da8ab95682ccb390863780f7114dda0a0e0c55644c7c4",
             "normalization": None,
