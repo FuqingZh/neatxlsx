@@ -1260,7 +1260,7 @@ dependencies = [
 
 [[package]]
 name = "neatxlsx-core"
-version = "0.2.0"
+version = "0.2.1"
 dependencies = [
  "chrono",
  "polars-arrow",
@@ -1270,7 +1270,7 @@ dependencies = [
 
 [[package]]
 name = "neatxlsx-py"
-version = "0.2.0"
+version = "0.2.1"
 dependencies = [
  "neatxlsx-core",
  "polars",

@@ -10,7 +10,7 @@ from neatxlsx import _native
 def test_installed_distribution_and_extension_are_importable() -> None:
     parameters = inspect.signature(nx.Workbook.write_sheet).parameters
 
-    assert version("neatxlsx") == "0.2.0"
+    assert version("neatxlsx") == "0.2.1"
     assert nx.Workbook.__module__ == "neatxlsx.writer"
     assert tuple(parameters) == (
         "self",

@@ -3,7 +3,7 @@
 Start with the current contracts, then use the guides, plans, and historical
 records for their stated scope:
 
-Current delivery: [2026-09-08 release readiness](implementation-plan/20260908-v1.0-single-pass-release-readiness.md) records fresh checks and remaining merge/publication gates.
+Current delivery: [2026-09-08 release readiness](implementation-plan/20260908-v1.0-single-pass-release-readiness.md) records fresh checks and remaining merge/publication gates. The user accepted the measured performance costs; [0.2.1 release notes](release-notes/20260908-v0.2.1-single-pass-autofit.md) describe the prepared candidate.
 
 1. [Architecture](architecture/20260728-v1.0-neatxlsx-architecture.md) for
    component ownership, data flow, transactions, and large-table behavior.

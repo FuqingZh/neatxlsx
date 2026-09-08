@@ -1,0 +1,34 @@
+{
+  "source_id": "0.2.1-release-candidate",
+  "package_version": "0.2.1",
+  "native_sha256": "4f1e795842aa369eb84cfc21f86f370421de955c15bfd38c1147afd0808081ba",
+  "wheel_sha256": "1a451df6a19bbf3e40f6a9670895274db3915cbea42f68cfc2c64d2e29b9b75d",
+  "candidate_python": "/home/fqzhang/project/neatxlsx/.worktrees/single-pass-autofit/.venv/bin/python",
+  "neatxlsx_module": "/tmp/neatxlsx-0.2.1-excel-validation/runtime/neatxlsx/__init__.py",
+  "default_zip64": {
+    "path": "display-autofit-acceptance.xlsx",
+    "sha256": "b52041f65b2b14d9598ad3192fc4e115b32b16a7134902f8649a0cea19b7d063"
+  },
+  "nonzip64": {
+    "path": "display-autofit-acceptance-nonzip64.xlsx",
+    "sha256": "c3c2e800dca441da2562365769b9b605859a833ed35a9b6604a3e0d42e96df9a"
+  },
+  "covered": [
+    "Latin W/i",
+    "Chinese",
+    "Japanese 日本語の列幅検証",
+    "Korean",
+    "fullwidth",
+    "emoji",
+    "number/time",
+    "missing",
+    "bounds",
+    "sampling",
+    "merged header",
+    "bestFit"
+  ],
+  "not_covered": [
+    "real Excel-limit pagination",
+    "Windows Excel bestFit edit"
+  ]
+}
