@@ -1,0 +1,59 @@
+All checks passed!
+36 files already formatted
+0 errors, 0 warnings, 0 informations
+    Finished `dev` profile [unoptimized + debuginfo] target(s) in 0.86s
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 0.51s
+     Running unittests src/lib.rs (target/debug/deps/neatxlsx_core-1a1eb36b5ed6ac1a)
+
+running 27 tests
+test spec::tests::xlsx_write_options_enable_zip64_by_default ... ok
+test util::tests::test_apply_vertical_run_text_blankout ... ok
+test util::tests::test_generate_vertical_runs_detects_only_contiguous_non_empty_runs ... ok
+test util::tests::test_plan_sheet_slices_respects_row_and_column_boundaries ... ok
+test util::tests::test_select_sorted_indices_from_refs_rejects_missing_name ... ok
+test util::tests::test_select_sorted_indices_from_refs_respects_typed_selectors ... ok
+test writer::render::tests::autofit_pixel_policy_clamps_extreme_configuration_without_overflow ... ok
+test writer::render::tests::column_rules_are_rebased_for_every_physical_column_part ... ok
+test writer::render::tests::excel_width_pixel_conversion_matches_autofit_column_units ... ok
+test writer::render::tests::header_column_rules_are_rebased_for_every_physical_column_part ... ok
+test writer::stream::tests::autofit_tracker_uses_absolute_row_limit_across_batches ... ok
+test writer::render::tests::wide_header_format_plans_only_materialize_column_overrides ... ok
+test writer::stream::tests::display_width_estimator_uses_missing_value_text_and_parse_fallback ... ok
+test writer::stream::tests::header_and_body_share_the_measured_east_asian_display_helper ... ok
+test writer::stream::tests::internal_names_skip_temporary_and_reserved_final_names ... ok
+test writer::stream::tests::display_width_estimator_uses_general_and_final_number_format ... ok
+test writer::stream::tests::measured_east_asian_display_width_adjusts_only_the_evidence_ranges ... ok
+test writer::stream::tests::measured_east_asian_scalar_ranges_have_exact_boundaries ... ok
+test writer::stream::tests::registry_matches_stable_starts ... ok
+test writer::stream::tests::registry_rejects_missing_planned_key ... ok
+test writer::render::tests::column_rule_wins_after_inferred_and_workbook_role_formats ... ok
+test writer::stream::tests::registry_rejects_orphan_key ... ok
+test writer::stream::tests::registry_rejects_row_end_mismatch ... ok
+test writer::stream::tests::slice_indices_do_not_rebase_columns_before_the_slice ... ok
+test writer::stream::tests::registry_returns_entries_in_planned_canonical_order ... ok
+test writer::stream::tests::staging_names_skip_reserved_final_names ... ok
+test writer::stream::tests::finalization_failures_poison_writer_without_appending_report ... ok
+
+test result: ok. 27 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.01s
+
+     Running unittests src/lib.rs (target/debug/deps/_native-0feebe2e6ad6f053)
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+..................ss.................................................... [ 50%]
+......................................................................   [100%]
+=========================== short test summary info ============================
+SKIPPED [1] tests/integration/test_format_overrides.py:518: real Excel-limit pagination runs only in the explicit release gate
+SKIPPED [1] tests/integration/test_format_overrides.py:562: real Excel-limit pagination runs only in the explicit release gate
+140 passed, 2 skipped in 3.76s
+📦 Including license file `LICENSE`
+🍹 Building a mixed python/rust project
+🐍 Found CPython 3.13 at /home/fqzhang/project/neatxlsx/.worktrees/single-pass-autofit/.venv/bin/python
+🔗 Found pyo3 bindings with abi3-py3.11 support
+📡 Using build options features, bindings from pyproject.toml
+    Finished `release` profile [optimized] target(s) in 0.45s
+📦 Including files matching "LICENSE"
+📦 Built wheel for abi3 Python ≥ 3.11 to dist/neatxlsx-0.2.0-cp311-abi3-manylinux_2_28_x86_64.whl
+Validated neatxlsx distribution version 0.2.0

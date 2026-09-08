@@ -1,0 +1,1393 @@
+{
+  "acceptance_eligible": true,
+  "acceptance_passed": false,
+  "analysis": [
+    {
+      "metrics": {
+        "close_cpu_s": {
+          "ci95": [
+            0.9709120359032444,
+            1.0553066005464038
+          ],
+          "median_ratio": 1.0068206948203746,
+          "ratios": [
+            0.9403226278959879,
+            0.9902214502184622,
+            0.9709120359032444,
+            1.005277289004582,
+            1.0772619680011326,
+            1.0390239101950425,
+            1.0083641006361672,
+            1.0553066005464038
+          ]
+        },
+        "close_wall_s": {
+          "ci95": [
+            0.9713478409824091,
+            1.0580659035230477
+          ],
+          "median_ratio": 1.0066123433679355,
+          "ratios": [
+            0.9388388005315185,
+            0.9912510502227859,
+            0.9713478409824091,
+            1.0036340956733447,
+            1.0600999259027013,
+            1.0378740200438983,
+            1.009590591062526,
+            1.0580659035230477
+          ]
+        },
+        "total_cpu_s": {
+          "ci95": [
+            1.001164722600611,
+            1.0481485859616058
+          ],
+          "median_ratio": 1.018454522418614,
+          "ratios": [
+            0.9733996777027927,
+            1.0137447988033734,
+            1.0231642460338546,
+            1.005820072473259,
+            1.0468857536020073,
+            1.0481485859616058,
+            1.001164722600611,
+            1.0589908745853487
+          ]
+        },
+        "total_wall_s": {
+          "ci95": [
+            1.0021163155585517,
+            1.0457635131285257
+          ],
+          "median_ratio": 1.0197820749160678,
+          "ratios": [
+            0.971879912821845,
+            1.014436076913989,
+            1.0251280729181462,
+            1.0042565196337296,
+            1.0431122019536752,
+            1.0457635131285257,
+            1.0021163155585517,
+            1.0600804461854685
+          ]
+        },
+        "write_cpu_s": {
+          "ci95": [
+            1.0002032690086582,
+            1.0621010903486925
+          ],
+          "median_ratio": 1.027784078016326,
+          "ratios": [
+            1.0002032690086582,
+            1.0333759498252169,
+            1.0688232439342615,
+            1.0063056454106123,
+            1.0221922062074353,
+            1.0551895844536001,
+            0.9957055881453031,
+            1.0621010903486925
+          ]
+        },
+        "write_wall_s": {
+          "ci95": [
+            0.9994147932606582,
+            1.0618529157326544
+          ],
+          "median_ratio": 1.031506055525874,
+          "ratios": [
+            0.9994147932606582,
+            1.0343952031460664,
+            1.0737311097757318,
+            1.0048232090654998,
+            1.0286169079056817,
+            1.0520428839657938,
+            0.9962962482581516,
+            1.0618529157326544
+          ]
+        }
+      },
+      "paired_observations": 8,
+      "reason": "display_regression",
+      "samples_by_variant": {
+        "baseline": 8,
+        "candidate": 8
+      },
+      "scenario": {
+        "autofit_max_rows": 20000,
+        "chunk_size": 8192,
+        "input_kind": "parquet_lazyframe",
+        "n_numeric_cols": 10,
+        "n_rows": 250000,
+        "n_text_cols": 4,
+        "name": "huge_tall_parquet_lazyframe_none",
+        "rule_autofit_columns": "none",
+        "should_autofit_columns": false
+      },
+      "verdict": "failed",
+      "zip_members_equal": true
+    },
+    {
+      "metrics": {},
+      "paired_observations": 0,
+      "reason": "insufficient_samples",
+      "samples_by_variant": {
+        "baseline": 0,
+        "candidate": 0
+      },
+      "scenario": {
+        "autofit_max_rows": 20000,
+        "chunk_size": 8192,
+        "input_kind": "parquet_lazyframe",
+        "n_numeric_cols": 10,
+        "n_rows": 250000,
+        "n_text_cols": 4,
+        "name": "huge_tall_parquet_lazyframe_header",
+        "rule_autofit_columns": "header",
+        "should_autofit_columns": true
+      },
+      "verdict": "inconclusive",
+      "zip_members_equal": true
+    },
+    {
+      "metrics": {},
+      "paired_observations": 0,
+      "reason": "insufficient_samples",
+      "samples_by_variant": {
+        "baseline": 0,
+        "candidate": 0
+      },
+      "scenario": {
+        "autofit_max_rows": 20000,
+        "chunk_size": 8192,
+        "input_kind": "parquet_lazyframe",
+        "n_numeric_cols": 40,
+        "n_rows": 50000,
+        "n_text_cols": 20,
+        "name": "huge_wide_parquet_lazyframe_body",
+        "rule_autofit_columns": "body",
+        "should_autofit_columns": true
+      },
+      "verdict": "inconclusive",
+      "zip_members_equal": true
+    },
+    {
+      "metrics": {},
+      "paired_observations": 0,
+      "reason": "insufficient_samples",
+      "samples_by_variant": {
+        "baseline": 0,
+        "candidate": 0
+      },
+      "scenario": {
+        "autofit_max_rows": 20000,
+        "chunk_size": 8192,
+        "input_kind": "parquet_lazyframe",
+        "n_numeric_cols": 40,
+        "n_rows": 50000,
+        "n_text_cols": 20,
+        "name": "huge_wide_parquet_lazyframe_all",
+        "rule_autofit_columns": "all",
+        "should_autofit_columns": true
+      },
+      "verdict": "inconclusive",
+      "zip_members_equal": true
+    },
+    {
+      "metrics": {},
+      "paired_observations": 0,
+      "reason": "insufficient_samples",
+      "samples_by_variant": {
+        "baseline": 0,
+        "candidate": 0
+      },
+      "scenario": {
+        "autofit_max_rows": null,
+        "chunk_size": 8192,
+        "input_kind": "parquet_lazyframe",
+        "n_numeric_cols": 40,
+        "n_rows": 50000,
+        "n_text_cols": 20,
+        "name": "huge_wide_parquet_lazyframe_body_full_scan",
+        "rule_autofit_columns": "body",
+        "should_autofit_columns": true
+      },
+      "verdict": "inconclusive",
+      "zip_members_equal": true
+    },
+    {
+      "metrics": {},
+      "paired_observations": 0,
+      "reason": "insufficient_samples",
+      "samples_by_variant": {
+        "baseline": 0,
+        "candidate": 0
+      },
+      "scenario": {
+        "autofit_max_rows": null,
+        "chunk_size": 8192,
+        "input_kind": "parquet_lazyframe",
+        "n_numeric_cols": 40,
+        "n_rows": 50000,
+        "n_text_cols": 20,
+        "name": "huge_wide_parquet_lazyframe_all_full_scan",
+        "rule_autofit_columns": "all",
+        "should_autofit_columns": true
+      },
+      "verdict": "inconclusive",
+      "zip_members_equal": true
+    }
+  ],
+  "analysis_seed": 20260902,
+  "blocks": 4,
+  "command": [
+    "scripts/compare_xlsx_writer.py",
+    "--baseline-root",
+    "/tmp/neatxlsx-display-autofit-eval/baseline-single-pass",
+    "--baseline-python",
+    "/tmp/neatxlsx-display-autofit-eval/baseline-single-pass/.venv/bin/python",
+    "--baseline-source-id",
+    "1ca104048a7c5663783d690fde54b1c75fc9a0ff",
+    "--candidate-root",
+    "/tmp/neatxlsx-release-audit-20260908/candidate",
+    "--candidate-python",
+    "/home/fqzhang/project/neatxlsx/.worktrees/single-pass-autofit/.venv/bin/python",
+    "--candidate-source-id",
+    "c411b68a7a2c1c64df3333ec427a9715ab06f0ae49c45a2674f906f362cb6b5f",
+    "--profile",
+    "huge",
+    "--scenario",
+    "huge_tall_parquet_lazyframe_none",
+    "--scenario",
+    "huge_tall_parquet_lazyframe_header",
+    "--scenario",
+    "huge_wide_parquet_lazyframe_body",
+    "--scenario",
+    "huge_wide_parquet_lazyframe_all",
+    "--scenario",
+    "huge_wide_parquet_lazyframe_body_full_scan",
+    "--scenario",
+    "huge_wide_parquet_lazyframe_all_full_scan",
+    "--include-full-scan",
+    "--blocks",
+    "4",
+    "--warmup",
+    "1",
+    "--order-seed",
+    "20260901",
+    "--analysis-seed",
+    "20260902",
+    "--cpu-list",
+    "0-7",
+    "--polars-threads",
+    "4",
+    "--verdict-policy",
+    "display-autofit",
+    "--out-dir",
+    "/tmp/neatxlsx-release-audit-20260908/fresh-performance"
+  ],
+  "cpu_list": "0-7",
+  "fixtures": [
+    {
+      "path": "/tmp/neatxlsx-release-audit-20260908/fresh-performance/fixtures/rows-250000-numeric-10-text-4.parquet",
+      "sha256": "95f39bd96a0a6aefa73e525f2fd4013fc518b3727a91ff03fa42dfaa911c87cf"
+    },
+    {
+      "path": "/tmp/neatxlsx-release-audit-20260908/fresh-performance/fixtures/rows-50000-numeric-40-text-20.parquet",
+      "sha256": "3ab4d7b71a39b5b3a3b5aae457d08d0cda41d37a02851705dfa431a8755f914f"
+    }
+  ],
+  "harness_path": "/home/fqzhang/project/neatxlsx/.worktrees/single-pass-autofit/scripts/compare_xlsx_writer.py",
+  "harness_sha256": "7533595751d024baa86d6eab9c677c7d905b89a358e3b0b28493f3a673523b48",
+  "matrix_complete": false,
+  "non_acceptance_overrides": {
+    "allow_dirty_source": false,
+    "allow_identical_native": false
+  },
+  "order_seed": 20260901,
+  "plans": {
+    "huge_tall_parquet_lazyframe_header": [
+      {
+        "block": null,
+        "pair_id": null,
+        "position": 0,
+        "run_id": "huge_tall_parquet_lazyframe_header-warmup-0-baseline",
+        "scenario_name": "huge_tall_parquet_lazyframe_header",
+        "variant": "baseline",
+        "warmup": true
+      },
+      {
+        "block": null,
+        "pair_id": null,
+        "position": 1,
+        "run_id": "huge_tall_parquet_lazyframe_header-warmup-1-candidate",
+        "scenario_name": "huge_tall_parquet_lazyframe_header",
+        "variant": "candidate",
+        "warmup": true
+      },
+      {
+        "block": 0,
+        "pair_id": "huge_tall_parquet_lazyframe_header-block-0-pair-0",
+        "position": 0,
+        "run_id": "huge_tall_parquet_lazyframe_header-block-0-position-0-baseline",
+        "scenario_name": "huge_tall_parquet_lazyframe_header",
+        "variant": "baseline",
+        "warmup": false
+      },
+      {
+        "block": 0,
+        "pair_id": "huge_tall_parquet_lazyframe_header-block-0-pair-0",
+        "position": 1,
+        "run_id": "huge_tall_parquet_lazyframe_header-block-0-position-1-candidate",
+        "scenario_name": "huge_tall_parquet_lazyframe_header",
+        "variant": "candidate",
+        "warmup": false
+      },
+      {
+        "block": 0,
+        "pair_id": "huge_tall_parquet_lazyframe_header-block-0-pair-1",
+        "position": 2,
+        "run_id": "huge_tall_parquet_lazyframe_header-block-0-position-2-candidate",
+        "scenario_name": "huge_tall_parquet_lazyframe_header",
+        "variant": "candidate",
+        "warmup": false
+      },
+      {
+        "block": 0,
+        "pair_id": "huge_tall_parquet_lazyframe_header-block-0-pair-1",
+        "position": 3,
+        "run_id": "huge_tall_parquet_lazyframe_header-block-0-position-3-baseline",
+        "scenario_name": "huge_tall_parquet_lazyframe_header",
+        "variant": "baseline",
+        "warmup": false
+      },
+      {
+        "block": 1,
+        "pair_id": "huge_tall_parquet_lazyframe_header-block-1-pair-0",
+        "position": 0,
+        "run_id": "huge_tall_parquet_lazyframe_header-block-1-position-0-baseline",
+        "scenario_name": "huge_tall_parquet_lazyframe_header",
+        "variant": "baseline",
+        "warmup": false
+      },
+      {
+        "block": 1,
+        "pair_id": "huge_tall_parquet_lazyframe_header-block-1-pair-0",
+        "position": 1,
+        "run_id": "huge_tall_parquet_lazyframe_header-block-1-position-1-candidate",
+        "scenario_name": "huge_tall_parquet_lazyframe_header",
+        "variant": "candidate",
+        "warmup": false
+      },
+      {
+        "block": 1,
+        "pair_id": "huge_tall_parquet_lazyframe_header-block-1-pair-1",
+        "position": 2,
+        "run_id": "huge_tall_parquet_lazyframe_header-block-1-position-2-candidate",
+        "scenario_name": "huge_tall_parquet_lazyframe_header",
+        "variant": "candidate",
+        "warmup": false
+      },
+      {
+        "block": 1,
+        "pair_id": "huge_tall_parquet_lazyframe_header-block-1-pair-1",
+        "position": 3,
+        "run_id": "huge_tall_parquet_lazyframe_header-block-1-position-3-baseline",
+        "scenario_name": "huge_tall_parquet_lazyframe_header",
+        "variant": "baseline",
+        "warmup": false
+      },
+      {
+        "block": 2,
+        "pair_id": "huge_tall_parquet_lazyframe_header-block-2-pair-0",
+        "position": 0,
+        "run_id": "huge_tall_parquet_lazyframe_header-block-2-position-0-baseline",
+        "scenario_name": "huge_tall_parquet_lazyframe_header",
+        "variant": "baseline",
+        "warmup": false
+      },
+      {
+        "block": 2,
+        "pair_id": "huge_tall_parquet_lazyframe_header-block-2-pair-0",
+        "position": 1,
+        "run_id": "huge_tall_parquet_lazyframe_header-block-2-position-1-candidate",
+        "scenario_name": "huge_tall_parquet_lazyframe_header",
+        "variant": "candidate",
+        "warmup": false
+      },
+      {
+        "block": 2,
+        "pair_id": "huge_tall_parquet_lazyframe_header-block-2-pair-1",
+        "position": 2,
+        "run_id": "huge_tall_parquet_lazyframe_header-block-2-position-2-candidate",
+        "scenario_name": "huge_tall_parquet_lazyframe_header",
+        "variant": "candidate",
+        "warmup": false
+      },
+      {
+        "block": 2,
+        "pair_id": "huge_tall_parquet_lazyframe_header-block-2-pair-1",
+        "position": 3,
+        "run_id": "huge_tall_parquet_lazyframe_header-block-2-position-3-baseline",
+        "scenario_name": "huge_tall_parquet_lazyframe_header",
+        "variant": "baseline",
+        "warmup": false
+      },
+      {
+        "block": 3,
+        "pair_id": "huge_tall_parquet_lazyframe_header-block-3-pair-0",
+        "position": 0,
+        "run_id": "huge_tall_parquet_lazyframe_header-block-3-position-0-baseline",
+        "scenario_name": "huge_tall_parquet_lazyframe_header",
+        "variant": "baseline",
+        "warmup": false
+      },
+      {
+        "block": 3,
+        "pair_id": "huge_tall_parquet_lazyframe_header-block-3-pair-0",
+        "position": 1,
+        "run_id": "huge_tall_parquet_lazyframe_header-block-3-position-1-candidate",
+        "scenario_name": "huge_tall_parquet_lazyframe_header",
+        "variant": "candidate",
+        "warmup": false
+      },
+      {
+        "block": 3,
+        "pair_id": "huge_tall_parquet_lazyframe_header-block-3-pair-1",
+        "position": 2,
+        "run_id": "huge_tall_parquet_lazyframe_header-block-3-position-2-candidate",
+        "scenario_name": "huge_tall_parquet_lazyframe_header",
+        "variant": "candidate",
+        "warmup": false
+      },
+      {
+        "block": 3,
+        "pair_id": "huge_tall_parquet_lazyframe_header-block-3-pair-1",
+        "position": 3,
+        "run_id": "huge_tall_parquet_lazyframe_header-block-3-position-3-baseline",
+        "scenario_name": "huge_tall_parquet_lazyframe_header",
+        "variant": "baseline",
+        "warmup": false
+      }
+    ],
+    "huge_tall_parquet_lazyframe_none": [
+      {
+        "block": null,
+        "pair_id": null,
+        "position": 0,
+        "run_id": "huge_tall_parquet_lazyframe_none-warmup-0-candidate",
+        "scenario_name": "huge_tall_parquet_lazyframe_none",
+        "variant": "candidate",
+        "warmup": true
+      },
+      {
+        "block": null,
+        "pair_id": null,
+        "position": 1,
+        "run_id": "huge_tall_parquet_lazyframe_none-warmup-1-baseline",
+        "scenario_name": "huge_tall_parquet_lazyframe_none",
+        "variant": "baseline",
+        "warmup": true
+      },
+      {
+        "block": 0,
+        "pair_id": "huge_tall_parquet_lazyframe_none-block-0-pair-0",
+        "position": 0,
+        "run_id": "huge_tall_parquet_lazyframe_none-block-0-position-0-baseline",
+        "scenario_name": "huge_tall_parquet_lazyframe_none",
+        "variant": "baseline",
+        "warmup": false
+      },
+      {
+        "block": 0,
+        "pair_id": "huge_tall_parquet_lazyframe_none-block-0-pair-0",
+        "position": 1,
+        "run_id": "huge_tall_parquet_lazyframe_none-block-0-position-1-candidate",
+        "scenario_name": "huge_tall_parquet_lazyframe_none",
+        "variant": "candidate",
+        "warmup": false
+      },
+      {
+        "block": 0,
+        "pair_id": "huge_tall_parquet_lazyframe_none-block-0-pair-1",
+        "position": 2,
+        "run_id": "huge_tall_parquet_lazyframe_none-block-0-position-2-candidate",
+        "scenario_name": "huge_tall_parquet_lazyframe_none",
+        "variant": "candidate",
+        "warmup": false
+      },
+      {
+        "block": 0,
+        "pair_id": "huge_tall_parquet_lazyframe_none-block-0-pair-1",
+        "position": 3,
+        "run_id": "huge_tall_parquet_lazyframe_none-block-0-position-3-baseline",
+        "scenario_name": "huge_tall_parquet_lazyframe_none",
+        "variant": "baseline",
+        "warmup": false
+      },
+      {
+        "block": 1,
+        "pair_id": "huge_tall_parquet_lazyframe_none-block-1-pair-0",
+        "position": 0,
+        "run_id": "huge_tall_parquet_lazyframe_none-block-1-position-0-candidate",
+        "scenario_name": "huge_tall_parquet_lazyframe_none",
+        "variant": "candidate",
+        "warmup": false
+      },
+      {
+        "block": 1,
+        "pair_id": "huge_tall_parquet_lazyframe_none-block-1-pair-0",
+        "position": 1,
+        "run_id": "huge_tall_parquet_lazyframe_none-block-1-position-1-baseline",
+        "scenario_name": "huge_tall_parquet_lazyframe_none",
+        "variant": "baseline",
+        "warmup": false
+      },
+      {
+        "block": 1,
+        "pair_id": "huge_tall_parquet_lazyframe_none-block-1-pair-1",
+        "position": 2,
+        "run_id": "huge_tall_parquet_lazyframe_none-block-1-position-2-baseline",
+        "scenario_name": "huge_tall_parquet_lazyframe_none",
+        "variant": "baseline",
+        "warmup": false
+      },
+      {
+        "block": 1,
+        "pair_id": "huge_tall_parquet_lazyframe_none-block-1-pair-1",
+        "position": 3,
+        "run_id": "huge_tall_parquet_lazyframe_none-block-1-position-3-candidate",
+        "scenario_name": "huge_tall_parquet_lazyframe_none",
+        "variant": "candidate",
+        "warmup": false
+      },
+      {
+        "block": 2,
+        "pair_id": "huge_tall_parquet_lazyframe_none-block-2-pair-0",
+        "position": 0,
+        "run_id": "huge_tall_parquet_lazyframe_none-block-2-position-0-baseline",
+        "scenario_name": "huge_tall_parquet_lazyframe_none",
+        "variant": "baseline",
+        "warmup": false
+      },
+      {
+        "block": 2,
+        "pair_id": "huge_tall_parquet_lazyframe_none-block-2-pair-0",
+        "position": 1,
+        "run_id": "huge_tall_parquet_lazyframe_none-block-2-position-1-candidate",
+        "scenario_name": "huge_tall_parquet_lazyframe_none",
+        "variant": "candidate",
+        "warmup": false
+      },
+      {
+        "block": 2,
+        "pair_id": "huge_tall_parquet_lazyframe_none-block-2-pair-1",
+        "position": 2,
+        "run_id": "huge_tall_parquet_lazyframe_none-block-2-position-2-candidate",
+        "scenario_name": "huge_tall_parquet_lazyframe_none",
+        "variant": "candidate",
+        "warmup": false
+      },
+      {
+        "block": 2,
+        "pair_id": "huge_tall_parquet_lazyframe_none-block-2-pair-1",
+        "position": 3,
+        "run_id": "huge_tall_parquet_lazyframe_none-block-2-position-3-baseline",
+        "scenario_name": "huge_tall_parquet_lazyframe_none",
+        "variant": "baseline",
+        "warmup": false
+      },
+      {
+        "block": 3,
+        "pair_id": "huge_tall_parquet_lazyframe_none-block-3-pair-0",
+        "position": 0,
+        "run_id": "huge_tall_parquet_lazyframe_none-block-3-position-0-candidate",
+        "scenario_name": "huge_tall_parquet_lazyframe_none",
+        "variant": "candidate",
+        "warmup": false
+      },
+      {
+        "block": 3,
+        "pair_id": "huge_tall_parquet_lazyframe_none-block-3-pair-0",
+        "position": 1,
+        "run_id": "huge_tall_parquet_lazyframe_none-block-3-position-1-baseline",
+        "scenario_name": "huge_tall_parquet_lazyframe_none",
+        "variant": "baseline",
+        "warmup": false
+      },
+      {
+        "block": 3,
+        "pair_id": "huge_tall_parquet_lazyframe_none-block-3-pair-1",
+        "position": 2,
+        "run_id": "huge_tall_parquet_lazyframe_none-block-3-position-2-baseline",
+        "scenario_name": "huge_tall_parquet_lazyframe_none",
+        "variant": "baseline",
+        "warmup": false
+      },
+      {
+        "block": 3,
+        "pair_id": "huge_tall_parquet_lazyframe_none-block-3-pair-1",
+        "position": 3,
+        "run_id": "huge_tall_parquet_lazyframe_none-block-3-position-3-candidate",
+        "scenario_name": "huge_tall_parquet_lazyframe_none",
+        "variant": "candidate",
+        "warmup": false
+      }
+    ],
+    "huge_wide_parquet_lazyframe_all": [
+      {
+        "block": null,
+        "pair_id": null,
+        "position": 0,
+        "run_id": "huge_wide_parquet_lazyframe_all-warmup-0-baseline",
+        "scenario_name": "huge_wide_parquet_lazyframe_all",
+        "variant": "baseline",
+        "warmup": true
+      },
+      {
+        "block": null,
+        "pair_id": null,
+        "position": 1,
+        "run_id": "huge_wide_parquet_lazyframe_all-warmup-1-candidate",
+        "scenario_name": "huge_wide_parquet_lazyframe_all",
+        "variant": "candidate",
+        "warmup": true
+      },
+      {
+        "block": 0,
+        "pair_id": "huge_wide_parquet_lazyframe_all-block-0-pair-0",
+        "position": 0,
+        "run_id": "huge_wide_parquet_lazyframe_all-block-0-position-0-baseline",
+        "scenario_name": "huge_wide_parquet_lazyframe_all",
+        "variant": "baseline",
+        "warmup": false
+      },
+      {
+        "block": 0,
+        "pair_id": "huge_wide_parquet_lazyframe_all-block-0-pair-0",
+        "position": 1,
+        "run_id": "huge_wide_parquet_lazyframe_all-block-0-position-1-candidate",
+        "scenario_name": "huge_wide_parquet_lazyframe_all",
+        "variant": "candidate",
+        "warmup": false
+      },
+      {
+        "block": 0,
+        "pair_id": "huge_wide_parquet_lazyframe_all-block-0-pair-1",
+        "position": 2,
+        "run_id": "huge_wide_parquet_lazyframe_all-block-0-position-2-candidate",
+        "scenario_name": "huge_wide_parquet_lazyframe_all",
+        "variant": "candidate",
+        "warmup": false
+      },
+      {
+        "block": 0,
+        "pair_id": "huge_wide_parquet_lazyframe_all-block-0-pair-1",
+        "position": 3,
+        "run_id": "huge_wide_parquet_lazyframe_all-block-0-position-3-baseline",
+        "scenario_name": "huge_wide_parquet_lazyframe_all",
+        "variant": "baseline",
+        "warmup": false
+      },
+      {
+        "block": 1,
+        "pair_id": "huge_wide_parquet_lazyframe_all-block-1-pair-0",
+        "position": 0,
+        "run_id": "huge_wide_parquet_lazyframe_all-block-1-position-0-candidate",
+        "scenario_name": "huge_wide_parquet_lazyframe_all",
+        "variant": "candidate",
+        "warmup": false
+      },
+      {
+        "block": 1,
+        "pair_id": "huge_wide_parquet_lazyframe_all-block-1-pair-0",
+        "position": 1,
+        "run_id": "huge_wide_parquet_lazyframe_all-block-1-position-1-baseline",
+        "scenario_name": "huge_wide_parquet_lazyframe_all",
+        "variant": "baseline",
+        "warmup": false
+      },
+      {
+        "block": 1,
+        "pair_id": "huge_wide_parquet_lazyframe_all-block-1-pair-1",
+        "position": 2,
+        "run_id": "huge_wide_parquet_lazyframe_all-block-1-position-2-baseline",
+        "scenario_name": "huge_wide_parquet_lazyframe_all",
+        "variant": "baseline",
+        "warmup": false
+      },
+      {
+        "block": 1,
+        "pair_id": "huge_wide_parquet_lazyframe_all-block-1-pair-1",
+        "position": 3,
+        "run_id": "huge_wide_parquet_lazyframe_all-block-1-position-3-candidate",
+        "scenario_name": "huge_wide_parquet_lazyframe_all",
+        "variant": "candidate",
+        "warmup": false
+      },
+      {
+        "block": 2,
+        "pair_id": "huge_wide_parquet_lazyframe_all-block-2-pair-0",
+        "position": 0,
+        "run_id": "huge_wide_parquet_lazyframe_all-block-2-position-0-candidate",
+        "scenario_name": "huge_wide_parquet_lazyframe_all",
+        "variant": "candidate",
+        "warmup": false
+      },
+      {
+        "block": 2,
+        "pair_id": "huge_wide_parquet_lazyframe_all-block-2-pair-0",
+        "position": 1,
+        "run_id": "huge_wide_parquet_lazyframe_all-block-2-position-1-baseline",
+        "scenario_name": "huge_wide_parquet_lazyframe_all",
+        "variant": "baseline",
+        "warmup": false
+      },
+      {
+        "block": 2,
+        "pair_id": "huge_wide_parquet_lazyframe_all-block-2-pair-1",
+        "position": 2,
+        "run_id": "huge_wide_parquet_lazyframe_all-block-2-position-2-baseline",
+        "scenario_name": "huge_wide_parquet_lazyframe_all",
+        "variant": "baseline",
+        "warmup": false
+      },
+      {
+        "block": 2,
+        "pair_id": "huge_wide_parquet_lazyframe_all-block-2-pair-1",
+        "position": 3,
+        "run_id": "huge_wide_parquet_lazyframe_all-block-2-position-3-candidate",
+        "scenario_name": "huge_wide_parquet_lazyframe_all",
+        "variant": "candidate",
+        "warmup": false
+      },
+      {
+        "block": 3,
+        "pair_id": "huge_wide_parquet_lazyframe_all-block-3-pair-0",
+        "position": 0,
+        "run_id": "huge_wide_parquet_lazyframe_all-block-3-position-0-baseline",
+        "scenario_name": "huge_wide_parquet_lazyframe_all",
+        "variant": "baseline",
+        "warmup": false
+      },
+      {
+        "block": 3,
+        "pair_id": "huge_wide_parquet_lazyframe_all-block-3-pair-0",
+        "position": 1,
+        "run_id": "huge_wide_parquet_lazyframe_all-block-3-position-1-candidate",
+        "scenario_name": "huge_wide_parquet_lazyframe_all",
+        "variant": "candidate",
+        "warmup": false
+      },
+      {
+        "block": 3,
+        "pair_id": "huge_wide_parquet_lazyframe_all-block-3-pair-1",
+        "position": 2,
+        "run_id": "huge_wide_parquet_lazyframe_all-block-3-position-2-candidate",
+        "scenario_name": "huge_wide_parquet_lazyframe_all",
+        "variant": "candidate",
+        "warmup": false
+      },
+      {
+        "block": 3,
+        "pair_id": "huge_wide_parquet_lazyframe_all-block-3-pair-1",
+        "position": 3,
+        "run_id": "huge_wide_parquet_lazyframe_all-block-3-position-3-baseline",
+        "scenario_name": "huge_wide_parquet_lazyframe_all",
+        "variant": "baseline",
+        "warmup": false
+      }
+    ],
+    "huge_wide_parquet_lazyframe_all_full_scan": [
+      {
+        "block": null,
+        "pair_id": null,
+        "position": 0,
+        "run_id": "huge_wide_parquet_lazyframe_all_full_scan-warmup-0-candidate",
+        "scenario_name": "huge_wide_parquet_lazyframe_all_full_scan",
+        "variant": "candidate",
+        "warmup": true
+      },
+      {
+        "block": null,
+        "pair_id": null,
+        "position": 1,
+        "run_id": "huge_wide_parquet_lazyframe_all_full_scan-warmup-1-baseline",
+        "scenario_name": "huge_wide_parquet_lazyframe_all_full_scan",
+        "variant": "baseline",
+        "warmup": true
+      },
+      {
+        "block": 0,
+        "pair_id": "huge_wide_parquet_lazyframe_all_full_scan-block-0-pair-0",
+        "position": 0,
+        "run_id": "huge_wide_parquet_lazyframe_all_full_scan-block-0-position-0-baseline",
+        "scenario_name": "huge_wide_parquet_lazyframe_all_full_scan",
+        "variant": "baseline",
+        "warmup": false
+      },
+      {
+        "block": 0,
+        "pair_id": "huge_wide_parquet_lazyframe_all_full_scan-block-0-pair-0",
+        "position": 1,
+        "run_id": "huge_wide_parquet_lazyframe_all_full_scan-block-0-position-1-candidate",
+        "scenario_name": "huge_wide_parquet_lazyframe_all_full_scan",
+        "variant": "candidate",
+        "warmup": false
+      },
+      {
+        "block": 0,
+        "pair_id": "huge_wide_parquet_lazyframe_all_full_scan-block-0-pair-1",
+        "position": 2,
+        "run_id": "huge_wide_parquet_lazyframe_all_full_scan-block-0-position-2-candidate",
+        "scenario_name": "huge_wide_parquet_lazyframe_all_full_scan",
+        "variant": "candidate",
+        "warmup": false
+      },
+      {
+        "block": 0,
+        "pair_id": "huge_wide_parquet_lazyframe_all_full_scan-block-0-pair-1",
+        "position": 3,
+        "run_id": "huge_wide_parquet_lazyframe_all_full_scan-block-0-position-3-baseline",
+        "scenario_name": "huge_wide_parquet_lazyframe_all_full_scan",
+        "variant": "baseline",
+        "warmup": false
+      },
+      {
+        "block": 1,
+        "pair_id": "huge_wide_parquet_lazyframe_all_full_scan-block-1-pair-0",
+        "position": 0,
+        "run_id": "huge_wide_parquet_lazyframe_all_full_scan-block-1-position-0-candidate",
+        "scenario_name": "huge_wide_parquet_lazyframe_all_full_scan",
+        "variant": "candidate",
+        "warmup": false
+      },
+      {
+        "block": 1,
+        "pair_id": "huge_wide_parquet_lazyframe_all_full_scan-block-1-pair-0",
+        "position": 1,
+        "run_id": "huge_wide_parquet_lazyframe_all_full_scan-block-1-position-1-baseline",
+        "scenario_name": "huge_wide_parquet_lazyframe_all_full_scan",
+        "variant": "baseline",
+        "warmup": false
+      },
+      {
+        "block": 1,
+        "pair_id": "huge_wide_parquet_lazyframe_all_full_scan-block-1-pair-1",
+        "position": 2,
+        "run_id": "huge_wide_parquet_lazyframe_all_full_scan-block-1-position-2-baseline",
+        "scenario_name": "huge_wide_parquet_lazyframe_all_full_scan",
+        "variant": "baseline",
+        "warmup": false
+      },
+      {
+        "block": 1,
+        "pair_id": "huge_wide_parquet_lazyframe_all_full_scan-block-1-pair-1",
+        "position": 3,
+        "run_id": "huge_wide_parquet_lazyframe_all_full_scan-block-1-position-3-candidate",
+        "scenario_name": "huge_wide_parquet_lazyframe_all_full_scan",
+        "variant": "candidate",
+        "warmup": false
+      },
+      {
+        "block": 2,
+        "pair_id": "huge_wide_parquet_lazyframe_all_full_scan-block-2-pair-0",
+        "position": 0,
+        "run_id": "huge_wide_parquet_lazyframe_all_full_scan-block-2-position-0-baseline",
+        "scenario_name": "huge_wide_parquet_lazyframe_all_full_scan",
+        "variant": "baseline",
+        "warmup": false
+      },
+      {
+        "block": 2,
+        "pair_id": "huge_wide_parquet_lazyframe_all_full_scan-block-2-pair-0",
+        "position": 1,
+        "run_id": "huge_wide_parquet_lazyframe_all_full_scan-block-2-position-1-candidate",
+        "scenario_name": "huge_wide_parquet_lazyframe_all_full_scan",
+        "variant": "candidate",
+        "warmup": false
+      },
+      {
+        "block": 2,
+        "pair_id": "huge_wide_parquet_lazyframe_all_full_scan-block-2-pair-1",
+        "position": 2,
+        "run_id": "huge_wide_parquet_lazyframe_all_full_scan-block-2-position-2-candidate",
+        "scenario_name": "huge_wide_parquet_lazyframe_all_full_scan",
+        "variant": "candidate",
+        "warmup": false
+      },
+      {
+        "block": 2,
+        "pair_id": "huge_wide_parquet_lazyframe_all_full_scan-block-2-pair-1",
+        "position": 3,
+        "run_id": "huge_wide_parquet_lazyframe_all_full_scan-block-2-position-3-baseline",
+        "scenario_name": "huge_wide_parquet_lazyframe_all_full_scan",
+        "variant": "baseline",
+        "warmup": false
+      },
+      {
+        "block": 3,
+        "pair_id": "huge_wide_parquet_lazyframe_all_full_scan-block-3-pair-0",
+        "position": 0,
+        "run_id": "huge_wide_parquet_lazyframe_all_full_scan-block-3-position-0-candidate",
+        "scenario_name": "huge_wide_parquet_lazyframe_all_full_scan",
+        "variant": "candidate",
+        "warmup": false
+      },
+      {
+        "block": 3,
+        "pair_id": "huge_wide_parquet_lazyframe_all_full_scan-block-3-pair-0",
+        "position": 1,
+        "run_id": "huge_wide_parquet_lazyframe_all_full_scan-block-3-position-1-baseline",
+        "scenario_name": "huge_wide_parquet_lazyframe_all_full_scan",
+        "variant": "baseline",
+        "warmup": false
+      },
+      {
+        "block": 3,
+        "pair_id": "huge_wide_parquet_lazyframe_all_full_scan-block-3-pair-1",
+        "position": 2,
+        "run_id": "huge_wide_parquet_lazyframe_all_full_scan-block-3-position-2-baseline",
+        "scenario_name": "huge_wide_parquet_lazyframe_all_full_scan",
+        "variant": "baseline",
+        "warmup": false
+      },
+      {
+        "block": 3,
+        "pair_id": "huge_wide_parquet_lazyframe_all_full_scan-block-3-pair-1",
+        "position": 3,
+        "run_id": "huge_wide_parquet_lazyframe_all_full_scan-block-3-position-3-candidate",
+        "scenario_name": "huge_wide_parquet_lazyframe_all_full_scan",
+        "variant": "candidate",
+        "warmup": false
+      }
+    ],
+    "huge_wide_parquet_lazyframe_body": [
+      {
+        "block": null,
+        "pair_id": null,
+        "position": 0,
+        "run_id": "huge_wide_parquet_lazyframe_body-warmup-0-baseline",
+        "scenario_name": "huge_wide_parquet_lazyframe_body",
+        "variant": "baseline",
+        "warmup": true
+      },
+      {
+        "block": null,
+        "pair_id": null,
+        "position": 1,
+        "run_id": "huge_wide_parquet_lazyframe_body-warmup-1-candidate",
+        "scenario_name": "huge_wide_parquet_lazyframe_body",
+        "variant": "candidate",
+        "warmup": true
+      },
+      {
+        "block": 0,
+        "pair_id": "huge_wide_parquet_lazyframe_body-block-0-pair-0",
+        "position": 0,
+        "run_id": "huge_wide_parquet_lazyframe_body-block-0-position-0-candidate",
+        "scenario_name": "huge_wide_parquet_lazyframe_body",
+        "variant": "candidate",
+        "warmup": false
+      },
+      {
+        "block": 0,
+        "pair_id": "huge_wide_parquet_lazyframe_body-block-0-pair-0",
+        "position": 1,
+        "run_id": "huge_wide_parquet_lazyframe_body-block-0-position-1-baseline",
+        "scenario_name": "huge_wide_parquet_lazyframe_body",
+        "variant": "baseline",
+        "warmup": false
+      },
+      {
+        "block": 0,
+        "pair_id": "huge_wide_parquet_lazyframe_body-block-0-pair-1",
+        "position": 2,
+        "run_id": "huge_wide_parquet_lazyframe_body-block-0-position-2-baseline",
+        "scenario_name": "huge_wide_parquet_lazyframe_body",
+        "variant": "baseline",
+        "warmup": false
+      },
+      {
+        "block": 0,
+        "pair_id": "huge_wide_parquet_lazyframe_body-block-0-pair-1",
+        "position": 3,
+        "run_id": "huge_wide_parquet_lazyframe_body-block-0-position-3-candidate",
+        "scenario_name": "huge_wide_parquet_lazyframe_body",
+        "variant": "candidate",
+        "warmup": false
+      },
+      {
+        "block": 1,
+        "pair_id": "huge_wide_parquet_lazyframe_body-block-1-pair-0",
+        "position": 0,
+        "run_id": "huge_wide_parquet_lazyframe_body-block-1-position-0-baseline",
+        "scenario_name": "huge_wide_parquet_lazyframe_body",
+        "variant": "baseline",
+        "warmup": false
+      },
+      {
+        "block": 1,
+        "pair_id": "huge_wide_parquet_lazyframe_body-block-1-pair-0",
+        "position": 1,
+        "run_id": "huge_wide_parquet_lazyframe_body-block-1-position-1-candidate",
+        "scenario_name": "huge_wide_parquet_lazyframe_body",
+        "variant": "candidate",
+        "warmup": false
+      },
+      {
+        "block": 1,
+        "pair_id": "huge_wide_parquet_lazyframe_body-block-1-pair-1",
+        "position": 2,
+        "run_id": "huge_wide_parquet_lazyframe_body-block-1-position-2-candidate",
+        "scenario_name": "huge_wide_parquet_lazyframe_body",
+        "variant": "candidate",
+        "warmup": false
+      },
+      {
+        "block": 1,
+        "pair_id": "huge_wide_parquet_lazyframe_body-block-1-pair-1",
+        "position": 3,
+        "run_id": "huge_wide_parquet_lazyframe_body-block-1-position-3-baseline",
+        "scenario_name": "huge_wide_parquet_lazyframe_body",
+        "variant": "baseline",
+        "warmup": false
+      },
+      {
+        "block": 2,
+        "pair_id": "huge_wide_parquet_lazyframe_body-block-2-pair-0",
+        "position": 0,
+        "run_id": "huge_wide_parquet_lazyframe_body-block-2-position-0-baseline",
+        "scenario_name": "huge_wide_parquet_lazyframe_body",
+        "variant": "baseline",
+        "warmup": false
+      },
+      {
+        "block": 2,
+        "pair_id": "huge_wide_parquet_lazyframe_body-block-2-pair-0",
+        "position": 1,
+        "run_id": "huge_wide_parquet_lazyframe_body-block-2-position-1-candidate",
+        "scenario_name": "huge_wide_parquet_lazyframe_body",
+        "variant": "candidate",
+        "warmup": false
+      },
+      {
+        "block": 2,
+        "pair_id": "huge_wide_parquet_lazyframe_body-block-2-pair-1",
+        "position": 2,
+        "run_id": "huge_wide_parquet_lazyframe_body-block-2-position-2-candidate",
+        "scenario_name": "huge_wide_parquet_lazyframe_body",
+        "variant": "candidate",
+        "warmup": false
+      },
+      {
+        "block": 2,
+        "pair_id": "huge_wide_parquet_lazyframe_body-block-2-pair-1",
+        "position": 3,
+        "run_id": "huge_wide_parquet_lazyframe_body-block-2-position-3-baseline",
+        "scenario_name": "huge_wide_parquet_lazyframe_body",
+        "variant": "baseline",
+        "warmup": false
+      },
+      {
+        "block": 3,
+        "pair_id": "huge_wide_parquet_lazyframe_body-block-3-pair-0",
+        "position": 0,
+        "run_id": "huge_wide_parquet_lazyframe_body-block-3-position-0-candidate",
+        "scenario_name": "huge_wide_parquet_lazyframe_body",
+        "variant": "candidate",
+        "warmup": false
+      },
+      {
+        "block": 3,
+        "pair_id": "huge_wide_parquet_lazyframe_body-block-3-pair-0",
+        "position": 1,
+        "run_id": "huge_wide_parquet_lazyframe_body-block-3-position-1-baseline",
+        "scenario_name": "huge_wide_parquet_lazyframe_body",
+        "variant": "baseline",
+        "warmup": false
+      },
+      {
+        "block": 3,
+        "pair_id": "huge_wide_parquet_lazyframe_body-block-3-pair-1",
+        "position": 2,
+        "run_id": "huge_wide_parquet_lazyframe_body-block-3-position-2-baseline",
+        "scenario_name": "huge_wide_parquet_lazyframe_body",
+        "variant": "baseline",
+        "warmup": false
+      },
+      {
+        "block": 3,
+        "pair_id": "huge_wide_parquet_lazyframe_body-block-3-pair-1",
+        "position": 3,
+        "run_id": "huge_wide_parquet_lazyframe_body-block-3-position-3-candidate",
+        "scenario_name": "huge_wide_parquet_lazyframe_body",
+        "variant": "candidate",
+        "warmup": false
+      }
+    ],
+    "huge_wide_parquet_lazyframe_body_full_scan": [
+      {
+        "block": null,
+        "pair_id": null,
+        "position": 0,
+        "run_id": "huge_wide_parquet_lazyframe_body_full_scan-warmup-0-baseline",
+        "scenario_name": "huge_wide_parquet_lazyframe_body_full_scan",
+        "variant": "baseline",
+        "warmup": true
+      },
+      {
+        "block": null,
+        "pair_id": null,
+        "position": 1,
+        "run_id": "huge_wide_parquet_lazyframe_body_full_scan-warmup-1-candidate",
+        "scenario_name": "huge_wide_parquet_lazyframe_body_full_scan",
+        "variant": "candidate",
+        "warmup": true
+      },
+      {
+        "block": 0,
+        "pair_id": "huge_wide_parquet_lazyframe_body_full_scan-block-0-pair-0",
+        "position": 0,
+        "run_id": "huge_wide_parquet_lazyframe_body_full_scan-block-0-position-0-candidate",
+        "scenario_name": "huge_wide_parquet_lazyframe_body_full_scan",
+        "variant": "candidate",
+        "warmup": false
+      },
+      {
+        "block": 0,
+        "pair_id": "huge_wide_parquet_lazyframe_body_full_scan-block-0-pair-0",
+        "position": 1,
+        "run_id": "huge_wide_parquet_lazyframe_body_full_scan-block-0-position-1-baseline",
+        "scenario_name": "huge_wide_parquet_lazyframe_body_full_scan",
+        "variant": "baseline",
+        "warmup": false
+      },
+      {
+        "block": 0,
+        "pair_id": "huge_wide_parquet_lazyframe_body_full_scan-block-0-pair-1",
+        "position": 2,
+        "run_id": "huge_wide_parquet_lazyframe_body_full_scan-block-0-position-2-baseline",
+        "scenario_name": "huge_wide_parquet_lazyframe_body_full_scan",
+        "variant": "baseline",
+        "warmup": false
+      },
+      {
+        "block": 0,
+        "pair_id": "huge_wide_parquet_lazyframe_body_full_scan-block-0-pair-1",
+        "position": 3,
+        "run_id": "huge_wide_parquet_lazyframe_body_full_scan-block-0-position-3-candidate",
+        "scenario_name": "huge_wide_parquet_lazyframe_body_full_scan",
+        "variant": "candidate",
+        "warmup": false
+      },
+      {
+        "block": 1,
+        "pair_id": "huge_wide_parquet_lazyframe_body_full_scan-block-1-pair-0",
+        "position": 0,
+        "run_id": "huge_wide_parquet_lazyframe_body_full_scan-block-1-position-0-candidate",
+        "scenario_name": "huge_wide_parquet_lazyframe_body_full_scan",
+        "variant": "candidate",
+        "warmup": false
+      },
+      {
+        "block": 1,
+        "pair_id": "huge_wide_parquet_lazyframe_body_full_scan-block-1-pair-0",
+        "position": 1,
+        "run_id": "huge_wide_parquet_lazyframe_body_full_scan-block-1-position-1-baseline",
+        "scenario_name": "huge_wide_parquet_lazyframe_body_full_scan",
+        "variant": "baseline",
+        "warmup": false
+      },
+      {
+        "block": 1,
+        "pair_id": "huge_wide_parquet_lazyframe_body_full_scan-block-1-pair-1",
+        "position": 2,
+        "run_id": "huge_wide_parquet_lazyframe_body_full_scan-block-1-position-2-baseline",
+        "scenario_name": "huge_wide_parquet_lazyframe_body_full_scan",
+        "variant": "baseline",
+        "warmup": false
+      },
+      {
+        "block": 1,
+        "pair_id": "huge_wide_parquet_lazyframe_body_full_scan-block-1-pair-1",
+        "position": 3,
+        "run_id": "huge_wide_parquet_lazyframe_body_full_scan-block-1-position-3-candidate",
+        "scenario_name": "huge_wide_parquet_lazyframe_body_full_scan",
+        "variant": "candidate",
+        "warmup": false
+      },
+      {
+        "block": 2,
+        "pair_id": "huge_wide_parquet_lazyframe_body_full_scan-block-2-pair-0",
+        "position": 0,
+        "run_id": "huge_wide_parquet_lazyframe_body_full_scan-block-2-position-0-baseline",
+        "scenario_name": "huge_wide_parquet_lazyframe_body_full_scan",
+        "variant": "baseline",
+        "warmup": false
+      },
+      {
+        "block": 2,
+        "pair_id": "huge_wide_parquet_lazyframe_body_full_scan-block-2-pair-0",
+        "position": 1,
+        "run_id": "huge_wide_parquet_lazyframe_body_full_scan-block-2-position-1-candidate",
+        "scenario_name": "huge_wide_parquet_lazyframe_body_full_scan",
+        "variant": "candidate",
+        "warmup": false
+      },
+      {
+        "block": 2,
+        "pair_id": "huge_wide_parquet_lazyframe_body_full_scan-block-2-pair-1",
+        "position": 2,
+        "run_id": "huge_wide_parquet_lazyframe_body_full_scan-block-2-position-2-candidate",
+        "scenario_name": "huge_wide_parquet_lazyframe_body_full_scan",
+        "variant": "candidate",
+        "warmup": false
+      },
+      {
+        "block": 2,
+        "pair_id": "huge_wide_parquet_lazyframe_body_full_scan-block-2-pair-1",
+        "position": 3,
+        "run_id": "huge_wide_parquet_lazyframe_body_full_scan-block-2-position-3-baseline",
+        "scenario_name": "huge_wide_parquet_lazyframe_body_full_scan",
+        "variant": "baseline",
+        "warmup": false
+      },
+      {
+        "block": 3,
+        "pair_id": "huge_wide_parquet_lazyframe_body_full_scan-block-3-pair-0",
+        "position": 0,
+        "run_id": "huge_wide_parquet_lazyframe_body_full_scan-block-3-position-0-candidate",
+        "scenario_name": "huge_wide_parquet_lazyframe_body_full_scan",
+        "variant": "candidate",
+        "warmup": false
+      },
+      {
+        "block": 3,
+        "pair_id": "huge_wide_parquet_lazyframe_body_full_scan-block-3-pair-0",
+        "position": 1,
+        "run_id": "huge_wide_parquet_lazyframe_body_full_scan-block-3-position-1-baseline",
+        "scenario_name": "huge_wide_parquet_lazyframe_body_full_scan",
+        "variant": "baseline",
+        "warmup": false
+      },
+      {
+        "block": 3,
+        "pair_id": "huge_wide_parquet_lazyframe_body_full_scan-block-3-pair-1",
+        "position": 2,
+        "run_id": "huge_wide_parquet_lazyframe_body_full_scan-block-3-position-2-baseline",
+        "scenario_name": "huge_wide_parquet_lazyframe_body_full_scan",
+        "variant": "baseline",
+        "warmup": false
+      },
+      {
+        "block": 3,
+        "pair_id": "huge_wide_parquet_lazyframe_body_full_scan-block-3-pair-1",
+        "position": 3,
+        "run_id": "huge_wide_parquet_lazyframe_body_full_scan-block-3-position-3-candidate",
+        "scenario_name": "huge_wide_parquet_lazyframe_body_full_scan",
+        "variant": "candidate",
+        "warmup": false
+      }
+    ]
+  },
+  "polars_threads": 4,
+  "profile": "huge",
+  "raw_record_count": 20,
+  "raw_sha256": "299307761f90b99cc7580f72f75ab6e8cbcf8d709b26cebd50daaa6562ff4389",
+  "scenarios": [
+    {
+      "autofit_max_rows": 20000,
+      "chunk_size": 8192,
+      "input_kind": "parquet_lazyframe",
+      "n_numeric_cols": 10,
+      "n_rows": 250000,
+      "n_text_cols": 4,
+      "name": "huge_tall_parquet_lazyframe_none",
+      "rule_autofit_columns": "none",
+      "should_autofit_columns": false
+    },
+    {
+      "autofit_max_rows": 20000,
+      "chunk_size": 8192,
+      "input_kind": "parquet_lazyframe",
+      "n_numeric_cols": 10,
+      "n_rows": 250000,
+      "n_text_cols": 4,
+      "name": "huge_tall_parquet_lazyframe_header",
+      "rule_autofit_columns": "header",
+      "should_autofit_columns": true
+    },
+    {
+      "autofit_max_rows": 20000,
+      "chunk_size": 8192,
+      "input_kind": "parquet_lazyframe",
+      "n_numeric_cols": 40,
+      "n_rows": 50000,
+      "n_text_cols": 20,
+      "name": "huge_wide_parquet_lazyframe_body",
+      "rule_autofit_columns": "body",
+      "should_autofit_columns": true
+    },
+    {
+      "autofit_max_rows": 20000,
+      "chunk_size": 8192,
+      "input_kind": "parquet_lazyframe",
+      "n_numeric_cols": 40,
+      "n_rows": 50000,
+      "n_text_cols": 20,
+      "name": "huge_wide_parquet_lazyframe_all",
+      "rule_autofit_columns": "all",
+      "should_autofit_columns": true
+    },
+    {
+      "autofit_max_rows": null,
+      "chunk_size": 8192,
+      "input_kind": "parquet_lazyframe",
+      "n_numeric_cols": 40,
+      "n_rows": 50000,
+      "n_text_cols": 20,
+      "name": "huge_wide_parquet_lazyframe_body_full_scan",
+      "rule_autofit_columns": "body",
+      "should_autofit_columns": true
+    },
+    {
+      "autofit_max_rows": null,
+      "chunk_size": 8192,
+      "input_kind": "parquet_lazyframe",
+      "n_numeric_cols": 40,
+      "n_rows": 50000,
+      "n_text_cols": 20,
+      "name": "huge_wide_parquet_lazyframe_all_full_scan",
+      "rule_autofit_columns": "all",
+      "should_autofit_columns": true
+    }
+  ],
+  "status": "incomplete",
+  "termination_reason": "operator stopped remaining scenarios after the first mandatory control completed all predeclared samples and failed; one in-flight later worker was terminated",
+  "timestamp_utc": "2026-09-08T04:16:26.798547+00:00",
+  "variants": [
+    {
+      "cargo_lock_sha256": "8abfc60890850338f57d07c570a1eb6ab0aee8ab7a144fbf13c3c8a82abff15f",
+      "checkout_root": "/tmp/neatxlsx-display-autofit-eval/baseline-single-pass",
+      "git_sha": null,
+      "git_status_short": null,
+      "label": "baseline",
+      "python": "/tmp/neatxlsx-display-autofit-eval/baseline-single-pass/.venv/bin/python",
+      "source_id": "1ca104048a7c5663783d690fde54b1c75fc9a0ff"
+    },
+    {
+      "cargo_lock_sha256": "d31b3f4f7c3604d1824a4a61362d0bd075929555f034efbaa40e78355f84d00f",
+      "checkout_root": "/tmp/neatxlsx-release-audit-20260908/candidate",
+      "git_sha": null,
+      "git_status_short": null,
+      "label": "candidate",
+      "python": "/home/fqzhang/project/neatxlsx/.worktrees/single-pass-autofit/.venv/bin/python",
+      "source_id": "c411b68a7a2c1c64df3333ec427a9715ab06f0ae49c45a2674f906f362cb6b5f"
+    }
+  ],
+  "verdict_policy": "display-autofit",
+  "warmup": 1,
+  "worker_path": "/home/fqzhang/project/neatxlsx/.worktrees/single-pass-autofit/scripts/benchmark_xlsx_writer.py",
+  "worker_sha256": "a28d4a8cecd3ff16a9457320675639cd1b03f034e6c8e69c049672c11389633e"
+}
