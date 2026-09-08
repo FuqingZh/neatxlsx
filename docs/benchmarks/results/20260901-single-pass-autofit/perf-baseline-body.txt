@@ -1,0 +1,185 @@
+# To display the perf.data header info, please use --header/--header-only options.
+#
+#
+# Total Lost Samples: 0
+#
+# Samples: 2K of event 'cycles:u'
+# Event count (approx.): 20222434083
+#
+# Overhead  Symbol                                                                                                                                                                                                                                                                                      IPC   [IPC Coverage]
+# ........  ..........................................................................................................................................................................................................................................................................................  ....................
+#
+    21.00%  [.] zlib_rs::deflate::longest_match::longest_match                                                                                                                                                                                                                                          -      -
+            |
+            ---zlib_rs::deflate::longest_match::longest_match
+
+    12.80%  [.] <core::hash::sip::Hasher<S> as core::hash::Hasher>::write                                                                                                                                                                                                                               -      -
+            |
+            ---<core::hash::sip::Hasher<S> as core::hash::Hasher>::write
+               |
+               |--2.55%--0x7
+               |
+               |--0.98%--0x850603c28d1494a8
+               |
+               |--0.75%--0xcb48d62b115df541
+               |
+               |--0.73%--0x3e21a4e2690b4a5f
+               |
+               |--0.65%--0xe3d88c7d210a4966
+               |
+                --0.51%--0x512672731cd585e3
+
+    10.94%  [.] zlib_rs::deflate::algorithm::medium::deflate_medium                                                                                                                                                                                                                                     -      -
+            |
+            ---zlib_rs::deflate::algorithm::medium::deflate_medium
+               |
+                --5.03%--zlib_rs::deflate::deflate
+                          0x7f571ddb7a0f
+
+     3.31%  [.] inflate_fast                                                                                                                                                                                                                                                                            -      -
+     2.96%  [.] _RNvNtNtNtNtNtCs3BFokC4QLxY_4core3num3imp7flt2dec8strategy5grisu19format_shortest_opt                                                                                                                                                                                                   -      -
+            |
+            ---_RNvNtNtNtNtNtCs3BFokC4QLxY_4core3num3imp7flt2dec8strategy5grisu19format_shortest_opt
+               |
+                --2.02%--_RINvNtNtCs3BFokC4QLxY_4core3fmt5float32float_to_decimal_common_shortestdEB6_
+                          _RNvNtCs3BFokC4QLxY_4core3fmt5write
+                          rust_xlsxwriter::worksheet::Worksheet::flush_data_row
+                          0x7f571ddb7a0f
+                          0x3b
+
+     2.92%  [.] _RNvNtNtNtNtNtCs3BFokC4QLxY_4core3num3imp7flt2dec8strategy6dragon12format_exact                                                                                                                                                                                                         -      -
+            |
+            ---_RNvNtNtNtNtNtCs3BFokC4QLxY_4core3num3imp7flt2dec8strategy6dragon12format_exact
+               _RINvNtNtCs3BFokC4QLxY_4core3fmt5float29float_to_decimal_common_exactdEB6_
+               _RNvNtCs3BFokC4QLxY_4core3fmt5write
+               _RNvNvNtCs8y6E41fb8tc_5alloc3fmt6format12format_inner
+               neatxlsx_core::writer::value::estimate_width_len
+
+     2.19%  [.] neatxlsx_core::writer::value::convert_arrow_value_with_plan                                                                                                                                                                                                                             -      -
+            |
+            ---neatxlsx_core::writer::value::convert_arrow_value_with_plan
+               |
+               |--0.87%--0x7f571dd39d7f
+               |
+                --0.63%--neatxlsx_core::writer::stream::write_arrow_record_batch_to_runtime_sheet
+                          0x3cf
+
+     2.10%  [.] __memmove_avx_unaligned_erms                                                                                                                                                                                                                                                            -      -
+            |
+            ---__memmove_avx_unaligned_erms
+               |
+                --0.56%--<std::io::default_write_fmt::Adapter<T> as core::fmt::Write>::write_str
+
+     2.03%  [.] neatxlsx_core::writer::stream::write_arrow_record_batch_to_runtime_sheet                                                                                                                                                                                                                -      -
+            |
+            ---neatxlsx_core::writer::stream::write_arrow_record_batch_to_runtime_sheet
+               |
+                --1.57%--0x3cf
+
+     1.80%  [.] alloc::collections::btree::map::BTreeMap<K,V,A>::insert                                                                                                                                                                                                                                 -      -
+            |
+            ---alloc::collections::btree::map::BTreeMap<K,V,A>::insert
+
+     1.80%  [.] fastsearch.llvm.9832789911285586643                                                                                                                                                                                                                                                     -      -
+     1.65%  [.] zlib_rs::deflate::flush_block_only                                                                                                                                                                                                                                                      -      -
+            |
+            ---zlib_rs::deflate::flush_block_only
+               |
+                --1.59%--zlib_rs::deflate::algorithm::medium::deflate_medium
+
+     1.52%  [.] core::hash::BuildHasher::hash_one                                                                                                                                                                                                                                                       -      -
+            |
+            ---core::hash::BuildHasher::hash_one
+
+     1.51%  [.] _RNvNtCs3BFokC4QLxY_4core3fmt5write                                                                                                                                                                                                                                                     -      -
+            |
+            ---_RNvNtCs3BFokC4QLxY_4core3fmt5write
+               |
+               |--0.68%--_RNvNvNtCs8y6E41fb8tc_5alloc3fmt6format12format_inner
+               |          |
+               |           --0.63%--rust_xlsxwriter::utility::column_number_to_name
+               |
+                --0.65%--rust_xlsxwriter::worksheet::Worksheet::flush_data_row
+
+     1.38%  [.] rust_xlsxwriter::worksheet::Worksheet::format_xf_index                                                                                                                                                                                                                                  -      -
+            |
+            ---rust_xlsxwriter::worksheet::Worksheet::format_xf_index
+               |
+                --0.75%--0x7fffffffffffffff
+
+     1.35%  [.] malloc                                                                                                                                                                                                                                                                                  -      -
+            |
+            ---__GI___libc_malloc (inlined)
+
+     1.29%  [.] crc32_z                                                                                                                                                                                                                                                                                 -      -
+            |
+            ---.LCPI26_0 (inlined)
+               _PyEval_EvalFrameDefault.org.0 (inlined)
+               _PyEval_EvalFrameDefault.org.0 (inlined)
+
+     1.20%  [.] _int_free                                                                                                                                                                                                                                                                               -      -
+            |
+            ---_int_free
+
+     1.15%  [.] _RNvNvNtCs8y6E41fb8tc_5alloc3fmt6format12format_inner                                                                                                                                                                                                                                   -      -
+            |
+            ---_RNvNvNtCs8y6E41fb8tc_5alloc3fmt6format12format_inner
+               |
+                --0.95%--rust_xlsxwriter::utility::column_number_to_name
+
+     1.14%  [.] _RNvNtNtNtNtNtCs3BFokC4QLxY_4core3num3imp7flt2dec8strategy5grisu16format_exact_opt                                                                                                                                                                                                      -      -
+            |
+            ---_RNvNtNtNtNtNtCs3BFokC4QLxY_4core3num3imp7flt2dec8strategy5grisu16format_exact_opt
+               |
+                --0.86%--_RINvNtNtCs3BFokC4QLxY_4core3fmt5float29float_to_decimal_common_exactdEB6_
+                          _RNvNtCs3BFokC4QLxY_4core3fmt5write
+                          _RNvNvNtCs8y6E41fb8tc_5alloc3fmt6format12format_inner
+                          neatxlsx_core::writer::value::estimate_width_len
+
+     1.06%  [.] <std::io::default_write_fmt::Adapter<T> as core::fmt::Write>::write_str                                                                                                                                                                                                                 -      -
+            |
+            ---<std::io::default_write_fmt::Adapter<T> as core::fmt::Write>::write_str
+
+     0.96%  [.] _RNvXs8_NtNtNtCs3BFokC4QLxY_4core3fmt3num3impmNtB9_7Display3fmt                                                                                                                                                                                                                         -      -
+            |
+            ---_RNvXs8_NtNtNtCs3BFokC4QLxY_4core3fmt3num3impmNtB9_7Display3fmt
+               _RNvNtCs3BFokC4QLxY_4core3fmt5write
+               rust_xlsxwriter::worksheet::Worksheet::flush_data_row
+               |
+                --0.51%--0x7f571ddb7a0f
+                          0x3b
+
+     0.87%  [.] neatxlsx_core::writer::plan::XlsxSheetPlanBuilder::scan_batch                                                                                                                                                                                                                           -      -
+            |
+            ---neatxlsx_core::writer::plan::XlsxSheetPlanBuilder::scan_batch
+
+     0.80%  [.] ZSTD_decompressSequences_default.constprop.0                                                                                                                                                                                                                                            -      -
+            |
+            ---ZSTD_decompressSequences_default.constprop.0
+               ZSTD_decompressBlock_internal
+
+     0.77%  [.] <rust_xlsxwriter::format::Font as core::hash::Hash>::hash                                                                                                                                                                                                                               -      -
+            |
+            ---<rust_xlsxwriter::format::Font as core::hash::Hash>::hash
+
+     0.71%  [.] rust_xlsxwriter::worksheet::Worksheet::flush_data_row                                                                                                                                                                                                                                   -      -
+            |
+            ---rust_xlsxwriter::worksheet::Worksheet::flush_data_row
+
+     0.66%  [.] zlib_rs::deflate::compare256::avx2::compare256                                                                                                                                                                                                                                          -      -
+            |
+            ---zlib_rs::deflate::compare256::avx2::compare256
+
+     0.60%  [.] __memcmp_avx2_movbe                                                                                                                                                                                                                                                                     -      -
+            |
+            ---__memcmp_avx2_movbe
+
+     0.56%  [k] 0xffffffffb5401100                                                                                                                                                                                                                                                                      -      -
+            |
+            ---0xffffffffb5401100
+
+
+
+#
+# (Tip: Boolean options have negative forms, e.g.: perf report --no-children)
+#

@@ -1,4 +1,35 @@
 {
+  "baseline": {
+    "bridge_abi": 5,
+    "bridge_contract": "neatxlsx.xlsx.writer.v5",
+    "package_version": "0.2.0",
+    "source_revision": "85c3519e7fd830c83dd0b3e52b00ff8db19c4ab3"
+  },
+  "inputs": {
+    "sheets": [
+      {
+        "data_kind": "LazyFrame",
+        "kwargs": {
+          "autofit": {
+            "max_rows": 20000,
+            "max_width": 60,
+            "min_width": 8,
+            "mode": "none",
+            "padding": 2
+          }
+        },
+        "name": "Large Rows",
+        "schema": [
+          [
+            "row",
+            "Int64"
+          ]
+        ],
+        "sentinels": []
+      }
+    ],
+    "workbook_kwargs": {}
+  },
   "kind": "workbook",
   "known_gaps": [],
   "reports": [
@@ -32,7 +63,7 @@
     }
   ],
   "scenario": "large-row-split",
-  "schema_version": 1,
+  "schema_version": 2,
   "sentinels": {},
   "worksheets": [
     {

@@ -1,0 +1,62 @@
+{
+  "timestamp_utc": "2026-02-12T07:07:04.021545+00:00",
+  "command": "scripts/benchmark_xlsx_writer.py --profile huge --repeat 2 --warmup 1",
+  "platform": "Linux-6.6.87.2-microsoft-standard-WSL2-x86_64-with-glibc2.39",
+  "python_version": "3.13.2",
+  "packages": {
+    "axiomkit": "local-src",
+    "polars": "1.38.1",
+    "xlsxwriter": "3.2.9"
+  },
+  "repeat": 2,
+  "warmup": 1,
+  "profile": "huge",
+  "scenarios": [
+    {
+      "scenario": {
+        "name": "huge_tall_header_autofit",
+        "n_rows": 250000,
+        "n_numeric_cols": 10,
+        "n_text_cols": 4,
+        "if_autofit_columns": true,
+        "rule_autofit_columns": "header"
+      },
+      "n_cols": 15,
+      "repeats": 2,
+      "warmup_runs": 1,
+      "times_seconds": [
+        19.298815763002494,
+        19.059939795999526
+      ],
+      "mean_seconds": 19.17937777950101,
+      "median_seconds": 19.17937777950101,
+      "min_seconds": 19.059939795999526,
+      "max_seconds": 19.298815763002494,
+      "stdev_seconds": 0.16891081613029302,
+      "output_size_bytes_mean": 22746075
+    },
+    {
+      "scenario": {
+        "name": "huge_wide_autofit_all",
+        "n_rows": 50000,
+        "n_numeric_cols": 40,
+        "n_text_cols": 20,
+        "if_autofit_columns": true,
+        "rule_autofit_columns": "all"
+      },
+      "n_cols": 61,
+      "repeats": 2,
+      "warmup_runs": 1,
+      "times_seconds": [
+        16.22718759700001,
+        15.942233688998385
+      ],
+      "mean_seconds": 16.084710642999198,
+      "median_seconds": 16.084710642999198,
+      "min_seconds": 15.942233688998385,
+      "max_seconds": 16.22718759700001,
+      "stdev_seconds": 0.20149284067355713,
+      "output_size_bytes_mean": 19996534
+    }
+  ]
+}

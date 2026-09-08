@@ -1,6 +1,211 @@
 {
+  "baseline": {
+    "bridge_abi": 5,
+    "bridge_contract": "neatxlsx.xlsx.writer.v5",
+    "package_version": "0.2.0",
+    "source_revision": "85c3519e7fd830c83dd0b3e52b00ff8db19c4ab3"
+  },
+  "inputs": {
+    "sheets": [
+      {
+        "data_kind": "DataFrame",
+        "kwargs": {
+          "autofit": {
+            "max_rows": 20000,
+            "max_width": 60,
+            "min_width": 8,
+            "mode": "all",
+            "padding": 2
+          },
+          "decimal_columns": [
+            "effect",
+            "p_value"
+          ],
+          "freeze_columns": 1,
+          "integer_columns": "count",
+          "scientific_notation": {
+            "max_absolute": 1000000.0,
+            "min_absolute": 0.0001,
+            "scope": "decimal"
+          }
+        },
+        "name": "Results",
+        "schema": [
+          [
+            "sample_id",
+            "String"
+          ],
+          [
+            "count",
+            "Int64"
+          ],
+          [
+            "effect",
+            "Float64"
+          ],
+          [
+            "p_value",
+            "Float64"
+          ],
+          [
+            "literal",
+            "String"
+          ],
+          [
+            "note",
+            "String"
+          ]
+        ],
+        "sentinels": [
+          "A1",
+          "B2",
+          "C2",
+          "D2",
+          "E2",
+          "E3",
+          "F3"
+        ]
+      }
+    ],
+    "workbook_kwargs": {}
+  },
   "kind": "workbook",
   "known_gaps": [],
+  "ooxml": {
+    "styles": {
+      "cell_xfs": [
+        {
+          "borderId": "0",
+          "fillId": "0",
+          "fontId": "0",
+          "numFmtId": "0",
+          "xfId": "0"
+        },
+        {
+          "applyAlignment": "1",
+          "applyBorder": "1",
+          "applyFont": "1",
+          "borderId": "1",
+          "fillId": "0",
+          "fontId": "1",
+          "numFmtId": "0",
+          "xfId": "0"
+        },
+        {
+          "applyAlignment": "1",
+          "applyFont": "1",
+          "borderId": "0",
+          "fillId": "0",
+          "fontId": "2",
+          "numFmtId": "0",
+          "xfId": "0"
+        },
+        {
+          "applyAlignment": "1",
+          "applyFont": "1",
+          "applyNumberFormat": "1",
+          "borderId": "0",
+          "fillId": "0",
+          "fontId": "2",
+          "numFmtId": "164",
+          "xfId": "0"
+        },
+        {
+          "applyAlignment": "1",
+          "applyFont": "1",
+          "applyNumberFormat": "1",
+          "borderId": "0",
+          "fillId": "0",
+          "fontId": "2",
+          "numFmtId": "165",
+          "xfId": "0"
+        },
+        {
+          "applyAlignment": "1",
+          "applyFont": "1",
+          "applyNumberFormat": "1",
+          "borderId": "0",
+          "fillId": "0",
+          "fontId": "2",
+          "numFmtId": "166",
+          "xfId": "0"
+        }
+      ],
+      "number_formats": [
+        {
+          "formatCode": "0",
+          "numFmtId": "164"
+        },
+        {
+          "formatCode": "0.00E+0",
+          "numFmtId": "165"
+        },
+        {
+          "formatCode": "0.0000",
+          "numFmtId": "166"
+        }
+      ]
+    },
+    "workbook_sheets": [
+      {
+        "name": "Results",
+        "relationship_id": "rId1",
+        "target": "xl/worksheets/sheet1.xml"
+      }
+    ],
+    "worksheets": [
+      {
+        "columns": [
+          {
+            "customWidth": "1",
+            "max": "1",
+            "min": "1",
+            "width": "11.7109375"
+          },
+          {
+            "customWidth": "1",
+            "max": "2",
+            "min": "2",
+            "width": "8.7109375"
+          },
+          {
+            "customWidth": "1",
+            "max": "4",
+            "min": "3",
+            "width": "9.7109375"
+          },
+          {
+            "customWidth": "1",
+            "max": "5",
+            "min": "5",
+            "width": "13.7109375"
+          },
+          {
+            "customWidth": "1",
+            "max": "6",
+            "min": "6",
+            "width": "8.7109375"
+          }
+        ],
+        "dimension_ref": "A1:F4",
+        "formula_like_cells": [
+          {
+            "address": "E2",
+            "has_formula": false,
+            "type": "inlineStr"
+          },
+          {
+            "address": "E3",
+            "has_formula": false,
+            "type": "inlineStr"
+          }
+        ],
+        "merges": [],
+        "name": "Results",
+        "target": "xl/worksheets/sheet1.xml"
+      }
+    ]
+  },
   "reports": [
     {
       "requested_name": "Results",
@@ -21,7 +226,7 @@
     }
   ],
   "scenario": "ordinary-scientific",
-  "schema_version": 1,
+  "schema_version": 2,
   "sentinels": {
     "Results": [
       {
@@ -81,7 +286,9 @@
         "A": 11.7109,
         "B": 8.7109,
         "C": 9.7109,
-        "D": 13.0
+        "D": 13.0,
+        "E": 13.7109,
+        "F": 8.7109
       }
     }
   ]

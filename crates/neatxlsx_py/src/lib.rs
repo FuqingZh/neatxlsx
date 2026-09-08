@@ -2,7 +2,7 @@ use std::collections::BTreeMap;
 use std::path::PathBuf;
 use std::sync::Arc;
 
-use arrow::array::StructArray;
+use arrow::array::{StructArray, new_empty_array};
 use arrow::datatypes::{ArrowDataType, ArrowSchema, Field as ArrowField};
 use arrow::record_batch::RecordBatchT;
 use neatxlsx_core::constant::{ColumnIdentifier, create_default_xlsx_write_options};
@@ -20,8 +20,8 @@ use pyo3::ffi as pyffi;
 use pyo3::prelude::*;
 use pyo3::types::{PyAny, PyIterator, PyList, PyTuple};
 
-pub const BRIDGE_ABI_VERSION: u64 = 5;
-pub const BRIDGE_CONTRACT_VERSION: &str = "neatxlsx.xlsx.writer.v5";
+pub const BRIDGE_ABI_VERSION: u64 = 6;
+pub const BRIDGE_CONTRACT_VERSION: &str = "neatxlsx.xlsx.writer.v6";
 pub const BRIDGE_TRANSPORT: &str = "arrow_c_data";
 pub const BUILD_PROFILE: &str = env!("NEATXLSX_BUILD_PROFILE");
 const C_ARROW_ARRAY_STREAM_CAPSULE_NAME: &[u8] = b"arrow_array_stream\0";
@@ -148,83 +148,7 @@ impl PyXlsxWriter {
     }
 
     #[pyo3(signature = (
-        body,
-        sheet_name,
-        header = None,
-        header_row_formats = None,
-        header_column_formats = None,
-        column_formats = None,
-        cols_integer = None,
-        cols_decimal = None,
-        num_frozen_cols = 0,
-        num_frozen_rows = None,
-        should_merge_header = false,
-        should_keep_missing_values = None,
-        policy_autofit = None,
-        policy_scientific = None,
-        value_plans = None
-    ))]
-    #[allow(clippy::too_many_arguments)]
-    fn write_sheet<'py>(
-        mut slf: PyRefMut<'py, Self>,
-        py: Python<'py>,
-        body: &Bound<'py, PyAny>,
-        sheet_name: &str,
-        header: Option<&Bound<'py, PyAny>>,
-        header_row_formats: Option<&Bound<'py, PyAny>>,
-        header_column_formats: Option<&Bound<'py, PyAny>>,
-        column_formats: Option<&Bound<'py, PyAny>>,
-        cols_integer: Option<&Bound<'py, PyAny>>,
-        cols_decimal: Option<&Bound<'py, PyAny>>,
-        num_frozen_cols: usize,
-        num_frozen_rows: Option<usize>,
-        should_merge_header: bool,
-        should_keep_missing_values: Option<bool>,
-        policy_autofit: Option<&Bound<'py, PyAny>>,
-        policy_scientific: Option<&Bound<'py, PyAny>>,
-        value_plans: Option<&Bound<'py, PyAny>>,
-    ) -> PyResult<PyRefMut<'py, Self>> {
-        let cfg_sheet_write_options = XlsxSheetWriteOptions {
-            header_row_formats: parse_header_row_formats(header_row_formats)?,
-            header_column_formats: parse_header_column_formats(header_column_formats)?,
-            column_formats: parse_column_formats(column_formats)?,
-            cols_integer: parse_column_refs(cols_integer)?,
-            cols_decimal: parse_column_refs(cols_decimal)?,
-            num_frozen_cols,
-            num_frozen_rows,
-            should_merge_header,
-            should_keep_missing_values,
-            policy_autofit: parse_autofit_policy(policy_autofit)?
-                .unwrap_or_else(AutofitPolicy::default),
-            policy_scientific: parse_scientific_policy(policy_scientific)?
-                .unwrap_or_else(ScientificPolicy::default),
-            value_plans: parse_column_value_plans(value_plans)?,
-        };
-
-        let header_grid = derive_optional_header_grid(py, header)?;
-        let plan = slf
-            .inner
-            .plan_sheet_from_record_batch_results(
-                PyRecordBatchIter::from_dataframe(py, body),
-                sheet_name,
-                header_grid,
-                &cfg_sheet_write_options,
-            )
-            .map_err(PyValueError::new_err)?;
-        slf.inner
-            .write_sheet_from_record_batch_results(
-                plan,
-                PyRecordBatchIter::from_dataframe(py, body),
-                &cfg_sheet_write_options,
-            )
-            .map_err(PyValueError::new_err)?;
-
-        Ok(slf)
-    }
-
-    #[pyo3(signature = (
-        batches_scan,
-        batches_write,
+        batches,
         sheet_name,
         header = None,
         header_row_formats = None,
@@ -245,8 +169,7 @@ impl PyXlsxWriter {
     fn write_sheet_batches<'py>(
         mut slf: PyRefMut<'py, Self>,
         py: Python<'py>,
-        batches_scan: &Bound<'py, PyAny>,
-        batches_write: &Bound<'py, PyAny>,
+        batches: &Bound<'py, PyAny>,
         sheet_name: &str,
         header: Option<&Bound<'py, PyAny>>,
         header_row_formats: Option<&Bound<'py, PyAny>>,
@@ -281,95 +204,9 @@ impl PyXlsxWriter {
         };
 
         let header_grid = derive_optional_header_grid(py, header)?;
-        let plan = slf
-            .inner
-            .plan_sheet_from_record_batch_results(
-                PyRecordBatchIter::from_arrow_stream_or_iterable_with_schema(
-                    batches_scan,
-                    schema_body,
-                )?,
-                sheet_name,
-                header_grid,
-                &cfg_sheet_write_options,
-            )
-            .map_err(PyValueError::new_err)?;
         slf.inner
             .write_sheet_from_record_batch_results(
-                plan,
-                PyRecordBatchIter::from_arrow_stream_or_iterable_with_schema(
-                    batches_write,
-                    schema_body,
-                )?,
-                &cfg_sheet_write_options,
-            )
-            .map_err(PyValueError::new_err)?;
-
-        Ok(slf)
-    }
-
-    #[pyo3(signature = (
-        batches_write,
-        sheet_name,
-        header = None,
-        header_row_formats = None,
-        header_column_formats = None,
-        column_formats = None,
-        cols_integer = None,
-        cols_decimal = None,
-        num_frozen_cols = 0,
-        num_frozen_rows = None,
-        should_merge_header = false,
-        should_keep_missing_values = None,
-        policy_autofit = None,
-        policy_scientific = None,
-        schema_body = None,
-        value_plans = None
-    ))]
-    #[allow(clippy::too_many_arguments)]
-    fn write_sheet_batches_single_pass<'py>(
-        mut slf: PyRefMut<'py, Self>,
-        py: Python<'py>,
-        batches_write: &Bound<'py, PyAny>,
-        sheet_name: &str,
-        header: Option<&Bound<'py, PyAny>>,
-        header_row_formats: Option<&Bound<'py, PyAny>>,
-        header_column_formats: Option<&Bound<'py, PyAny>>,
-        column_formats: Option<&Bound<'py, PyAny>>,
-        cols_integer: Option<&Bound<'py, PyAny>>,
-        cols_decimal: Option<&Bound<'py, PyAny>>,
-        num_frozen_cols: usize,
-        num_frozen_rows: Option<usize>,
-        should_merge_header: bool,
-        should_keep_missing_values: Option<bool>,
-        policy_autofit: Option<&Bound<'py, PyAny>>,
-        policy_scientific: Option<&Bound<'py, PyAny>>,
-        schema_body: Option<&Bound<'py, PyAny>>,
-        value_plans: Option<&Bound<'py, PyAny>>,
-    ) -> PyResult<PyRefMut<'py, Self>> {
-        let cfg_sheet_write_options = XlsxSheetWriteOptions {
-            header_row_formats: parse_header_row_formats(header_row_formats)?,
-            header_column_formats: parse_header_column_formats(header_column_formats)?,
-            column_formats: parse_column_formats(column_formats)?,
-            cols_integer: parse_column_refs(cols_integer)?,
-            cols_decimal: parse_column_refs(cols_decimal)?,
-            num_frozen_cols,
-            num_frozen_rows,
-            should_merge_header,
-            should_keep_missing_values,
-            policy_autofit: parse_autofit_policy(policy_autofit)?
-                .unwrap_or_else(AutofitPolicy::default),
-            policy_scientific: parse_scientific_policy(policy_scientific)?
-                .unwrap_or_else(ScientificPolicy::default),
-            value_plans: parse_column_value_plans(value_plans)?,
-        };
-
-        let header_grid = derive_optional_header_grid(py, header)?;
-        slf.inner
-            .write_sheet_from_record_batch_results_single_pass(
-                PyRecordBatchIter::from_arrow_stream_or_iterable_with_schema(
-                    batches_write,
-                    schema_body,
-                )?,
+                PyRecordBatchIter::from_arrow_stream_or_iterable_with_schema(batches, schema_body)?,
                 sheet_name,
                 header_grid,
                 &cfg_sheet_write_options,
@@ -460,7 +297,6 @@ fn parse_column_value_plans(value: Option<&Bound<'_, PyAny>>) -> PyResult<Vec<Co
 struct PyRecordBatchIter<'py> {
     py: Python<'py>,
     iter: Option<Bound<'py, PyIterator>>,
-    single: Option<Bound<'py, PyAny>>,
     stream_current: Option<PyArrowCStreamBatchIter<'py>>,
     schema_fallback: Option<Bound<'py, PyAny>>,
     has_yielded_batch: bool,
@@ -469,24 +305,10 @@ struct PyRecordBatchIter<'py> {
 }
 
 impl<'py> PyRecordBatchIter<'py> {
-    fn from_dataframe(py: Python<'py>, df: &Bound<'py, PyAny>) -> Self {
-        Self {
-            py,
-            iter: None,
-            single: Some(df.clone()),
-            stream_current: None,
-            schema_fallback: None,
-            has_yielded_batch: false,
-            has_used_schema_fallback: false,
-            is_done: false,
-        }
-    }
-
     fn from_iterable(obj: &Bound<'py, PyAny>) -> PyResult<Self> {
         Ok(Self {
             py: obj.py(),
             iter: Some(obj.try_iter()?),
-            single: None,
             stream_current: None,
             schema_fallback: None,
             has_yielded_batch: false,
@@ -507,7 +329,6 @@ impl<'py> PyRecordBatchIter<'py> {
             return Ok(Self {
                 py: obj.py(),
                 iter: None,
-                single: None,
                 stream_current: Some(create_arrow_c_stream_batch_iter_from_arrow_stream_source(
                     obj,
                 )?),
@@ -545,9 +366,7 @@ impl Iterator for PyRecordBatchIter<'_> {
                 return None;
             }
 
-            let item = if let Some(single) = self.single.take() {
-                single
-            } else if let Some(iter) = self.iter.as_mut() {
+            let item = if let Some(iter) = self.iter.as_mut() {
                 match iter.next() {
                     Some(Ok(item)) => item,
                     Some(Err(err)) => return Some(Err(err.to_string())),
@@ -555,7 +374,14 @@ impl Iterator for PyRecordBatchIter<'_> {
                         if !self.has_yielded_batch && !self.has_used_schema_fallback {
                             if let Some(schema_fallback) = self.schema_fallback.take() {
                                 self.has_used_schema_fallback = true;
-                                schema_fallback
+                                self.is_done = true;
+                                return Some(
+                                    create_empty_record_batch_from_any_dataframe(
+                                        self.py,
+                                        &schema_fallback,
+                                    )
+                                    .map_err(|err| err.to_string()),
+                                );
                             } else {
                                 self.is_done = true;
                                 return None;
@@ -569,7 +395,11 @@ impl Iterator for PyRecordBatchIter<'_> {
             } else if !self.has_yielded_batch && !self.has_used_schema_fallback {
                 if let Some(schema_fallback) = self.schema_fallback.take() {
                     self.has_used_schema_fallback = true;
-                    schema_fallback
+                    self.is_done = true;
+                    return Some(
+                        create_empty_record_batch_from_any_dataframe(self.py, &schema_fallback)
+                            .map_err(|err| err.to_string()),
+                    );
                 } else {
                     self.is_done = true;
                     return None;
@@ -681,6 +511,25 @@ fn create_arrow_c_stream_batch_iter_from_any_dataframe<'py>(
     let df_polars = convert_to_polars_dataframe(py, df)?;
     let obj_capsule = df_polars.call_method0("__arrow_c_stream__")?;
     PyArrowCStreamBatchIter::try_new(obj_capsule, Some(df_polars))
+}
+
+fn create_empty_record_batch_from_any_dataframe(
+    py: Python<'_>,
+    df: &Bound<'_, PyAny>,
+) -> PyResult<XlsxRecordBatch> {
+    let df_polars = convert_to_polars_dataframe(py, df)?;
+    let obj_capsule = df_polars.call_method0("__arrow_c_stream__")?;
+    let stream = PyArrowCStreamBatchIter::try_new(obj_capsule, Some(df_polars))?;
+    let schema_ref = Arc::clone(&stream.schema_ref);
+    let arrays = schema_ref
+        .iter_values()
+        .map(|field| new_empty_array(field.dtype().clone()))
+        .collect();
+    RecordBatchT::try_new(0, schema_ref, arrays).map_err(|err| {
+        PyValueError::new_err(format!(
+            "Failed to construct zero-row Arrow record batch from schema fallback: {err}"
+        ))
+    })
 }
 
 fn create_arrow_c_stream_batch_iter_from_arrow_stream_source<'py>(

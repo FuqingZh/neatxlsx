@@ -1,0 +1,394 @@
+# To display the perf.data header info, please use --header/--header-only options.
+#
+#
+# Total Lost Samples: 0
+#
+# Samples: 7K of event 'cycles:u'
+# Event count (approx.): 99030429735
+#
+# Overhead  Command          Shared Object            Symbol
+# ........  ...............  .......................  .................................................................................................................................................................................................................................................................
+#
+    25.93%  python           python3.13               [.] _PyEval_EvalFrameDefault
+     3.97%  python           _native.abi3.so          [.] zlib_rs::deflate::longest_match::longest_match
+            |
+            ---zlib_rs::deflate::longest_match::longest_match
+
+     3.35%  python           python3.13               [.] _PyObject_Malloc
+     3.28%  python           python3.13               [.] sha256_block_data_order_avx2
+            |
+            |--1.50%--sqlite3DropTable.org.0 (inlined)
+            |
+             --1.07%--sqlite3CreateForeignKey.org.0 (inlined)
+
+     3.08%  python           _native.abi3.so          [.] <core::hash::sip::Hasher<S> as core::hash::Hasher>::write
+            |
+            ---<core::hash::sip::Hasher<S> as core::hash::Hasher>::write
+               |
+                --2.09%--0x6f0bc5a30cda4fa3
+
+     3.04%  python           python3.13               [.] PyObject_GenericGetAttr
+     2.66%  python           python3.13               [.] _PyObject_Free
+     2.16%  python           python3.13               [.] _io_TextIOWrapper_write
+     1.84%  python           _native.abi3.so          [.] zlib_rs::deflate::algorithm::medium::deflate_medium
+            |
+            ---zlib_rs::deflate::algorithm::medium::deflate_medium
+               |
+                --0.92%--zlib_rs::deflate::deflate
+                          0x7f71d58b723f
+
+     1.80%  python           libc-2.28.so             [.] __memmove_avx_unaligned_erms
+            |
+            ---__memmove_avx_unaligned_erms
+
+     1.79%  python           python3.13               [.] PyObject_GetOptionalAttr
+     1.69%  python           _native.abi3.so          [.] _RNvNtNtNtNtNtCs3BFokC4QLxY_4core3num3imp7flt2dec8strategy6dragon12format_exact
+            |
+            ---_RNvNtNtNtNtNtCs3BFokC4QLxY_4core3num3imp7flt2dec8strategy6dragon12format_exact
+               _RINvNtNtCs3BFokC4QLxY_4core3fmt5float29float_to_decimal_common_exactdEB6_
+               _RNvNtCs3BFokC4QLxY_4core3fmt5write
+               _RNvNvNtCs8y6E41fb8tc_5alloc3fmt6format12format_inner
+               neatxlsx_core::writer::value::NormalizedCell::estimated_width
+
+     1.40%  python           python3.13               [.] PyUnicode_Contains
+     1.33%  python           python3.13               [.] inflate_fast
+     1.23%  python           python3.13               [.] _PyObject_GetMethod
+     1.14%  python           python3.13               [.] td_cache+0xffffffffffb2a058
+     1.13%  python           python3.13               [.] PyUnicode_Concat
+     1.11%  python           python3.13               [.] normal_updatePosition
+            |
+            ---common_get_params (inlined)
+
+     1.09%  python           python3.13               [.] gc_collect_main.llvm.12973745181020017436
+     0.92%  python           python3.13               [.] mi_segment_map+0xffffffffffb2a480
+     0.88%  python           python3.13               [.] storeAtts
+     0.86%  python           [unknown]                [k] 0xffffffffb5401100
+            |
+            ---0xffffffffb5401100
+
+     0.86%  python           python3.13               [.] list_dealloc
+     0.78%  python           python3.13               [.] getset_get
+     0.74%  python           python3.13               [.] _PyFunction_Vectorcall
+     0.73%  python           _native.abi3.so          [.] _RNvNtNtNtNtNtCs3BFokC4QLxY_4core3num3imp7flt2dec8strategy5grisu19format_shortest_opt
+            |
+            ---_RNvNtNtNtNtNtCs3BFokC4QLxY_4core3num3imp7flt2dec8strategy5grisu19format_shortest_opt
+               |
+                --0.51%--_RINvNtNtCs3BFokC4QLxY_4core3fmt5float32float_to_decimal_common_shortestdEB6_
+                          _RNvNtCs3BFokC4QLxY_4core3fmt5write
+                          rust_xlsxwriter::worksheet::Worksheet::flush_data_row
+                          0x7f71d58b723f
+                          0x3b
+
+     0.73%  python           python3.13               [.] element_dealloc
+     0.66%  python           libc-2.28.so             [.] __strlen_avx2
+            |
+            ---__strlen_avx2
+
+     0.65%  python           _native.abi3.so          [.] neatxlsx_core::writer::stream::write_arrow_record_batch_to_runtime_sheet
+            |
+            ---neatxlsx_core::writer::stream::write_arrow_record_batch_to_runtime_sheet
+
+     0.63%  python           python3.13               [.] deduce_unreachable.warm
+     0.63%  python           python3.13               [.] accountingDiffTolerated
+     0.62%  python           python3.13               [.] _elementtree_Element_items
+     0.61%  python           python3.13               [.] object_recursive_isinstance.llvm.1354319147215566280
+     0.57%  python           python3.13               [.] PyUnicode_FromString
+     0.55%  python           python3.13               [.] _mi_abandoned_default+0xffffffffffb2a034
+     0.55%  python           python3.13               [.] elementiter_next
+     0.53%  python           python3.13               [.] tupledealloc
+     0.51%  python           python3.13               [.] normal_getAtts
+     0.50%  python           python3.13               [.] PyUnicode_DecodeUTF8
+     0.49%  python           python3.13               [.] PyDict_Items.cold
+     0.48%  python           python3.13               [.] sip24_final
+     0.48%  python           _native.abi3.so          [.] _RNvNtNtNtNtNtCs3BFokC4QLxY_4core3num3imp7flt2dec8strategy5grisu16format_exact_opt
+     0.47%  python           python3.13               [.] doContent
+     0.44%  python           python3.13               [.] normal_contentTok
+     0.40%  python           libc-2.28.so             [.] __memset_avx2_unaligned_erms
+     0.39%  python           python3.13               [.] crc32_z
+     0.39%  python           python3.13               [.] normal_nameLength
+     0.38%  python           python3.13               [.] _PyDict_SetItem_Take2
+     0.38%  python           libc-2.28.so             [.] malloc
+     0.38%  python           python3.13               [.] PyDict_GetItemWithError
+     0.38%  python           python3.13               [.] normal_scanAtts
+     0.38%  python           python3.13               [.] list_vectorcall
+     0.37%  python           python3.13               [.] mi_arenas+0xffffffffffb2a22b
+     0.37%  python           python3.13               [.] fastsearch.llvm.9832789911285586643
+     0.36%  python           python3.13               [.] _textiowrapper_writeflush.warm
+     0.36%  python           python3.13               [.] _PyErr_SetObject
+     0.35%  python           _native.abi3.so          [.] _RNvNtCs3BFokC4QLxY_4core3fmt5write
+     0.35%  python           python3.13               [.] pysiphash
+     0.34%  python           python3.13               [.] PyType_GenericAlloc
+     0.33%  python           python3.13               [.] PyList_Append
+     0.33%  python           _native.abi3.so          [.] core::hash::BuildHasher::hash_one
+     0.32%  python           python3.13               [.] unicode_dealloc
+     0.31%  python           python3.13               [.] makeuniversal
+     0.31%  python           _native.abi3.so          [.] rust_xlsxwriter::worksheet::Worksheet::format_xf_index
+     0.29%  python           python3.13               [.] element_getitem
+     0.28%  python           _native.abi3.so          [.] zlib_rs::deflate::flush_block_only
+     0.28%  python           python3.13               [.] dict_dealloc
+     0.28%  python           python3.13               [.] treebuilder_handle_start
+     0.28%  python           python3.13               [.] PyTuple_New
+     0.27%  python           python3.13               [.] element_gc_clear
+     0.27%  python           python3.13               [.] visit_reachable
+     0.26%  python           python3.13               [.] utf8_toUtf8
+     0.26%  python           _native.abi3.so          [.] _RNvNvNtCs8y6E41fb8tc_5alloc3fmt6format12format_inner
+     0.26%  python           python3.13               [.] _PyObject_VectorcallTstate.llvm.16102248842622572431
+     0.24%  python           _native.abi3.so          [.] <std::io::default_write_fmt::Adapter<T> as core::fmt::Write>::write_str
+     0.24%  python           python3.13               [.] expat_start_handler
+     0.23%  python           libc-2.28.so             [.] _int_free
+     0.23%  python           python3.13               [.] list_iter
+     0.23%  python           _native.abi3.so          [.] neatxlsx_core::writer::value::convert_arrow_value_with_plan
+     0.23%  python           python3.13               [.] listiter_dealloc
+     0.22%  python           python3.13               [.] iter_iternext
+     0.22%  python           python3.13               [.] _PyObject_GC_New
+     0.22%  python           python3.13               [.] hash
+     0.22%  python           python3.13               [.] PyDict_Items.warm
+     0.21%  python           python3.13               [.] list_extend_lock_held.llvm.6822750682510564889
+     0.20%  python           _native.abi3.so          [.] alloc::collections::btree::map::BTreeMap<K,V,A>::insert
+     0.20%  python           python3.13               [.] treebuilder_handle_end
+     0.20%  python           _native.abi3.so          [.] rust_xlsxwriter::worksheet::Worksheet::flush_data_row
+     0.20%  python           libc-2.28.so             [.] __memcmp_avx2_movbe
+     0.18%  python           _native.abi3.so          [.] <rust_xlsxwriter::format::Font as core::hash::Hash>::hash
+     0.18%  python           python3.13               [.] bytes_richcompare
+     0.18%  python           python3.13               [.] lookup
+     0.18%  python           python3.13               [.] PyList_New
+     0.18%  python           python3.13               [.] expat_end_handler
+     0.16%  python           libc-2.28.so             [.] realloc
+     0.16%  python           python3.13               [.] _PyObject_Calloc
+     0.15%  python           python3.13               [.] PyObject_RichCompareBool
+     0.15%  python           _native.abi3.so          [.] neatxlsx_core::writer::value::normalize_arrow_cell
+     0.15%  python           _native.abi3.so          [.] _RNvMsa_NtCs3BFokC4QLxY_4core3fmtNtB5_9Formatter21write_formatted_parts
+     0.14%  python           python3.13               [.] PyDict_Items
+     0.13%  python           _native.abi3.so          [.] _RNvXs8_NtNtNtCs3BFokC4QLxY_4core3fmt3num3impmNtB9_7Display3fmt
+     0.13%  python           python3.13               [.] PyErr_CheckSignals
+     0.13%  python           _native.abi3.so          [.] _RNvXsZ_NtCs8y6E41fb8tc_5alloc6stringNtB5_6StringNtNtCs3BFokC4QLxY_4core3fmt5Write9write_str
+     0.13%  python           _native.abi3.so          [.] neatxlsx_core::util::convert_cell_value
+     0.12%  python           _native.abi3.so          [.] neatxlsx_core::writer::render::write_cell_with_format
+     0.11%  python           python3.13               [.] getAttributeId
+     0.11%  python           python3.13               [.] iter_dealloc
+     0.11%  python           python3.13               [.] element_add_subelement
+     0.11%  python           _native.abi3.so          [.] zlib_rs::deflate::compare256::avx2::compare256
+     0.11%  python           python3.13               [.] PyDict_GetItemWithError.warm
+     0.11%  python           python3.13               [.] PyObject_GC_Del
+     0.11%  python           python3.13               [.] _PyObject_Realloc
+     0.11%  python           _native.abi3.so          [.] _RINvNtNtCs3BFokC4QLxY_4core3fmt5float29float_to_decimal_common_exactdEB6_
+     0.11%  python           _native.abi3.so          [.] _RNvMs2_NtNtNtCs3BFokC4QLxY_4core3num3imp6bignumNtB5_8Big32x408mul_pow2
+     0.10%  python           python3.13               [.] create_new_element
+     0.10%  python           _native.abi3.so          [.] alloc::collections::btree::node::Handle<alloc::collections::btree::node::NodeRef<alloc::collections::btree::node::marker::Mut,K,V,alloc::collections::btree::node::marker::Leaf>,alloc::collections::btree::node::marker::Edge>::insert_recursing
+     0.10%  python           python3.13               [.] BaseException_init
+     0.10%  python           python3.13               [.] element_tag_getter
+     0.09%  async-executor-  _polars_runtime.abi3.so  [.] ZSTD_decompressSequences_default.constprop.0
+     0.09%  python           _native.abi3.so          [.] <rust_xlsxwriter::format::Border as core::hash::Hash>::hash
+     0.08%  python           _native.abi3.so          [.] <rust_xlsxwriter::format::Format as core::cmp::PartialEq>::eq
+     0.08%  python           _native.abi3.so          [.] _RINvNvMs2_NtCs8y6E41fb8tc_5alloc7raw_vecINtB8_11RawVecInnerpE7reserve21do_reserve_and_handleNtNtBa_5alloc6GlobalEBa_
+     0.08%  python           python3.13               [.] element_text_getter
+     0.08%  python           libc-2.28.so             [.] _int_malloc
+     0.08%  python           _native.abi3.so          [.] neatxlsx_core::writer::value::NormalizedCell::estimated_width
+     0.08%  python           _native.abi3.so          [.] rust_xlsxwriter::worksheet::Worksheet::store_number_type
+     0.08%  python           _native.abi3.so          [.] _RNvMsa_NtCs3BFokC4QLxY_4core3fmtNtB5_9Formatter12pad_integral
+     0.08%  python           _native.abi3.so          [.] _RNvMs4_NtCs8y6E41fb8tc_5alloc7raw_vecNtB5_11RawVecInner11finish_growB7_
+     0.07%  python           python3.13               [.] inflate_fast.cold
+     0.07%  python           python3.13               [.] type_call
+     0.07%  python           libc-2.28.so             [.] __memchr_avx2
+     0.07%  python           python3.13               [.] memcpy@plt
+     0.07%  python           libc-2.28.so             [.] __memset_avx2_erms
+     0.07%  python           python3.13               [.] BaseException_dealloc
+     0.07%  python           _native.abi3.so          [.] zlib_rs::deflate::compare256::compare256_slice
+     0.07%  python           _native.abi3.so          [.] _RNvNtNtNtCs3BFokC4QLxY_4core3num3imp7flt2dec17digits_to_dec_str
+     0.06%  python           python3.13               [.] accountingDiffTolerated.warm
+     0.06%  python           _native.abi3.so          [.] zlib_rs::deflate::slide_hash::avx2::slide_hash_chain
+     0.06%  python           _native.abi3.so          [.] polars_arrow::array::Array::is_null
+     0.06%  python           _native.abi3.so          [.] rust_xlsxwriter::worksheet::Worksheet::insert_cell
+     0.06%  python           _native.abi3.so          [.] rust_xlsxwriter::xmlwriter::escape_xml_data
+     0.06%  python           _native.abi3.so          [.] <rust_xlsxwriter::format::Font as core::cmp::PartialEq>::eq
+     0.06%  python           _native.abi3.so          [.] _RNvNvMsa_NtCs3BFokC4QLxY_4core3fmtNtB7_9Formatter12pad_integral12write_prefix
+     0.06%  python           python3.13               [.] bytesio_get_closed
+     0.06%  python           python3.13               [.] strlen@plt
+     0.06%  python           python3.13               [.] unicode_length
+     0.05%  python           python3.13               [.] treebuilder_extend_element_text_or_tail
+     0.05%  python           _native.abi3.so          [.] rust_xlsxwriter::worksheet::Worksheet::store_string
+     0.05%  python           python3.13               [.] PyObject_Str
+     0.05%  python           python3.13               [.] expat_data_handler
+     0.05%  python           _native.abi3.so          [.] _RNvMsa_NtCs3BFokC4QLxY_4core3fmtNtB5_9Formatter19pad_formatted_parts
+     0.05%  python           python3.13               [.] 0x00000000000242e0
+     0.05%  python           _native.abi3.so          [.] rust_xlsxwriter::xmlwriter::escape_xml_escapes
+     0.05%  python           python3.13               [.] PyErr_GivenExceptionMatches
+     0.05%  python           _native.abi3.so          [.] _RNvMsa_NtCs3BFokC4QLxY_4core3fmtNtB5_9Formatter3pad
+     0.05%  python           python3.13               [.] element_tail_getter
+     0.04%  python           _native.abi3.so          [.] rust_xlsxwriter::utility::column_number_to_name
+     0.04%  python           _native.abi3.so          [.] _RINvNtNtCs3BFokC4QLxY_4core3fmt5float32float_to_decimal_common_shortestdEB6_
+     0.04%  python           _native.abi3.so          [.] _RNvNtNtCs3BFokC4QLxY_4core3str5count23char_count_general_case
+     0.04%  python           _native.abi3.so          [.] neatxlsx_core::writer::value::estimate_unicode_string_width
+     0.04%  python           [unknown]                [k] 0xffffffffb5401c40
+     0.04%  python           _native.abi3.so          [.] <alloc::boxed::Box<T,A> as core::fmt::Display>::fmt
+     0.03%  python           python3.13               [.] object_dealloc
+     0.03%  python           python3.13               [.] poolGrow
+     0.03%  python           python3.13               [.] PyList_SetItem
+     0.03%  python           python3.13               [.] element_gc_clear.warm
+     0.03%  python           python3.13               [.] BaseException_new
+     0.03%  python           libpthread-2.28.so       [.] pthread_self@GLIBC_2.2.5
+     0.03%  python           _native.abi3.so          [.] rust_xlsxwriter::worksheet::Worksheet::get_cell_xf_index
+     0.03%  python           _native.abi3.so          [.] core::ptr::drop_in_place<rust_xlsxwriter::worksheet::CellType>
+     0.03%  python           python3.13               [.] PySequence_Fast
+     0.03%  python           python3.13               [.] free@plt
+     0.03%  python           _native.abi3.so          [.] _RNvCs4SDFJOLwvtW_7___rustc35___rust_no_alloc_shim_is_unstable_v2
+     0.03%  python           _native.abi3.so          [.] alloc::sync::Arc<T,A>::drop_slow
+     0.03%  python           _native.abi3.so          [.] polars_arrow::array::binview::BinaryViewArrayGeneric<T>::value
+     0.03%  python           libc-2.28.so             [.] cfree@GLIBC_2.2.5
+     0.03%  python           python3.13               [.] element_length
+     0.03%  python           _native.abi3.so          [.] _RNvXsZ_NtCs8y6E41fb8tc_5alloc6stringNtB5_6StringNtNtCs3BFokC4QLxY_4core3fmt5Write10write_char
+     0.03%  python           _native.abi3.so          [.] _RNvCs4SDFJOLwvtW_7___rustc13___rdl_dealloc
+     0.03%  python           _native.abi3.so          [.] _RNvCs4SDFJOLwvtW_7___rustc12___rust_alloc
+     0.02%  python           _native.abi3.so          [.] _RNvNtNtNtNtNtCs3BFokC4QLxY_4core3num3imp7flt2dec8strategy6dragon9mul_pow10
+     0.02%  python           python3.13               [.] _list_extend.llvm.6822750682510564889
+     0.02%  python           _native.abi3.so          [.] _RNvCs4SDFJOLwvtW_7___rustc13___rdl_realloc
+     0.02%  python           python3.13               [.] inflate_table
+     0.02%  python           _native.abi3.so          [.] polars_arrow::array::Array::is_null
+     0.02%  python           python3.13               [.] type_new
+     0.02%  python           python3.13               [.] element_add_subelement.warm
+     0.02%  python           python3.13               [.] storeAtts.warm
+     0.02%  python           python3.13               [.] bytes_hash
+     0.02%  python           _native.abi3.so          [.] _RNvCs4SDFJOLwvtW_7___rustc11___rdl_alloc
+     0.02%  python           _native.abi3.so          [.] <alloc::collections::btree::dedup_sorted_iter::DedupSortedIter<K,V,I> as core::iter::traits::iterator::Iterator>::next
+     0.02%  python           python3.13               [.] tok_get_normal_mode.llvm.4256215740449384895
+     0.02%  python           python3.13               [.] _PyCode_New
+     0.02%  python           python3.13               [.] PyDict_GetItemRef
+     0.02%  python           python3.13               [.] obmalloc_state_main.llvm.12007966093412705991+0xffffffffffb2cf88
+     0.02%  python           python3.13               [.] _textiowrapper_writeflush
+     0.01%  python           python3.13               [.] _PyDict_GetItemRef_KnownHash
+     0.01%  python           _polars_runtime.abi3.so  [.] emap_try_acquire_edata_neighbor_impl
+     0.01%  python           _native.abi3.so          [.] crc32fast::specialized::pclmulqdq::calculate
+     0.01%  python           _native.abi3.so          [.] alloc::raw_vec::RawVecInner<A>::try_allocate_in
+     0.01%  python           _native.abi3.so          [.] _$LT$alloc..collections..btree..map..BTreeMap$LT$K$C$V$GT$$u20$as$u20$core..convert..From$LT$$u5b$$LP$K$C$V$RP$$u3b$$u20$N$u5d$$GT$$GT$::from::heb964e908b7e36cb
+     0.01%  python           python3.13               [.] _PyObject_ClearFreeLists
+     0.01%  python           _native.abi3.so          [.] _RNvXsq_NtCs8y6E41fb8tc_5alloc6stringNtB5_6StringNtNtCs3BFokC4QLxY_4core3fmt7Display3fmt.llvm.11399316059216707316
+     0.01%  python           libc-2.28.so             [.] __strncmp_avx2
+     0.01%  python           _native.abi3.so          [.] <polars_arrow::array::primitive::PrimitiveArray<T> as polars_arrow::array::Array>::dtype
+     0.01%  python           _native.abi3.so          [.] zlib_rs::deflate::Heap::construct_huffman_tree
+     0.01%  python           libc-2.28.so             [.] _int_realloc
+     0.01%  python           _native.abi3.so          [.] _RNvXs4_NtCs8y6E41fb8tc_5alloc6stringNtB5_6StringNtNtCs3BFokC4QLxY_4core5clone5Clone5clone
+     0.01%  python           _native.abi3.so          [.] rust_xlsxwriter::worksheet::Worksheet::insert_cell_to_table
+     0.01%  python           _native.abi3.so          [.] zlib_rs::deflate::gen_codes
+     0.01%  python           _native.abi3.so          [.] _RNvCs4SDFJOLwvtW_7___rustc14___rust_dealloc
+     0.01%  python           _native.abi3.so          [.] <hashbrown::raw::RawTable<T,A> as core::ops::drop::Drop>::drop
+     0.01%  python           _native.abi3.so          [.] _RNvXs7_NtNtCs3BFokC4QLxY_4core3fmt5floatdNtB7_7Display3fmt
+     0.01%  python           python3.13               [.] treebuilder_handle_data
+     0.01%  python           python3.13               [.] sum_rule
+     0.01%  python           python3.13               [.] dict_traverse
+     0.01%  python           _native.abi3.so          [.] _RNvNvNtNtNtNtNtCs3BFokC4QLxY_4core3num3imp7flt2dec8strategy5grisu16format_exact_opt14possibly_round
+     0.01%  python           python3.13               [.] type_setattro
+     0.01%  python           python3.13               [.] PyDict_SetDefaultRef
+     0.01%  python           python3.13               [.] builtin_getattr
+     0.01%  python           python3.13               [.] dict_ass_sub
+     0.01%  python           python3.13               [.] subtype_dealloc
+     0.01%  python           python3.13               [.] subtype_traverse
+     0.01%  python           _native.abi3.so          [.] alloc::collections::btree::append::<impl alloc::collections::btree::node::NodeRef<alloc::collections::btree::node::marker::Owned,K,V,alloc::collections::btree::node::marker::LeafOrInternal>>::bulk_push
+     0.01%  python           python3.13               [.] PyUnicode_DecodeUTF8.warm
+     0.01%  python           python3.13               [.] shift_expr_rule
+     0.01%  async-executor-  _polars_runtime.abi3.so  [.] _RINvNtNtNtNtNtCsaeiVroDxOve_14polars_parquet5arrow4read11deserialize18dictionary_encoded8required6decodeNtNtNtCs9ukWNdFGaen_12polars_arrow5types13aligned_bytes17Bytes16Alignment4RSB1E_EBc_
+     0.01%  python           python3.13               [.] PyType_GenericNew
+     0.01%  python           _native.abi3.so          [.] neatxlsx_core::writer::render::parse_format_align
+     0.01%  python           _polars_runtime.abi3.so  [.] _RNvXNtCs6lSzCvc6d5L_12polars_utils4mmapNtB2_13MMapSemaphoreNtNtNtCscgRAwXFJnXP_4core3ops4drop4Drop4drop
+     0.01%  python           python3.13               [.] memory_dealloc
+     0.01%  python           python3.13               [.] PyDict_Contains
+     0.01%  python           python3.13               [.] delitem_knownhash_lock_held.llvm.11705287343192813786
+     0.01%  python           python3.13               [.] dictresize.llvm.11705287343192813786
+     0.01%  async-executor-  _polars_runtime.abi3.so  [.] _RNvNtNtNtNtNtCsaeiVroDxOve_14polars_parquet5arrow4read11deserialize7binview8required6decode
+     0.01%  python           python3.13               [.] supercheck
+     0.01%  python           python3.13               [.] intern_constants
+     0.01%  python           python3.13               [.] convertitem.llvm.14386067069921477813
+     0.00%  python           python3.13               [.] PySlice_Unpack
+     0.00%  python           python3.13               [.] type_ready.llvm.10737210598047299731
+     0.00%  python           python3.13               [.] r_object.llvm.16736411774644606315
+     0.00%  python           python3.13               [.] _Py_hashtable_get_entry_generic
+     0.00%  python           python3.13               [.] _PyAssemble_MakeCodeObject
+     0.00%  python           python3.13               [.] vgetargs1.llvm.14386067069921477813
+     0.00%  python           python3.13               [.] PyUnicode_RichCompare
+     0.00%  python           libc-2.28.so             [.] __gconv_transform_internal_utf8
+     0.00%  async-executor-  libc-2.28.so             [.] __memmove_avx_unaligned_erms
+     0.00%  async-executor-  _polars_runtime.abi3.so  [.] _RNvNtNtNtNtCsaeiVroDxOve_14polars_parquet7parquet8encoding9bitpacked6unpack8unpack32
+     0.00%  jemalloc_bg_thd  _polars_runtime.abi3.so  [.] extent_merge_impl.constprop.0
+     0.00%  python           python3.13               [.] getpath_joinpath.cold
+     0.00%  python           _polars_runtime.abi3.so  [.] pac_alloc_real
+     0.00%  jemalloc_bg_thd  _polars_runtime.abi3.so  [.] _rjem_je_emap_update_edata_state
+     0.00%  async-executor-  _polars_runtime.abi3.so  [.] _rjem_je_emap_split_prepare
+     0.00%  tokio-rt-worker  _polars_runtime.abi3.so  [.] _RNCNCNvMNtNtNtNtCs71sYiaVJZZJ_13polars_stream5nodes10io_sources7parquet20row_group_data_fetchNtB6_19RowGroupDataFetcher4next00Be_
+     0.00%  tokio-rt-worker  _polars_runtime.abi3.so  [.] _RINvNtCscgRAwXFJnXP_4core3ptr13drop_in_placeNtNtNtCsaYhq3YAxIHR_11polars_plan3dsl9file_scan11FileScanDslEBM_
+     0.00%  async-executor-  _polars_runtime.abi3.so  [.] _rjem_je_arena_choose_hard
+     0.00%  async-executor-  _polars_runtime.abi3.so  [.] _rjem_je_pa_alloc
+     0.00%  tokio-rt-worker  libpthread-2.28.so       [.] __pthread_mutex_trylock
+     0.00%  python           ld-2.28.so               [.] strcmp
+     0.00%  jemalloc_bg_thd  libc-2.28.so             [.] __memset_avx2_unaligned_erms
+     0.00%  jemalloc_bg_thd  _polars_runtime.abi3.so  [.] emap_try_acquire_edata_neighbor_impl
+     0.00%  jemalloc_bg_thd  _polars_runtime.abi3.so  [.] _rjem_je_decay_maybe_advance_epoch
+     0.00%  jemalloc_bg_thd  libc-2.28.so             [.] __madvise
+     0.00%  python           ld-2.28.so               [.] do_lookup_x
+     0.00%  polars-ooc-clea  _polars_runtime.abi3.so  [.] _RINvNtNtCsh8eZTKRCwoO_3std3sys9backtrace28___rust_begin_short_backtraceNCNCNCINvNtNtB6_6thread9lifecycle15spawn_uncheckedNCNCNCNvMs6_NtCsaxLELyozyVW_12polars_async8executorNtB27_8Executor6global000uEs_000uEB29_
+     0.00%  async-executor-  _polars_runtime.abi3.so  [.] _RNvXs_NtNtNtCs2i3RYy7rPz4_11polars_core6series15implementations6stringINtB6_10SeriesWrapINtNtBa_13chunked_array12ChunkedArrayNtNtBa_9datatypes10StringTypeEENtNtB8_12series_trait11SeriesTrait8split_at
+     0.00%  tokio-rt-worker  _polars_runtime.abi3.so  [.] _rjem_je_tsd_fetch_slow
+     0.00%  tokio-rt-worker  ld-2.28.so               [.] __tls_get_addr
+     0.00%  tokio-rt-worker  _polars_runtime.abi3.so  [.] base_alloc_impl
+     0.00%  jemalloc_bg_thd  libpthread-2.28.so       [.] pthread_cond_wait@@GLIBC_2.3.2
+     0.00%  jemalloc_bg_thd  _polars_runtime.abi3.so  [.] _rjem_je_decay_ns_until_purge
+     0.00%  python           ld-2.28.so               [.] _dl_name_match_p
+     0.00%  python           ld-2.28.so               [.] __tls_get_addr
+     0.00%  polars-unmap-0   _polars_runtime.abi3.so  [.] _RNvXs4_NtCsTaaZHq7lUh_10rayon_core3jobINtB5_7HeapJobNCINvNtB7_5spawn9spawn_jobNCNvXNtCs6lSzCvc6d5L_12polars_utils4mmapNtB1j_13MMapSemaphoreNtNtNtCscgRAwXFJnXP_4core3ops4drop4Drop4drop0E0ENtB5_3Job7executeB1l_
+     0.00%  jemalloc_bg_thd  _polars_runtime.abi3.so  [.] _rjem_je_nstime_init_update
+     0.00%  tokio-rt-worker  _polars_runtime.abi3.so  [.] 0x0000000009285910
+     0.00%  tokio-rt-worker  [unknown]                [k] 0xffffffffb5401100
+     0.00%  async-executor-  libpthread-2.28.so       [.] __pthread_mutex_trylock
+     0.00%  polars-unmap-0   libpthread-2.28.so       [.] __pthread_mutex_unlock
+     0.00%  tokio-rt-worker  _polars_runtime.abi3.so  [.] _RINvNtNtNtCs8DA1oCeRghT_5tokio7runtime4task3raw4pollINtNtNtB6_8blocking4task12BlockingTaskNCNvMNtNtNtB6_9scheduler12multi_thread6workerNtB1v_6Launch6launch0ENtNtBT_8schedule16BlockingScheduleEB8_
+     0.00%  jemalloc_bg_thd  _polars_runtime.abi3.so  [.] _rjem_je_nstime_divide
+     0.00%  async-executor-  _polars_runtime.abi3.so  [.] _RNvNtCs3zklQBud6wq_16parking_lot_core11parking_lot16lock_bucket_pair
+     0.00%  python           ld-2.28.so               [.] open_path
+     0.00%  tokio-rt-worker  _polars_runtime.abi3.so  [.] _RINvMNtNtCs8DA1oCeRghT_5tokio7runtime7runtimeNtB3_7Runtime8block_onNCNvNtNtNtCsaYhq3YAxIHR_11polars_plan5plans10conversion9dsl_to_ir14fetch_metadata0EB1d_
+     0.00%  async-executor-  _polars_runtime.abi3.so  [.] _RNvMs_NtCs22sfhg86hCx_11parking_lot7condvarNtB4_7Condvar19wait_until_internal
+     0.00%  tokio-rt-worker  libc-2.28.so             [.] __ctype_init
+     0.00%  jemalloc_bg_thd  libc-2.28.so             [.] _int_malloc
+     0.00%  jemalloc_bg_thd  libc-2.28.so             [.] __memmove_avx_unaligned_erms
+     0.00%  jemalloc_bg_thd  libc-2.28.so             [.] arena_get2.part.6
+     0.00%  jemalloc_bg_thd  libpthread-2.28.so       [.] pthread_sigmask
+     0.00%  tokio-rt-worker  _polars_runtime.abi3.so  [.] _RNvMNtNtNtNtCsh8eZTKRCwoO_3std3sys4sync5mutex5futexNtB2_5Mutex14lock_contended
+     0.00%  tokio-rt-worker  _polars_runtime.abi3.so  [.] _rjem_je_edata_heap_new
+     0.00%  tokio-rt-worker  libc-2.28.so             [.] syscall
+     0.00%  async-executor-  _polars_runtime.abi3.so  [.] _RNvYINtNtNtCs2i3RYy7rPz4_11polars_core13chunked_array6object11ObjectArrayNtNtCsbPdvrlPQGTq_13polars_python10conversion11ObjectValueENtNtCs9ukWNdFGaen_12polars_arrow5array5Array8is_emptyB1d_
+     0.00%  python           python3.13               [.] child_exec.warm
+     0.00%  tokio-rt-worker  _polars_runtime.abi3.so  [.] _RINvNtNtNtCs8DA1oCeRghT_5tokio7runtime4task3raw4pollINtNtNtB6_8blocking4task12BlockingTaskNCNCNvXs_NtNtCs71sYiaVJZZJ_13polars_stream5nodes13callback_sinkNtB1z_16CallbackSinkNodeNtB1B_11ComputeNode12update_state00ENtNtBT_8schedule16BlockingScheduleEB1D_
+     0.00%  tokio-rt-worker  _polars_runtime.abi3.so  [.] base_block_alloc.isra.0
+     0.00%  async-executor-  libc-2.28.so             [.] syscall
+     0.00%  jemalloc_bg_thd  ld-2.28.so               [.] _dl_allocate_tls_init
+     0.00%  tokio-rt-worker  libc-2.28.so             [.] clock_gettime@GLIBC_2.2.5
+     0.00%  polars-unmap-0   [unknown]                [k] 0xffffffffb5401100
+     0.00%  async-executor-  ld-2.28.so               [.] __tls_get_addr
+     0.00%  jemalloc_bg_thd  libc-2.28.so             [.] __mmap
+     0.00%  jemalloc_bg_thd  libpthread-2.28.so       [.] pthread_create@@GLIBC_2.2.5
+     0.00%  async-executor-  _polars_runtime.abi3.so  [.] _RNvXs7_NtNtCs9ukWNdFGaen_12polars_arrow5array7binviewINtB5_22BinaryViewArrayGenericeENtB7_5Array14split_at_boxedCsaeiVroDxOve_14polars_parquet
+     0.00%  jemalloc_bg_thd  libc-2.28.so             [.] new_heap
+     0.00%  tokio-rt-worker  _polars_runtime.abi3.so  [.] _RNCNvNtNtNtCsaYhq3YAxIHR_11polars_plan5plans10conversion9dsl_to_ir11to_alp_impl0B9_
+     0.00%  jemalloc_bg_thd  libpthread-2.28.so       [.] pthread_cond_timedwait@@GLIBC_2.3.2
+     0.00%  python           libc-2.28.so             [.] __GI___execve
+     0.00%  jemalloc_bg_thd  _polars_runtime.abi3.so  [.] _rjem_je_arena_do_deferred_work
+     0.00%  tokio-rt-worker  libc-2.28.so             [.] __mmap
+     0.00%  python           libc-2.28.so             [.] new_heap
+     0.00%  jemalloc_bg_thd  libc-2.28.so             [.] __munmap
+     0.00%  async-executor-  _polars_runtime.abi3.so  [.] _RNvMs6_NtCsaxLELyozyVW_12polars_async8executorNtB5_8Executor6runner
+     0.00%  python           ld-2.28.so               [.] __GI___open64_nocancel
+     0.00%  tokio-rt-worker  libc-2.28.so             [.] __clone
+     0.00%  python           libc-2.28.so             [.] __mmap
+     0.00%  tokio-rt-worker  _polars_runtime.abi3.so  [.] _RNvMs_NtNtNtNtCs8DA1oCeRghT_5tokio7runtime9scheduler12multi_thread6workerNtB4_7Context13park_internal
+     0.00%  async-executor-  libpthread-2.28.so       [.] __lll_lock_wait
+     0.00%  polars-unmap-0   libc-2.28.so             [.] __munmap
+     0.00%  jemalloc_bg_thd  libpthread-2.28.so       [.] _pthread_cleanup_pop
+     0.00%  async-executor-  [unknown]                [k] 0xffffffffb5401100
+     0.00%  python           libc-2.28.so             [.] __mprotect
+     0.00%  python           libc-2.28.so             [.] __clone
+     0.00%  jemalloc_bg_thd  libc-2.28.so             [.] __clone
+     0.00%  tokio-rt-worker  libpthread-2.28.so       [.] __lll_lock_wait
+     0.00%  python           libc-2.28.so             [.] __vfork
+     0.00%  python           ld-2.28.so               [.] _start
+
+
+#
+# (Tip: Profiling branch (mis)predictions with: perf record -b / perf report)
+#

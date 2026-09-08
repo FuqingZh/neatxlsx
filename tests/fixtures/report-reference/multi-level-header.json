@@ -1,6 +1,169 @@
 {
+  "baseline": {
+    "bridge_abi": 5,
+    "bridge_contract": "neatxlsx.xlsx.writer.v5",
+    "package_version": "0.2.0",
+    "source_revision": "85c3519e7fd830c83dd0b3e52b00ff8db19c4ab3"
+  },
+  "inputs": {
+    "sheets": [
+      {
+        "data_kind": "DataFrame",
+        "kwargs": {
+          "freeze_columns": 1,
+          "header": {
+            "kind": "DataFrame",
+            "rows": [
+              {
+                "id": "Results",
+                "note": "Metadata",
+                "value": "Results"
+              },
+              {
+                "id": "ID",
+                "note": "Note",
+                "value": "Value"
+              }
+            ],
+            "schema": [
+              [
+                "id",
+                "String"
+              ],
+              [
+                "value",
+                "String"
+              ],
+              [
+                "note",
+                "String"
+              ]
+            ]
+          },
+          "merge_header": true
+        },
+        "name": "Header Report",
+        "schema": [
+          [
+            "id",
+            "Int64"
+          ],
+          [
+            "value",
+            "Float64"
+          ],
+          [
+            "note",
+            "String"
+          ]
+        ],
+        "sentinels": [
+          "A1",
+          "B1",
+          "A2",
+          "B2",
+          "C3"
+        ]
+      }
+    ],
+    "workbook_kwargs": {}
+  },
   "kind": "workbook",
   "known_gaps": [],
+  "ooxml": {
+    "styles": {
+      "cell_xfs": [
+        {
+          "borderId": "0",
+          "fillId": "0",
+          "fontId": "0",
+          "numFmtId": "0",
+          "xfId": "0"
+        },
+        {
+          "applyAlignment": "1",
+          "applyBorder": "1",
+          "applyFont": "1",
+          "borderId": "1",
+          "fillId": "0",
+          "fontId": "1",
+          "numFmtId": "0",
+          "xfId": "0"
+        },
+        {
+          "applyAlignment": "1",
+          "applyFont": "1",
+          "applyNumberFormat": "1",
+          "borderId": "0",
+          "fillId": "0",
+          "fontId": "2",
+          "numFmtId": "164",
+          "xfId": "0"
+        },
+        {
+          "applyAlignment": "1",
+          "applyFont": "1",
+          "applyNumberFormat": "1",
+          "borderId": "0",
+          "fillId": "0",
+          "fontId": "2",
+          "numFmtId": "165",
+          "xfId": "0"
+        },
+        {
+          "applyAlignment": "1",
+          "applyFont": "1",
+          "borderId": "0",
+          "fillId": "0",
+          "fontId": "2",
+          "numFmtId": "0",
+          "xfId": "0"
+        }
+      ],
+      "number_formats": [
+        {
+          "formatCode": "0",
+          "numFmtId": "164"
+        },
+        {
+          "formatCode": "0.0000",
+          "numFmtId": "165"
+        }
+      ]
+    },
+    "workbook_sheets": [
+      {
+        "name": "Header Report",
+        "relationship_id": "rId1",
+        "target": "xl/worksheets/sheet1.xml"
+      }
+    ],
+    "worksheets": [
+      {
+        "columns": [
+          {
+            "customWidth": "1",
+            "max": "2",
+            "min": "1",
+            "width": "9.7109375"
+          },
+          {
+            "customWidth": "1",
+            "max": "3",
+            "min": "3",
+            "width": "10.7109375"
+          }
+        ],
+        "dimension_ref": "A1:C4",
+        "formula_like_cells": [],
+        "merges": [
+          "A1:B1"
+        ],
+        "name": "Header Report",
+        "target": "xl/worksheets/sheet1.xml"
+      }
+    ]
+  },
   "reports": [
     {
       "requested_name": "Header Report",
@@ -21,7 +184,7 @@
     }
   ],
   "scenario": "multi-level-header",
-  "schema_version": 1,
+  "schema_version": 2,
   "sentinels": {
     "Header Report": [
       {

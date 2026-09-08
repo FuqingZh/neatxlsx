@@ -1,22 +1,25 @@
-//! RecordBatch planning and one-pass/two-pass streaming orchestration.
+//! Canonical one-pass RecordBatch XLSX writing.
 
-use std::collections::BTreeSet;
+use std::collections::{BTreeMap, BTreeSet};
+use std::rc::Rc;
 
 use arrow::array::Array as ArrowArray;
 use arrow::record_batch::RecordBatchT;
-use rust_xlsxwriter::{Format, Workbook};
+use rust_xlsxwriter::{Format, Workbook, cell_autofit_width};
+use ssfmt::{FormatOptions, NumberFormat};
 
-use crate::constant::{LEN_SHEET_NAME_MAX, NCOLS_SHEET_MAX, NROWS_SHEET_MAX};
+use crate::constant::{NCOLS_SHEET_MAX, NROWS_SHEET_MAX};
 use crate::spec::{
-    AutofitMode, CellValue, ColumnValueKind, ScientificPolicy, SheetSlice, WarningCode, XlsxReport,
+    AutofitMode, AutofitPolicy, ScientificPolicy, SheetSlice, WarningCode, XlsxReport,
     XlsxValuePolicy,
 };
 use crate::util::{
-    calculate_row_chunk_size, convert_cell_value, sanitize_sheet_name,
+    calculate_row_chunk_size, plan_sheet_slices, sanitize_sheet_name,
     select_sorted_indices_from_refs, validate_unique_columns,
 };
 
-use super::plan::{XlsxSheetPlan, XlsxSheetPlanBuilder, calculate_slice_indices};
+#[cfg(test)]
+use super::TestFinalizeFailurePoint;
 use super::render::{
     ColumnFormatPlanOptions, apply_column_widths, cast_col_num, cast_row_num,
     create_rust_xlsx_format, format_xlsx_error_text, inferred_num_formats, plan_column_formats,
@@ -24,10 +27,9 @@ use super::render::{
     write_cell_with_format, write_header,
 };
 use super::value::{
-    convert_arrow_value_with_plan, estimate_width_len, is_scientific_candidate_col,
-    select_integer_column_indices_from_arrow_schema,
-    select_numeric_column_indices_from_arrow_schema, should_use_scientific_value,
-    validate_policy_autofit, validate_policy_scientific,
+    NormalizedCell, normalize_arrow_cell, select_integer_column_indices_from_arrow_schema,
+    select_numeric_column_indices_from_arrow_schema, validate_policy_autofit,
+    validate_policy_scientific,
 };
 use super::{XlsxSheetWriteOptions, XlsxWriter};
 
@@ -41,10 +43,114 @@ struct XlsxSheetRuntime {
     sheet_slice: SheetSlice,
     data_formats_by_col: Vec<Format>,
     scientific_formats_by_col: Vec<Format>,
+    data_width_formats_by_col: Vec<WidthFormat>,
+    scientific_width_formats_by_col: Vec<WidthFormat>,
     numeric_cols_idx: BTreeSet<usize>,
     integer_cols_idx: BTreeSet<usize>,
     decimal_cols_idx: BTreeSet<usize>,
     is_decimal_explicit: bool,
+}
+
+/// Parsed display format paired with the exact `Format` selected for a cell.
+#[derive(Debug, Clone)]
+enum WidthFormat {
+    /// No number-format string was selected for this column.
+    Plain,
+    /// A parsed Excel number format reused for every sampled cell in the column.
+    ExcelNumberFormat(Rc<NumberFormat>),
+    /// The selected format isn't supported by `ssfmt`; retain legacy estimation.
+    Fallback,
+}
+
+/// Per-write cache for parsed and unsupported number formats.
+#[derive(Default)]
+struct DisplayWidthEstimator {
+    parsed_formats: BTreeMap<String, Option<Rc<NumberFormat>>>,
+    format_options: FormatOptions,
+}
+
+impl DisplayWidthEstimator {
+    fn width_format(&mut self, patch: &crate::spec::CellFormatPatch) -> WidthFormat {
+        let code = patch.num_format.as_deref().unwrap_or("General");
+        let parsed = self
+            .parsed_formats
+            .entry(code.to_string())
+            .or_insert_with(|| NumberFormat::parse(code).ok().map(Rc::new));
+        parsed.as_ref().map_or(WidthFormat::Fallback, |format| {
+            WidthFormat::ExcelNumberFormat(Rc::clone(format))
+        })
+    }
+
+    fn width_pixels(
+        &mut self,
+        cell: &NormalizedCell,
+        width_format: &WidthFormat,
+        should_keep_missing_values: bool,
+        value_policy: &XlsxValuePolicy,
+    ) -> u16 {
+        let display = match (&cell.value, width_format) {
+            (crate::spec::CellValue::String(value), _) => Some(value.as_str()),
+            (crate::spec::CellValue::Boolean(value), _) => {
+                Some(if *value { "TRUE" } else { "FALSE" })
+            }
+            (crate::spec::CellValue::Number(value), WidthFormat::ExcelNumberFormat(format)) => {
+                return match format.try_format(*value, &self.format_options) {
+                    Ok(display) => measured_east_asian_display_width_pixels(&display),
+                    Err(_) => legacy_width_to_pixels(
+                        cell.estimated_width(should_keep_missing_values, value_policy),
+                    ),
+                };
+            }
+            (crate::spec::CellValue::Blank, _) if should_keep_missing_values => {
+                Some(value_policy.missing_value_str.as_str())
+            }
+            _ => None,
+        };
+        display.map_or_else(
+            || {
+                legacy_width_to_pixels(
+                    cell.estimated_width(should_keep_missing_values, value_policy),
+                )
+            },
+            measured_east_asian_display_width_pixels,
+        )
+    }
+}
+
+/// Measure display text with the upstream Calibri 11 metric plus the narrow
+/// East Asian floor measured against LibreOffice 6.4 bounding boxes.
+///
+/// This deliberately isn't a general CJK or Unicode-width implementation. It
+/// applies only to the scalar ranges covered by that measurement; emoji,
+/// accented Latin, CJK extensions, and compatibility ideographs retain the
+/// upstream generic non-ASCII width.
+fn measured_east_asian_display_width_pixels(text: &str) -> u16 {
+    let adjustment = text.chars().fold(0_u16, |pixels, character| {
+        if is_measured_east_asian_scalar(character) {
+            pixels.saturating_add(4)
+        } else {
+            pixels
+        }
+    });
+    cell_autofit_width(text).saturating_add(adjustment)
+}
+
+fn is_measured_east_asian_scalar(character: char) -> bool {
+    matches!(
+        character as u32,
+        0x3000..=0x303F
+            | 0x3040..=0x30FF
+            | 0x4E00..=0x9FFF
+            | 0xAC00..=0xD7AF
+            | 0xFF01..=0xFF60
+    )
+}
+
+fn legacy_width_to_pixels(width: usize) -> u16 {
+    (width as u32)
+        .saturating_mul(7)
+        .saturating_add(5)
+        .min(u32::from(u16::MAX)) as u16
 }
 
 struct XlsxSinglePassPlan {
@@ -53,332 +159,173 @@ struct XlsxSinglePassPlan {
     cols_idx_numeric: Vec<usize>,
     cols_idx_integer: Vec<usize>,
     cols_idx_decimal_specified: Vec<usize>,
-    header_widths_by_col: Vec<usize>,
-    body_widths_by_col: Vec<usize>,
     num_frozen_rows: usize,
     should_keep_missing_values: bool,
 }
 
-struct XlsxSinglePassRuntimeSheet {
-    runtime: XlsxSheetRuntime,
-    report_index: usize,
+#[derive(Debug)]
+struct LogicalAutofitTracker {
+    mode: AutofitMode,
+    max_rows: Option<usize>,
+    header_widths_by_col: Vec<u16>,
+    body_widths_by_col: Vec<u16>,
 }
 
-impl XlsxWriter {
-    /// Plan one sheet from record batches without materializing the full body.
-    pub fn plan_sheet_from_record_batches<I>(
-        &self,
-        batches: I,
-        sheet_name: &str,
-        header_grid: Option<Vec<Vec<String>>>,
-        options: &XlsxSheetWriteOptions,
-    ) -> Result<XlsxSheetPlan, String>
-    where
-        I: IntoIterator<Item = XlsxRecordBatch>,
-    {
-        self.plan_sheet_from_record_batch_results(
-            batches.into_iter().map(Ok),
-            sheet_name,
-            header_grid,
-            options,
-        )
-    }
+struct LogicalAutofitObservation<'a> {
+    row_abs: usize,
+    col_abs: usize,
+    cell: &'a NormalizedCell,
+    width_format: &'a WidthFormat,
+}
 
-    /// Plan one sheet from fallible record batch stream without materializing the full body.
-    pub fn plan_sheet_from_record_batch_results<I>(
-        &self,
-        batches: I,
-        sheet_name: &str,
-        header_grid: Option<Vec<Vec<String>>>,
-        options: &XlsxSheetWriteOptions,
-    ) -> Result<XlsxSheetPlan, String>
-    where
-        I: IntoIterator<Item = XlsxRecordBatchResult>,
-    {
-        if self.is_closed {
-            return Err("Cannot write after close().".to_string());
-        }
-        options.validate_preflight()?;
-        validate_policy_autofit(&options.policy_autofit)?;
-        validate_policy_scientific(&options.policy_scientific)?;
-
-        let mut builder =
-            XlsxSheetPlanBuilder::new(sheet_name, header_grid, options, &self.options_write);
-        for batch in batches {
-            builder.scan_batch(batch?)?;
-        }
-        builder.finish()
-    }
-
-    /// Write one sheet from record batches using a precomputed streaming plan.
-    pub fn write_sheet_from_record_batches<I>(
-        &mut self,
-        plan: XlsxSheetPlan,
-        batches: I,
-        options: &XlsxSheetWriteOptions,
-    ) -> Result<(), String>
-    where
-        I: IntoIterator<Item = XlsxRecordBatch>,
-    {
-        self.write_sheet_from_record_batch_results(plan, batches.into_iter().map(Ok), options)
-    }
-
-    /// Write one sheet from fallible record batch stream using a precomputed streaming plan.
-    pub fn write_sheet_from_record_batch_results<I>(
-        &mut self,
-        plan: XlsxSheetPlan,
-        batches: I,
-        options: &XlsxSheetWriteOptions,
-    ) -> Result<(), String>
-    where
-        I: IntoIterator<Item = XlsxRecordBatchResult>,
-    {
-        if self.is_closed {
-            return Err("Cannot write after close().".to_string());
-        }
-        options.validate_preflight()?;
-        self.write_sheet_record_batches(plan, batches, options)
-    }
-
-    /// Write one sheet from fallible record batch stream in one pass.
-    ///
-    /// This path is only valid when column widths don't require body pre-scan.
-    pub fn write_sheet_from_record_batch_results_single_pass<I>(
-        &mut self,
-        batches: I,
-        sheet_name: &str,
-        header_grid: Option<Vec<Vec<String>>>,
-        options: &XlsxSheetWriteOptions,
-    ) -> Result<(), String>
-    where
-        I: IntoIterator<Item = XlsxRecordBatchResult>,
-    {
-        if self.is_closed {
-            return Err("Cannot write after close().".to_string());
-        }
-        options.validate_preflight()?;
-        validate_policy_autofit(&options.policy_autofit)?;
-        validate_policy_scientific(&options.policy_scientific)?;
-        if matches!(
-            options.policy_autofit.mode,
-            AutofitMode::Body | AutofitMode::All
-        ) {
-            return Err(
-                "single-pass XLSX writing requires policy_autofit.mode to be 'header' or 'none'."
-                    .to_string(),
-            );
-        }
-        self.write_sheet_record_batches_single_pass(batches, sheet_name, header_grid, options)
-    }
-
-    fn write_sheet_record_batches<I>(
-        &mut self,
-        plan: XlsxSheetPlan,
-        batches: I,
-        options: &XlsxSheetWriteOptions,
-    ) -> Result<(), String>
-    where
-        I: IntoIterator<Item = XlsxRecordBatchResult>,
-    {
-        let col_names_ref = plan
-            .col_names
-            .iter()
-            .map(String::as_str)
-            .collect::<Vec<_>>();
-        let header_row_count = plan.header_grid.len();
-        let value_policy = self.options_write.value_policy.clone();
-
-        let mut report = XlsxReport {
-            sheets: vec![],
-            warnings: vec![],
+impl LogicalAutofitTracker {
+    fn new(
+        width: usize,
+        header_grid: &[Vec<String>],
+        policy: &AutofitPolicy,
+        _should_keep_missing_values: bool,
+        _value_policy: &XlsxValuePolicy,
+    ) -> Self {
+        let mut tracker = Self {
+            mode: policy.mode,
+            max_rows: policy.height_body_inferred_max,
+            header_widths_by_col: vec![0; width],
+            body_widths_by_col: vec![0; width],
         };
-        let mut runtime_sheets = Vec::with_capacity(plan.sheet_slices.len());
-
-        for sheet_slice in &plan.sheet_slices {
-            let sheet_name_unique = self.ensure_unique_sheet_name(&sheet_slice.sheet_name);
-            let worksheet_index = self.workbook.worksheets().len();
-            let worksheet = self.workbook.add_worksheet_with_constant_memory();
-            worksheet
-                .set_name(&sheet_name_unique)
-                .map_err(format_xlsx_error_text)?;
-
-            let cols_idx_numeric_slice = calculate_slice_indices(
-                &plan.cols_idx_numeric,
-                sheet_slice.col_start_inclusive,
-                sheet_slice.col_end_exclusive,
-            );
-            let cols_idx_integer_slice = calculate_slice_indices(
-                &plan.cols_idx_integer,
-                sheet_slice.col_start_inclusive,
-                sheet_slice.col_end_exclusive,
-            );
-            let cols_idx_decimal_slice = calculate_slice_indices(
-                &plan.cols_idx_decimal_specified,
-                sheet_slice.col_start_inclusive,
-                sheet_slice.col_end_exclusive,
-            );
-            let inferred_num_formats_all = inferred_num_formats(&options.value_plans);
-            let inferred_num_formats_slice =
-                if inferred_num_formats_all.len() >= sheet_slice.col_end_exclusive {
-                    inferred_num_formats_all
-                        [sheet_slice.col_start_inclusive..sheet_slice.col_end_exclusive]
-                        .to_vec()
-                } else {
-                    vec![None; sheet_slice.col_end_exclusive - sheet_slice.col_start_inclusive]
-                };
-
-            let column_formats_slice = slice_column_format_overrides(
-                &options.column_formats,
-                sheet_slice.col_start_inclusive,
-                sheet_slice.col_end_exclusive,
-            );
-            let header_column_formats_slice = slice_column_format_overrides(
-                &options.header_column_formats,
-                sheet_slice.col_start_inclusive,
-                sheet_slice.col_end_exclusive,
-            );
-            let column_format_plan = plan_column_formats(ColumnFormatPlanOptions {
-                width_data: sheet_slice.col_end_exclusive - sheet_slice.col_start_inclusive,
-                cols_idx_numeric: &cols_idx_numeric_slice,
-                cols_idx_integer: &cols_idx_integer_slice,
-                cols_idx_decimal: if cols_idx_decimal_slice.is_empty() {
-                    None
-                } else {
-                    Some(&cols_idx_decimal_slice)
-                },
-                cols_fmt_overrides: &column_formats_slice,
-                fmt_text: &self.fmt_text,
-                fmt_integer: &self.fmt_integer,
-                fmt_decimal: &self.fmt_decimal,
-                fmt_text_override: &self.fmt_text_override,
-                fmt_integer_override: &self.fmt_integer_override,
-                fmt_decimal_override: &self.fmt_decimal_override,
-                inferred_num_formats: Some(&inferred_num_formats_slice),
-            });
-
-            let data_formats_by_col: Vec<Format> = column_format_plan
-                .fmts_by_col
-                .iter()
-                .map(create_rust_xlsx_format)
-                .collect();
-            let scientific_formats_by_col = plan_scientific_formats(
-                column_format_plan.fmts_by_col.len(),
-                &self.fmt_scientific,
-                &column_formats_slice,
-            )
-            .iter()
-            .map(create_rust_xlsx_format)
-            .collect::<Vec<_>>();
-            let fmt_headers = plan_header_formats(
-                &self.fmt_header,
-                &options.header_row_formats,
-                &header_column_formats_slice,
-                header_row_count,
-                sheet_slice.col_end_exclusive - sheet_slice.col_start_inclusive,
-            )?;
-
-            let header_grid_slice = plan
-                .header_grid
-                .iter()
-                .map(|row| {
-                    row[sheet_slice.col_start_inclusive..sheet_slice.col_end_exclusive].to_vec()
-                })
-                .collect::<Vec<_>>();
-
-            write_header(
-                worksheet,
-                header_grid_slice,
-                options.should_merge_header,
-                &fmt_headers,
-            )?;
-
-            worksheet
-                .set_freeze_panes(
-                    cast_row_num(plan.num_frozen_rows)?,
-                    cast_col_num(options.num_frozen_cols)?,
-                )
-                .map_err(format_xlsx_error_text)?;
-
-            apply_column_widths(
-                worksheet,
-                &options.policy_autofit,
-                &plan.header_widths_by_col
-                    [sheet_slice.col_start_inclusive..sheet_slice.col_end_exclusive],
-                &plan.body_widths_by_col
-                    [sheet_slice.col_start_inclusive..sheet_slice.col_end_exclusive],
-            )?;
-
-            runtime_sheets.push(XlsxSheetRuntime {
-                worksheet_index,
-                sheet_slice: sheet_slice.clone(),
-                data_formats_by_col,
-                scientific_formats_by_col,
-                numeric_cols_idx: cols_idx_numeric_slice.iter().copied().collect(),
-                integer_cols_idx: cols_idx_integer_slice.iter().copied().collect(),
-                decimal_cols_idx: cols_idx_decimal_slice.iter().copied().collect(),
-                is_decimal_explicit: !cols_idx_decimal_slice.is_empty(),
-            });
-
-            report.sheets.push(SheetSlice {
-                sheet_name: sheet_name_unique,
-                row_start_inclusive: sheet_slice.row_start_inclusive,
-                row_end_exclusive: sheet_slice.row_end_exclusive,
-                col_start_inclusive: sheet_slice.col_start_inclusive,
-                col_end_exclusive: sheet_slice.col_end_exclusive,
-            });
-        }
-
-        let mut row_offset = 0usize;
-        for batch in batches {
-            let batch = batch?;
-            let batch_col_names = batch
-                .schema()
-                .iter_names()
-                .map(|name| name.as_str())
-                .collect::<Vec<_>>();
-            if batch_col_names != col_names_ref {
-                return Err("All record batches must have identical column names.".to_string());
+        if matches!(tracker.mode, AutofitMode::Header | AutofitMode::All) {
+            for row in header_grid {
+                for (col_abs, value) in row.iter().enumerate() {
+                    tracker.header_widths_by_col[col_abs] = tracker.header_widths_by_col[col_abs]
+                        .max(measured_east_asian_display_width_pixels(value));
+                }
             }
-
-            for runtime in &runtime_sheets {
-                write_arrow_record_batch_to_runtime_sheet(
-                    &mut self.workbook,
-                    runtime,
-                    &batch,
-                    row_offset,
-                    header_row_count,
-                    plan.should_keep_missing_values,
-                    &value_policy,
-                    &options.policy_scientific,
-                    &options.value_plans,
-                    &mut report,
-                )?;
-            }
-            row_offset += batch.len();
         }
+        tracker
+    }
 
-        if row_offset != plan.height_body {
+    fn observe(
+        &mut self,
+        observation: LogicalAutofitObservation<'_>,
+        estimator: &mut Option<DisplayWidthEstimator>,
+        should_keep_missing_values: bool,
+        value_policy: &XlsxValuePolicy,
+    ) {
+        if !matches!(self.mode, AutofitMode::Body | AutofitMode::All)
+            || self
+                .max_rows
+                .is_some_and(|max_rows| observation.row_abs >= max_rows)
+        {
+            return;
+        }
+        let estimator = estimator
+            .as_mut()
+            .expect("body autofit must initialize its display width estimator");
+        self.body_widths_by_col[observation.col_abs] = self.body_widths_by_col[observation.col_abs]
+            .max(estimator.width_pixels(
+                observation.cell,
+                observation.width_format,
+                should_keep_missing_values,
+                value_policy,
+            ));
+    }
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
+struct PhysicalSheetKey {
+    row_start: usize,
+    col_start: usize,
+    col_end: usize,
+}
+
+impl PhysicalSheetKey {
+    fn from_slice(sheet: &SheetSlice) -> Self {
+        Self {
+            row_start: sheet.row_start_inclusive,
+            col_start: sheet.col_start_inclusive,
+            col_end: sheet.col_end_exclusive,
+        }
+    }
+}
+
+#[derive(Debug)]
+struct PhysicalSheetEntry {
+    worksheet_index: usize,
+    temporary_name: String,
+    actual_row_end: usize,
+}
+
+#[derive(Default, Debug)]
+struct PhysicalSheetRegistry {
+    entries: BTreeMap<PhysicalSheetKey, PhysicalSheetEntry>,
+}
+
+impl PhysicalSheetRegistry {
+    fn register(&mut self, key: PhysicalSheetKey, entry: PhysicalSheetEntry) -> Result<(), String> {
+        if self.entries.insert(key, entry).is_some() {
             return Err(format!(
-                "Streaming write row count mismatch: planned {} rows but wrote {row_offset}.",
-                plan.height_body
+                "Duplicate physical worksheet registry key: {key:?}."
             ));
         }
-
-        sort_conversion_warnings(&mut report);
-        self.reports.push(report);
         Ok(())
     }
 
-    fn write_sheet_record_batches_single_pass<I>(
+    fn observe_row_end(&mut self, key: PhysicalSheetKey, row_end: usize) -> Result<(), String> {
+        let entry = self
+            .entries
+            .get_mut(&key)
+            .ok_or_else(|| format!("Missing physical worksheet registry key: {key:?}."))?;
+        entry.actual_row_end = entry.actual_row_end.max(row_end);
+        Ok(())
+    }
+
+    fn into_canonical(mut self, planned: &[SheetSlice]) -> Result<Vec<PhysicalSheetEntry>, String> {
+        let mut entries = Vec::with_capacity(planned.len());
+        for sheet in planned {
+            let key = PhysicalSheetKey::from_slice(sheet);
+            let entry = self
+                .entries
+                .remove(&key)
+                .ok_or_else(|| format!("Missing physical worksheet registry key: {key:?}."))?;
+            if entry.actual_row_end != sheet.row_end_exclusive {
+                return Err(format!(
+                    "Physical worksheet row boundary mismatch for {key:?}: planned {} rows but observed {}.",
+                    sheet.row_end_exclusive, entry.actual_row_end
+                ));
+            }
+            entries.push(entry);
+        }
+        if !self.entries.is_empty() {
+            return Err(format!(
+                "Orphan physical worksheet registry keys: {:?}.",
+                self.entries.keys().collect::<Vec<_>>()
+            ));
+        }
+        Ok(entries)
+    }
+}
+
+struct XlsxSinglePassRuntimeSheet {
+    runtime: XlsxSheetRuntime,
+    key: PhysicalSheetKey,
+}
+
+impl XlsxWriter {
+    /// Write one logical sheet from a single fallible RecordBatch stream.
+    pub fn write_sheet_from_record_batch_results<I>(
         &mut self,
         batches: I,
         sheet_name: &str,
-        header_grid_custom: Option<Vec<Vec<String>>>,
+        header_grid: Option<Vec<Vec<String>>>,
         options: &XlsxSheetWriteOptions,
     ) -> Result<(), String>
     where
         I: IntoIterator<Item = XlsxRecordBatchResult>,
     {
+        self.require_open()?;
+        options.validate_preflight()?;
+        validate_policy_autofit(&options.policy_autofit)?;
+        validate_policy_scientific(&options.policy_scientific)?;
+
         let mut iter_batches = batches.into_iter();
         let Some(first_batch_result) = iter_batches.next() else {
             return Err(
@@ -386,8 +333,38 @@ impl XlsxWriter {
             );
         };
         let first_batch = first_batch_result?;
-        let plan =
-            self.create_single_pass_plan(&first_batch, sheet_name, header_grid_custom, options)?;
+        let plan = self.create_single_pass_plan(&first_batch, header_grid, options)?;
+        if plan.col_names.is_empty() {
+            return Err("Cannot write a sheet with zero columns.".to_string());
+        }
+
+        let worksheet_count_before = self.workbook.worksheets().len();
+        let result = self.write_prepared_record_batches(
+            first_batch,
+            iter_batches,
+            sheet_name,
+            plan,
+            options,
+            worksheet_count_before,
+        );
+        if result.is_err() && self.workbook.worksheets().len() > worksheet_count_before {
+            self.mark_poisoned();
+        }
+        result
+    }
+
+    fn write_prepared_record_batches<I>(
+        &mut self,
+        first_batch: XlsxRecordBatch,
+        iter_batches: I,
+        sheet_name: &str,
+        plan: XlsxSinglePassPlan,
+        options: &XlsxSheetWriteOptions,
+        worksheet_segment_start: usize,
+    ) -> Result<(), String>
+    where
+        I: Iterator<Item = XlsxRecordBatchResult>,
+    {
         let col_names_ref = plan
             .col_names
             .iter()
@@ -409,24 +386,36 @@ impl XlsxWriter {
             sheets: vec![],
             warnings: vec![],
         };
+        let mut tracker = LogicalAutofitTracker::new(
+            plan.col_names.len(),
+            &plan.header_grid,
+            &options.policy_autofit,
+            plan.should_keep_missing_values,
+            &self.options_write.value_policy,
+        );
+        let mut width_estimator = None;
+        let mut registry = PhysicalSheetRegistry::default();
         let mut runtime_sheets: Vec<XlsxSinglePassRuntimeSheet> = vec![];
         let mut active_row_start: Option<usize> = None;
-        let mut next_part_idx = 1usize;
+        let mut occupied_temporary_names = BTreeSet::new();
+        let mut next_temporary_index = 1usize;
         let mut rows_written = 0usize;
 
         self.write_single_pass_batch(
             &plan,
             options,
-            sheet_name,
             &first_batch,
             &col_names_ref,
             rows_written,
             max_data_rows,
             &mut active_row_start,
-            &mut next_part_idx,
+            &mut next_temporary_index,
+            &mut occupied_temporary_names,
             &mut runtime_sheets,
+            &mut registry,
+            &mut tracker,
+            &mut width_estimator,
             &mut report,
-            &options.value_plans,
         )?;
         rows_written += first_batch.len();
 
@@ -435,16 +424,18 @@ impl XlsxWriter {
             self.write_single_pass_batch(
                 &plan,
                 options,
-                sheet_name,
                 &batch,
                 &col_names_ref,
                 rows_written,
                 max_data_rows,
                 &mut active_row_start,
-                &mut next_part_idx,
+                &mut next_temporary_index,
+                &mut occupied_temporary_names,
                 &mut runtime_sheets,
+                &mut registry,
+                &mut tracker,
+                &mut width_estimator,
                 &mut report,
-                &options.value_plans,
             )?;
             rows_written += batch.len();
         }
@@ -453,16 +444,27 @@ impl XlsxWriter {
             self.ensure_single_pass_runtime_sheets(
                 &plan,
                 options,
-                sheet_name,
                 0,
                 max_data_rows,
                 &mut active_row_start,
-                &mut next_part_idx,
+                &mut next_temporary_index,
+                &mut occupied_temporary_names,
                 &mut runtime_sheets,
-                &mut report,
+                &mut registry,
+                &mut width_estimator,
             )?;
         }
 
+        self.finalize_single_pass_sheet(
+            sheet_name,
+            rows_written,
+            &plan,
+            options,
+            &tracker,
+            registry,
+            worksheet_segment_start,
+            &mut report,
+        )?;
         sort_conversion_warnings(&mut report);
         self.reports.push(report);
         Ok(())
@@ -471,7 +473,6 @@ impl XlsxWriter {
     fn create_single_pass_plan(
         &self,
         first_batch: &XlsxRecordBatch,
-        _sheet_name: &str,
         header_grid_custom: Option<Vec<Vec<String>>>,
         options: &XlsxSheetWriteOptions,
     ) -> Result<XlsxSinglePassPlan, String> {
@@ -530,40 +531,13 @@ impl XlsxWriter {
         let should_keep_missing_values = options
             .should_keep_missing_values
             .unwrap_or(self.options_write.should_keep_missing_values);
-        let mut header_widths_by_col = vec![0usize; width_body];
-        let body_widths_by_col = vec![0usize; width_body];
-        if !matches!(options.policy_autofit.mode, AutofitMode::None) {
-            for col_idx in 0..width_body {
-                for row in &header_grid {
-                    let value = &row[col_idx];
-                    if value.is_empty() {
-                        continue;
-                    }
-                    header_widths_by_col[col_idx] = usize::max(
-                        header_widths_by_col[col_idx],
-                        estimate_width_len(
-                            &CellValue::String(value.clone()),
-                            false,
-                            false,
-                            false,
-                            &options.policy_scientific,
-                            should_keep_missing_values,
-                            &self.options_write.value_policy,
-                        ),
-                    );
-                }
-            }
-        }
         let header_row_count = header_grid.len();
-
         Ok(XlsxSinglePassPlan {
             col_names,
             header_grid,
             cols_idx_numeric,
             cols_idx_integer,
             cols_idx_decimal_specified,
-            header_widths_by_col,
-            body_widths_by_col,
             num_frozen_rows: options.num_frozen_rows.unwrap_or(header_row_count),
             should_keep_missing_values,
         })
@@ -574,16 +548,18 @@ impl XlsxWriter {
         &mut self,
         plan: &XlsxSinglePassPlan,
         options: &XlsxSheetWriteOptions,
-        sheet_name: &str,
         batch: &XlsxRecordBatch,
         col_names_ref: &[&str],
         row_offset: usize,
         max_data_rows: usize,
         active_row_start: &mut Option<usize>,
-        next_part_idx: &mut usize,
+        next_temporary_index: &mut usize,
+        occupied_temporary_names: &mut BTreeSet<String>,
         runtime_sheets: &mut Vec<XlsxSinglePassRuntimeSheet>,
+        registry: &mut PhysicalSheetRegistry,
+        tracker: &mut LogicalAutofitTracker,
+        width_estimator: &mut Option<DisplayWidthEstimator>,
         report: &mut XlsxReport,
-        value_plans: &[crate::spec::ColumnValuePlan],
     ) -> Result<(), String> {
         let batch_col_names = batch
             .schema()
@@ -602,16 +578,17 @@ impl XlsxWriter {
             self.ensure_single_pass_runtime_sheets(
                 plan,
                 options,
-                sheet_name,
                 row_part_start,
                 max_data_rows,
                 active_row_start,
-                next_part_idx,
+                next_temporary_index,
+                occupied_temporary_names,
                 runtime_sheets,
-                report,
+                registry,
+                width_estimator,
             )?;
 
-            for runtime in runtime_sheets.iter_mut() {
+            for runtime in runtime_sheets.iter() {
                 write_arrow_record_batch_to_runtime_sheet(
                     &mut self.workbook,
                     &runtime.runtime,
@@ -621,20 +598,19 @@ impl XlsxWriter {
                     plan.should_keep_missing_values,
                     &self.options_write.value_policy,
                     &options.policy_scientific,
-                    value_plans,
+                    &options.value_plans,
+                    tracker,
+                    width_estimator,
                     report,
                 )?;
-                let report_sheet = &mut report.sheets[runtime.report_index];
-                let overlap_end =
-                    usize::min(batch_end, runtime.runtime.sheet_slice.row_end_exclusive);
-                if overlap_end > report_sheet.row_end_exclusive {
-                    report_sheet.row_end_exclusive = overlap_end;
+                let overlap_end = batch_end.min(runtime.runtime.sheet_slice.row_end_exclusive);
+                if overlap_end > runtime.runtime.sheet_slice.row_start_inclusive {
+                    registry.observe_row_end(runtime.key, overlap_end)?;
                 }
             }
 
-            segment_start = usize::min(batch_end, row_part_start + max_data_rows);
+            segment_start = batch_end.min(row_part_start + max_data_rows);
         }
-
         Ok(())
     }
 
@@ -643,13 +619,14 @@ impl XlsxWriter {
         &mut self,
         plan: &XlsxSinglePassPlan,
         options: &XlsxSheetWriteOptions,
-        sheet_name: &str,
         row_part_start: usize,
         max_data_rows: usize,
         active_row_start: &mut Option<usize>,
-        next_part_idx: &mut usize,
+        next_temporary_index: &mut usize,
+        occupied_temporary_names: &mut BTreeSet<String>,
         runtime_sheets: &mut Vec<XlsxSinglePassRuntimeSheet>,
-        report: &mut XlsxReport,
+        registry: &mut PhysicalSheetRegistry,
+        width_estimator: &mut Option<DisplayWidthEstimator>,
     ) -> Result<(), String> {
         if active_row_start.is_some_and(|value| value == row_part_start) {
             return Ok(());
@@ -660,22 +637,20 @@ impl XlsxWriter {
 
         let width_body = plan.col_names.len();
         let mut col_start = 0usize;
-        let has_multiple_col_parts = width_body > NCOLS_SHEET_MAX;
         while col_start < width_body {
-            let col_end = usize::min(width_body, col_start + NCOLS_SHEET_MAX);
-            let sheet_name_base = sanitize_sheet_name(sheet_name, "_");
-            let sheet_name_planned = if *next_part_idx == 1 && !has_multiple_col_parts {
-                sheet_name_base
-            } else {
-                create_sheet_identifier_local(&sheet_name_base, *next_part_idx)
-            };
-            *next_part_idx += 1;
+            let col_end = width_body.min(col_start + NCOLS_SHEET_MAX);
+            let temporary_name = allocate_internal_sheet_name(
+                "tmp",
+                next_temporary_index,
+                occupied_temporary_names,
+                &self.existing_sheet_names,
+            );
+            occupied_temporary_names.insert(temporary_name.clone());
 
-            let sheet_name_unique = self.ensure_unique_sheet_name(&sheet_name_planned);
             let worksheet_index = self.workbook.worksheets().len();
             let worksheet = self.workbook.add_worksheet_with_constant_memory();
             worksheet
-                .set_name(&sheet_name_unique)
+                .set_name(&temporary_name)
                 .map_err(format_xlsx_error_text)?;
 
             let cols_idx_numeric_slice =
@@ -717,14 +692,37 @@ impl XlsxWriter {
                 .iter()
                 .map(create_rust_xlsx_format)
                 .collect::<Vec<_>>();
-            let scientific_formats_by_col = plan_scientific_formats(
+            let scientific_format_patches = plan_scientific_formats(
                 column_format_plan.fmts_by_col.len(),
                 &self.fmt_scientific,
                 &column_formats_slice,
-            )
-            .iter()
-            .map(create_rust_xlsx_format)
-            .collect::<Vec<_>>();
+            );
+            let scientific_formats_by_col = scientific_format_patches
+                .iter()
+                .map(create_rust_xlsx_format)
+                .collect::<Vec<_>>();
+            let (data_width_formats_by_col, scientific_width_formats_by_col) = if matches!(
+                options.policy_autofit.mode,
+                AutofitMode::Body | AutofitMode::All
+            ) {
+                let estimator = width_estimator.get_or_insert_default();
+                (
+                    column_format_plan
+                        .fmts_by_col
+                        .iter()
+                        .map(|patch| estimator.width_format(patch))
+                        .collect::<Vec<_>>(),
+                    scientific_format_patches
+                        .iter()
+                        .map(|patch| estimator.width_format(patch))
+                        .collect::<Vec<_>>(),
+                )
+            } else {
+                (
+                    vec![WidthFormat::Plain; data_formats_by_col.len()],
+                    vec![WidthFormat::Plain; scientific_formats_by_col.len()],
+                )
+            };
             let fmt_headers = plan_header_formats(
                 &self.fmt_header,
                 &options.header_row_formats,
@@ -749,27 +747,25 @@ impl XlsxWriter {
                     cast_col_num(options.num_frozen_cols)?,
                 )
                 .map_err(format_xlsx_error_text)?;
-            apply_column_widths(
-                worksheet,
-                &options.policy_autofit,
-                &plan.header_widths_by_col[col_start..col_end],
-                &plan.body_widths_by_col[col_start..col_end],
+
+            let key = PhysicalSheetKey {
+                row_start: row_part_start,
+                col_start,
+                col_end,
+            };
+            registry.register(
+                key,
+                PhysicalSheetEntry {
+                    worksheet_index,
+                    temporary_name: temporary_name.clone(),
+                    actual_row_end: row_part_start,
+                },
             )?;
-
-            let report_index = report.sheets.len();
-            report.sheets.push(SheetSlice {
-                sheet_name: sheet_name_unique,
-                row_start_inclusive: row_part_start,
-                row_end_exclusive: row_part_start,
-                col_start_inclusive: col_start,
-                col_end_exclusive: col_end,
-            });
-
             runtime_sheets.push(XlsxSinglePassRuntimeSheet {
                 runtime: XlsxSheetRuntime {
                     worksheet_index,
                     sheet_slice: SheetSlice {
-                        sheet_name: sheet_name_planned,
+                        sheet_name: temporary_name,
                         row_start_inclusive: row_part_start,
                         row_end_exclusive: row_part_start + max_data_rows,
                         col_start_inclusive: col_start,
@@ -777,17 +773,149 @@ impl XlsxWriter {
                     },
                     data_formats_by_col,
                     scientific_formats_by_col,
+                    data_width_formats_by_col,
+                    scientific_width_formats_by_col,
                     numeric_cols_idx: cols_idx_numeric_slice.iter().copied().collect(),
                     integer_cols_idx: cols_idx_integer_slice.iter().copied().collect(),
                     decimal_cols_idx: cols_idx_decimal_slice.iter().copied().collect(),
                     is_decimal_explicit: !cols_idx_decimal_slice.is_empty(),
                 },
-                report_index,
+                key,
             });
-
             col_start = col_end;
         }
+        Ok(())
+    }
 
+    #[allow(clippy::too_many_arguments)]
+    fn finalize_single_pass_sheet(
+        &mut self,
+        sheet_name: &str,
+        rows_written: usize,
+        plan: &XlsxSinglePassPlan,
+        options: &XlsxSheetWriteOptions,
+        tracker: &LogicalAutofitTracker,
+        registry: PhysicalSheetRegistry,
+        worksheet_segment_start: usize,
+        report: &mut XlsxReport,
+    ) -> Result<(), String> {
+        let planned = plan_sheet_slices(
+            rows_written,
+            plan.col_names.len(),
+            plan.header_grid.len(),
+            &sanitize_sheet_name(sheet_name, "_"),
+            report,
+        )?;
+        let entries = registry.into_canonical(&planned)?;
+        let worksheet_segment_end = worksheet_segment_start + entries.len();
+        if worksheet_segment_end != self.workbook.worksheets().len() {
+            return Err(format!(
+                "Physical worksheet segment mismatch: expected [{worksheet_segment_start}, {worksheet_segment_end}) but workbook has {} sheets.",
+                self.workbook.worksheets().len()
+            ));
+        }
+        let actual_indices = entries
+            .iter()
+            .map(|entry| entry.worksheet_index)
+            .collect::<BTreeSet<_>>();
+        let expected_indices =
+            (worksheet_segment_start..worksheet_segment_end).collect::<BTreeSet<_>>();
+        if actual_indices != expected_indices {
+            return Err(format!(
+                "Physical worksheet indices are not the appended segment: {actual_indices:?}."
+            ));
+        }
+
+        for (sheet, entry) in planned.iter().zip(&entries) {
+            #[cfg(test)]
+            self.fail_at_finalize_point(TestFinalizeFailurePoint::ApplyColumnWidths)?;
+            let worksheet = self
+                .workbook
+                .worksheet_from_index(entry.worksheet_index)
+                .map_err(format_xlsx_error_text)?;
+            if worksheet.name() != entry.temporary_name {
+                return Err(format!(
+                    "Physical worksheet name mismatch at index {}: expected {:?}, got {:?}.",
+                    entry.worksheet_index,
+                    entry.temporary_name,
+                    worksheet.name()
+                ));
+            }
+            apply_column_widths(
+                worksheet,
+                &options.policy_autofit,
+                &tracker.header_widths_by_col[sheet.col_start_inclusive..sheet.col_end_exclusive],
+                &tracker.body_widths_by_col[sheet.col_start_inclusive..sheet.col_end_exclusive],
+            )?;
+        }
+
+        let final_names = planned
+            .iter()
+            .map(|sheet| self.ensure_unique_sheet_name(&sheet.sheet_name))
+            .collect::<Vec<_>>();
+        let reserved_final_names = final_names.iter().cloned().collect::<BTreeSet<_>>();
+        let mut occupied_names = self
+            .workbook
+            .worksheets()
+            .iter()
+            .map(|worksheet| worksheet.name())
+            .collect::<BTreeSet<_>>();
+        let mut next_stage_index = 1usize;
+        #[cfg(test)]
+        self.fail_at_finalize_point(TestFinalizeFailurePoint::RenameWorksheets)?;
+        for entry in &entries {
+            occupied_names.remove(&entry.temporary_name);
+            let stage_name = allocate_internal_sheet_name(
+                "stage",
+                &mut next_stage_index,
+                &occupied_names,
+                &reserved_final_names,
+            );
+            self.workbook
+                .worksheet_from_index(entry.worksheet_index)
+                .map_err(format_xlsx_error_text)?
+                .set_name(&stage_name)
+                .map_err(format_xlsx_error_text)?;
+            occupied_names.insert(stage_name);
+        }
+        for (entry, final_name) in entries.iter().zip(&final_names) {
+            self.workbook
+                .worksheet_from_index(entry.worksheet_index)
+                .map_err(format_xlsx_error_text)?
+                .set_name(final_name)
+                .map_err(format_xlsx_error_text)?;
+        }
+
+        let rank_by_name = final_names
+            .iter()
+            .enumerate()
+            .map(|(rank, name)| (name.clone(), rank))
+            .collect::<BTreeMap<_, _>>();
+        #[cfg(test)]
+        self.fail_at_finalize_point(TestFinalizeFailurePoint::ReorderWorksheets)?;
+        self.workbook.worksheets_mut()[worksheet_segment_start..worksheet_segment_end]
+            .sort_by_key(|worksheet| rank_by_name.get(&worksheet.name()).copied());
+        let reordered_names = self.workbook.worksheets()
+            [worksheet_segment_start..worksheet_segment_end]
+            .iter()
+            .map(|worksheet| worksheet.name())
+            .collect::<Vec<_>>();
+        if reordered_names != final_names {
+            return Err(format!(
+                "Physical worksheet reorder mismatch: expected {final_names:?}, got {reordered_names:?}."
+            ));
+        }
+
+        #[cfg(test)]
+        self.fail_at_finalize_point(TestFinalizeFailurePoint::ConstructReport)?;
+        report.sheets = planned
+            .into_iter()
+            .zip(final_names)
+            .map(|(mut sheet, final_name)| {
+                sheet.sheet_name = final_name;
+                sheet
+            })
+            .collect();
         Ok(())
     }
 }
@@ -803,14 +931,16 @@ fn write_arrow_record_batch_to_runtime_sheet(
     value_policy: &XlsxValuePolicy,
     policy_scientific: &ScientificPolicy,
     value_plans: &[crate::spec::ColumnValuePlan],
+    tracker: &mut LogicalAutofitTracker,
+    width_estimator: &mut Option<DisplayWidthEstimator>,
     report: &mut XlsxReport,
 ) -> Result<(), String> {
     let batch_start = row_offset;
     let batch_end = row_offset + batch.len();
     let sheet_start = runtime.sheet_slice.row_start_inclusive;
     let sheet_end = runtime.sheet_slice.row_end_exclusive;
-    let overlap_start = usize::max(batch_start, sheet_start);
-    let overlap_end = usize::min(batch_end, sheet_end);
+    let overlap_start = batch_start.max(sheet_start);
+    let overlap_end = batch_end.min(sheet_end);
     if overlap_start >= overlap_end {
         return Ok(());
     }
@@ -818,7 +948,6 @@ fn write_arrow_record_batch_to_runtime_sheet(
     let worksheet = workbook
         .worksheet_from_index(runtime.worksheet_index)
         .map_err(format_xlsx_error_text)?;
-
     for row_abs in overlap_start..overlap_end {
         let row_local_in_batch = row_abs - batch_start;
         let row_local_in_sheet = row_abs - sheet_start;
@@ -826,84 +955,85 @@ fn write_arrow_record_batch_to_runtime_sheet(
             runtime.sheet_slice.col_start_inclusive..runtime.sheet_slice.col_end_exclusive
         {
             let col_idx = col_abs - runtime.sheet_slice.col_start_inclusive;
-            let col = &batch.arrays()[col_abs];
             let is_numeric_col = runtime.numeric_cols_idx.contains(&col_idx);
             let is_integer_col = runtime.integer_cols_idx.contains(&col_idx);
             let is_decimal_specified = runtime.decimal_cols_idx.contains(&col_idx);
-            let is_scientific_candidate = is_scientific_candidate_col(
-                policy_scientific,
+            let normalized = normalize_arrow_cell(
+                batch.arrays()[col_abs].as_ref(),
+                row_local_in_batch,
+                value_plans.get(col_abs),
+                is_numeric_col,
                 is_integer_col,
                 runtime.is_decimal_explicit,
                 is_decimal_specified,
-            );
-            let value_raw = convert_arrow_value_with_plan(
-                col.as_ref(),
-                row_local_in_batch,
-                value_plans.get(col_abs),
+                should_keep_missing_values,
+                value_policy,
+                policy_scientific,
             )?;
-            if let Some(warning) = value_raw.warning
+            if let Some(warning) = normalized.warning
                 && let Some(plan) = value_plans.get(col_abs)
             {
                 add_conversion_warning(report, col_abs, &plan.name, warning);
             }
-            let value = if value_raw.warning.is_some() {
-                value_raw.value
+            let (fmt_cell, width_format) = if normalized.should_use_scientific {
+                (
+                    &runtime.scientific_formats_by_col[col_idx],
+                    &runtime.scientific_width_formats_by_col[col_idx],
+                )
             } else {
-                match value_plans.get(col_abs).map(|plan| plan.kind) {
-                    Some(
-                        ColumnValueKind::Boolean
-                        | ColumnValueKind::Integer
-                        | ColumnValueKind::Decimal
-                        | ColumnValueKind::Date
-                        | ColumnValueKind::Datetime
-                        | ColumnValueKind::Time
-                        | ColumnValueKind::Duration,
-                    ) => {
-                        if matches!(value_raw.value, CellValue::Blank) && should_keep_missing_values
-                        {
-                            CellValue::String(value_policy.missing_value_str.clone())
-                        } else {
-                            value_raw.value
-                        }
-                    }
-                    Some(ColumnValueKind::Float) => convert_cell_value(
-                        &value_raw.value,
-                        true,
-                        false,
-                        should_keep_missing_values,
-                        value_policy,
-                    ),
-                    _ => convert_cell_value(
-                        &value_raw.value,
-                        is_numeric_col,
-                        is_integer_col,
-                        should_keep_missing_values,
-                        value_policy,
-                    ),
-                }
+                (
+                    &runtime.data_formats_by_col[col_idx],
+                    &runtime.data_width_formats_by_col[col_idx],
+                )
             };
-            let should_use_scientific = should_use_scientific_value(
-                &value,
-                is_numeric_col,
-                is_scientific_candidate,
-                policy_scientific,
+            tracker.observe(
+                LogicalAutofitObservation {
+                    row_abs,
+                    col_abs,
+                    cell: &normalized,
+                    width_format,
+                },
+                width_estimator,
+                should_keep_missing_values,
+                value_policy,
             );
-            let fmt_cell = if should_use_scientific {
-                &runtime.scientific_formats_by_col[col_idx]
-            } else {
-                &runtime.data_formats_by_col[col_idx]
-            };
             write_cell_with_format(
                 worksheet,
                 header_row_count + row_local_in_sheet,
                 col_idx,
-                &value,
+                &normalized.value,
                 fmt_cell,
             )?;
         }
     }
-
     Ok(())
+}
+
+fn calculate_slice_indices(
+    indices: &[usize],
+    col_start_inclusive: usize,
+    col_end_exclusive: usize,
+) -> Vec<usize> {
+    indices
+        .iter()
+        .filter(|idx| **idx >= col_start_inclusive && **idx < col_end_exclusive)
+        .map(|idx| *idx - col_start_inclusive)
+        .collect()
+}
+
+fn allocate_internal_sheet_name(
+    phase: &str,
+    next_index: &mut usize,
+    occupied: &BTreeSet<String>,
+    reserved: &BTreeSet<String>,
+) -> String {
+    loop {
+        let candidate = format!("__nx_{phase}_{}", *next_index);
+        *next_index += 1;
+        if !occupied.contains(&candidate) && !reserved.contains(&candidate) {
+            return candidate;
+        }
+    }
 }
 
 fn add_conversion_warning(
@@ -941,9 +1071,475 @@ fn sort_conversion_warnings(report: &mut XlsxReport) {
     });
 }
 
-fn create_sheet_identifier_local(sheet_name: &str, part_idx: usize) -> String {
-    let suffix = format!("__{part_idx}");
-    let prefix_len = LEN_SHEET_NAME_MAX.saturating_sub(suffix.chars().count());
-    let prefix = sheet_name.chars().take(prefix_len).collect::<String>();
-    format!("{prefix}{suffix}")
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use arrow::array::PrimitiveArray;
+    use arrow::datatypes::{ArrowDataType, ArrowSchema, Field};
+    use std::sync::Arc;
+
+    use crate::spec::{CellFormatPatch, CellValue, XlsxValuePolicy, XlsxWriteOptions};
+
+    fn normalized(value: &str) -> NormalizedCell {
+        NormalizedCell {
+            value: CellValue::String(value.to_string()),
+            warning: None,
+            is_numeric_col: false,
+            is_integer_col: false,
+            should_use_scientific: false,
+        }
+    }
+
+    fn writer_for_finalization_failure(point: TestFinalizeFailurePoint) -> XlsxWriter {
+        let mut writer = XlsxWriter::new(
+            std::env::temp_dir().join(format!("neatxlsx-core-finalize-{point:?}.xlsx")),
+            CellFormatPatch::default(),
+            CellFormatPatch::default(),
+            CellFormatPatch::default(),
+            CellFormatPatch::default(),
+            CellFormatPatch::default(),
+            XlsxWriteOptions::default(),
+        )
+        .unwrap();
+        writer.inject_finalize_failure(point);
+        writer
+    }
+
+    fn one_column_batch() -> XlsxRecordBatch {
+        let schema = Arc::new(ArrowSchema::from_iter([Field::new(
+            "value".into(),
+            ArrowDataType::Int64,
+            false,
+        )]));
+        let values: Box<dyn ArrowArray> = Box::new(PrimitiveArray::<i64>::from_vec(vec![42]));
+        XlsxRecordBatch::new(1, schema, vec![values])
+    }
+
+    #[test]
+    fn autofit_tracker_uses_absolute_row_limit_across_batches() {
+        let policy = AutofitPolicy {
+            mode: AutofitMode::Body,
+            height_body_inferred_max: Some(2),
+            ..AutofitPolicy::default()
+        };
+        let value_policy = XlsxValuePolicy::default();
+        let mut tracker =
+            LogicalAutofitTracker::new(1, &[vec!["header".into()]], &policy, false, &value_policy);
+        let mut estimator = Some(DisplayWidthEstimator::default());
+        let width_format = WidthFormat::Plain;
+
+        tracker.observe(
+            LogicalAutofitObservation {
+                row_abs: 0,
+                col_abs: 0,
+                cell: &normalized("a"),
+                width_format: &width_format,
+            },
+            &mut estimator,
+            false,
+            &value_policy,
+        );
+        tracker.observe(
+            LogicalAutofitObservation {
+                row_abs: 1,
+                col_abs: 0,
+                cell: &normalized("included"),
+                width_format: &width_format,
+            },
+            &mut estimator,
+            false,
+            &value_policy,
+        );
+        tracker.observe(
+            LogicalAutofitObservation {
+                row_abs: 2,
+                col_abs: 0,
+                cell: &normalized("excluded-and-longer"),
+                width_format: &width_format,
+            },
+            &mut estimator,
+            false,
+            &value_policy,
+        );
+
+        assert_eq!(tracker.header_widths_by_col, [0]);
+        assert_eq!(tracker.body_widths_by_col, [cell_autofit_width("included")]);
+    }
+
+    #[test]
+    fn measured_east_asian_display_width_adjusts_only_the_evidence_ranges() {
+        let text = "A中あ한Ａ。😀é";
+        assert_eq!(
+            measured_east_asian_display_width_pixels(text),
+            cell_autofit_width(text).saturating_add(5 * 4)
+        );
+        for excluded in ["😀", "é", "𠀀", "豈"] {
+            assert_eq!(
+                measured_east_asian_display_width_pixels(excluded),
+                cell_autofit_width(excluded),
+                "{excluded:?} must retain the upstream non-ASCII metric"
+            );
+        }
+    }
+
+    #[test]
+    fn measured_east_asian_scalar_ranges_have_exact_boundaries() {
+        for codepoint in [
+            0x3000, 0x303F, 0x3040, 0x30FF, 0x4E00, 0x9FFF, 0xAC00, 0xD7AF, 0xFF01, 0xFF60,
+        ] {
+            let character = char::from_u32(codepoint).expect("test codepoint must be valid");
+            assert!(
+                is_measured_east_asian_scalar(character),
+                "U+{codepoint:04X}"
+            );
+        }
+        for codepoint in [
+            0x2FFF, 0x3100, 0x3400, 0x4DFF, 0xA000, 0xABFF, 0xD7B0, 0xFF00, 0xFF61, 0xF900, 0x20000,
+        ] {
+            let character = char::from_u32(codepoint).expect("test codepoint must be valid");
+            assert!(
+                !is_measured_east_asian_scalar(character),
+                "U+{codepoint:04X} must remain excluded"
+            );
+        }
+    }
+
+    #[test]
+    fn header_and_body_share_the_measured_east_asian_display_helper() {
+        let policy = AutofitPolicy {
+            mode: AutofitMode::All,
+            ..AutofitPolicy::default()
+        };
+        let value_policy = XlsxValuePolicy::default();
+        let mut tracker =
+            LogicalAutofitTracker::new(1, &[vec!["中".to_string()]], &policy, false, &value_policy);
+        let mut estimator = Some(DisplayWidthEstimator::default());
+        let body_cell = normalized("中");
+        let width_format = WidthFormat::Plain;
+        tracker.observe(
+            LogicalAutofitObservation {
+                row_abs: 0,
+                col_abs: 0,
+                cell: &body_cell,
+                width_format: &width_format,
+            },
+            &mut estimator,
+            false,
+            &value_policy,
+        );
+        let expected = measured_east_asian_display_width_pixels("中");
+        assert_eq!(tracker.header_widths_by_col, [expected]);
+        assert_eq!(tracker.body_widths_by_col, [expected]);
+    }
+
+    #[test]
+    fn display_width_estimator_uses_general_and_final_number_format() {
+        let mut estimator = DisplayWidthEstimator::default();
+        let numeric = NormalizedCell {
+            value: CellValue::Number(1234.5),
+            warning: None,
+            is_numeric_col: true,
+            is_integer_col: false,
+            should_use_scientific: false,
+        };
+        let general = estimator.width_format(&CellFormatPatch::default());
+        assert_eq!(
+            estimator.width_pixels(&numeric, &general, false, &XlsxValuePolicy::default()),
+            cell_autofit_width("1234.5")
+        );
+
+        let decimal = estimator.width_format(&CellFormatPatch {
+            num_format: Some("#,##0.00".to_string()),
+            ..Default::default()
+        });
+        assert_eq!(
+            estimator.width_pixels(&numeric, &decimal, false, &XlsxValuePolicy::default()),
+            cell_autofit_width("1,234.50")
+        );
+
+        for (value, code, display) in [
+            (1.2345e20, "0.00E+00", "1.23E+20"),
+            (46031.0, "yyyy-mm-dd", "2026-01-09"),
+            (0.5, "hh:mm:ss.000", "12:00:00.000"),
+            (1.5, "[h]:mm:ss.000", "36:00:00.000"),
+        ] {
+            let format = estimator.width_format(&CellFormatPatch {
+                num_format: Some(code.to_string()),
+                ..Default::default()
+            });
+            let cell = NormalizedCell {
+                value: CellValue::Number(value),
+                ..numeric.clone()
+            };
+            assert_eq!(
+                estimator.width_pixels(&cell, &format, false, &XlsxValuePolicy::default()),
+                cell_autofit_width(display),
+                "{code}"
+            );
+        }
+
+        let east_asian_literal = estimator.width_format(&CellFormatPatch {
+            num_format: Some("\"中\"0".to_string()),
+            ..Default::default()
+        });
+        let literal_cell = NormalizedCell {
+            value: CellValue::Number(12.0),
+            ..numeric
+        };
+        assert_eq!(
+            estimator.width_pixels(
+                &literal_cell,
+                &east_asian_literal,
+                false,
+                &XlsxValuePolicy::default()
+            ),
+            measured_east_asian_display_width_pixels("中12")
+        );
+    }
+
+    #[test]
+    fn display_width_estimator_uses_missing_value_text_and_parse_fallback() {
+        let value_policy = XlsxValuePolicy {
+            missing_value_str: "MISSING".to_string(),
+            ..Default::default()
+        };
+        let blank = NormalizedCell {
+            value: CellValue::Blank,
+            warning: None,
+            is_numeric_col: false,
+            is_integer_col: false,
+            should_use_scientific: false,
+        };
+        let mut estimator = DisplayWidthEstimator::default();
+        assert_eq!(
+            estimator.width_pixels(&blank, &WidthFormat::Plain, true, &value_policy),
+            cell_autofit_width("MISSING")
+        );
+        let east_asian_missing_policy = XlsxValuePolicy {
+            missing_value_str: "中".to_string(),
+            ..Default::default()
+        };
+        assert_eq!(
+            estimator.width_pixels(
+                &blank,
+                &WidthFormat::Plain,
+                true,
+                &east_asian_missing_policy
+            ),
+            measured_east_asian_display_width_pixels("中")
+        );
+        assert!(matches!(
+            estimator.width_format(&CellFormatPatch {
+                num_format: Some("[unterminated".to_string()),
+                ..Default::default()
+            }),
+            WidthFormat::Fallback
+        ));
+    }
+
+    #[test]
+    fn registry_matches_stable_starts() {
+        let planned = vec![SheetSlice {
+            sheet_name: "Data".to_string(),
+            row_start_inclusive: 0,
+            row_end_exclusive: 3,
+            col_start_inclusive: 0,
+            col_end_exclusive: 2,
+        }];
+        let key = PhysicalSheetKey::from_slice(&planned[0]);
+        let mut registry = PhysicalSheetRegistry::default();
+        registry
+            .register(
+                key,
+                PhysicalSheetEntry {
+                    worksheet_index: 0,
+                    temporary_name: "__nx_tmp_1".to_string(),
+                    actual_row_end: 3,
+                },
+            )
+            .unwrap();
+
+        let entries = registry.into_canonical(&planned).unwrap();
+        assert_eq!(entries[0].worksheet_index, 0);
+    }
+
+    fn planned_slice(
+        sheet_name: &str,
+        row_start_inclusive: usize,
+        row_end_exclusive: usize,
+        col_start_inclusive: usize,
+        col_end_exclusive: usize,
+    ) -> SheetSlice {
+        SheetSlice {
+            sheet_name: sheet_name.to_string(),
+            row_start_inclusive,
+            row_end_exclusive,
+            col_start_inclusive,
+            col_end_exclusive,
+        }
+    }
+
+    fn registry_entry(index: usize, name: &str, row_end: usize) -> PhysicalSheetEntry {
+        PhysicalSheetEntry {
+            worksheet_index: index,
+            temporary_name: name.to_string(),
+            actual_row_end: row_end,
+        }
+    }
+
+    #[test]
+    fn registry_rejects_missing_planned_key() {
+        let planned = vec![planned_slice("Data", 0, 3, 0, 2)];
+
+        let error = PhysicalSheetRegistry::default()
+            .into_canonical(&planned)
+            .unwrap_err();
+
+        assert!(error.contains("Missing physical worksheet registry key"));
+    }
+
+    #[test]
+    fn registry_rejects_orphan_key() {
+        let planned = vec![planned_slice("Data", 0, 3, 0, 2)];
+        let orphan = planned_slice("Data_2", 3, 6, 0, 2);
+        let mut registry = PhysicalSheetRegistry::default();
+        registry
+            .register(
+                PhysicalSheetKey::from_slice(&planned[0]),
+                registry_entry(0, "__nx_tmp_1", 3),
+            )
+            .unwrap();
+        registry
+            .register(
+                PhysicalSheetKey::from_slice(&orphan),
+                registry_entry(1, "__nx_tmp_2", 6),
+            )
+            .unwrap();
+
+        let error = registry.into_canonical(&planned).unwrap_err();
+
+        assert!(error.contains("Orphan physical worksheet registry keys"));
+    }
+
+    #[test]
+    fn registry_rejects_row_end_mismatch() {
+        let planned = vec![planned_slice("Data", 0, 3, 0, 2)];
+        let mut registry = PhysicalSheetRegistry::default();
+        registry
+            .register(
+                PhysicalSheetKey::from_slice(&planned[0]),
+                registry_entry(0, "__nx_tmp_1", 2),
+            )
+            .unwrap();
+
+        let error = registry.into_canonical(&planned).unwrap_err();
+
+        assert!(error.contains("Physical worksheet row boundary mismatch"));
+    }
+
+    #[test]
+    fn registry_returns_entries_in_planned_canonical_order() {
+        let planned = vec![
+            planned_slice("Data", 0, 2, 0, 2),
+            planned_slice("Data_2", 2, 4, 0, 2),
+            planned_slice("Data_3", 0, 2, 2, 4),
+            planned_slice("Data_4", 2, 4, 2, 4),
+        ];
+        let mut registry = PhysicalSheetRegistry::default();
+        // Runtime creation is row-first: r0c0, r0c1, r1c0, r1c1. The static
+        // planner is column-first: r0c0, r1c0, r0c1, r1c1.
+        for (index, slice) in
+            [0usize, 1, 2, 3]
+                .into_iter()
+                .zip([&planned[0], &planned[2], &planned[1], &planned[3]])
+        {
+            registry
+                .register(
+                    PhysicalSheetKey::from_slice(slice),
+                    registry_entry(index, &format!("__nx_tmp_{index}"), slice.row_end_exclusive),
+                )
+                .unwrap();
+        }
+
+        let entries = registry.into_canonical(&planned).unwrap();
+
+        assert_eq!(
+            entries
+                .iter()
+                .map(|entry| entry.worksheet_index)
+                .collect::<Vec<_>>(),
+            vec![0, 2, 1, 3]
+        );
+    }
+
+    #[test]
+    fn internal_names_skip_temporary_and_reserved_final_names() {
+        let occupied = BTreeSet::from(["__nx_tmp_1".to_string(), "__nx_tmp_3".to_string()]);
+        let reserved = BTreeSet::from(["__nx_tmp_2".to_string()]);
+        let mut next_index = 1;
+
+        let name = allocate_internal_sheet_name("tmp", &mut next_index, &occupied, &reserved);
+
+        assert_eq!(name, "__nx_tmp_4");
+        assert_eq!(next_index, 5);
+    }
+
+    #[test]
+    fn staging_names_skip_reserved_final_names() {
+        let occupied = BTreeSet::from(["__nx_stage_1".to_string()]);
+        let reserved = BTreeSet::from(["__nx_stage_2".to_string()]);
+        let mut next_index = 1;
+
+        let name = allocate_internal_sheet_name("stage", &mut next_index, &occupied, &reserved);
+
+        assert_eq!(name, "__nx_stage_3");
+    }
+
+    #[test]
+    fn slice_indices_do_not_rebase_columns_before_the_slice() {
+        assert_eq!(calculate_slice_indices(&[0, 16_384], 16_384, 16_385), [0]);
+    }
+
+    #[test]
+    fn finalization_failures_poison_writer_without_appending_report() {
+        for point in [
+            TestFinalizeFailurePoint::ApplyColumnWidths,
+            TestFinalizeFailurePoint::RenameWorksheets,
+            TestFinalizeFailurePoint::ReorderWorksheets,
+            TestFinalizeFailurePoint::ConstructReport,
+        ] {
+            let mut writer = writer_for_finalization_failure(point);
+            let options = XlsxSheetWriteOptions::default();
+
+            let error = writer
+                .write_sheet_from_record_batch_results(
+                    vec![Ok(one_column_batch())],
+                    "Data",
+                    None,
+                    &options,
+                )
+                .unwrap_err();
+
+            assert!(
+                error.contains("Injected finalization failure"),
+                "unexpected error for {point:?}: {error}"
+            );
+            assert!(writer.report().is_empty(), "report leaked for {point:?}");
+            assert_eq!(
+                writer
+                    .write_sheet_from_record_batch_results(
+                        vec![Ok(one_column_batch())],
+                        "Again",
+                        None,
+                        &options,
+                    )
+                    .unwrap_err(),
+                "Cannot use a poisoned workbook."
+            );
+            assert_eq!(
+                writer.close().unwrap_err(),
+                "Cannot close a poisoned workbook."
+            );
+        }
+    }
 }

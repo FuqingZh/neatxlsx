@@ -82,8 +82,16 @@ per-column style.
 ZIP64 is enabled by default because XLSX size depends on uncompressed worksheet
 XML and cannot be predicted reliably before streaming. Use
 `nx.Workbook(..., use_zip64=False)` only when a downstream reader lacks ZIP64
-support. `Autofit(mode="header")` and `"none"` preserve a single LazyFrame
-evaluation; `"body"` and `"all"` evaluate it twice.
+support. Every autofit mode consumes one LazyFrame batch stream. For `"body"`
+and `"all"`, column widths are tracked while rows are written and applied only
+after that stream is exhausted.
 
 See [the documentation map](docs/README.md) for the complete API, lifecycle,
 testing, and release contracts.
+
+For detailed pass-count, sampling, and temporary-file behavior, read the
+[streaming and autofit architecture](docs/architecture/20260831-v1.0-neatxlsx-streaming-autofit-architecture.md).
+Existing axiomkit callers can use the
+[migration guide](docs/how-to-guides/20260831-v1.0-migrate-axiomkit-xlsx.md);
+contributors can use the
+[benchmark protocol](docs/benchmarks/20260831-v1.0-xlsx-writer-benchmark-protocol.md).

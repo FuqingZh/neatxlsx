@@ -5,7 +5,7 @@ import xml.etree.ElementTree as ET
 import zipfile
 from collections.abc import Callable
 from pathlib import Path
-from typing import Any, Literal, cast
+from typing import Any, cast
 
 import neatxlsx as nx
 import openpyxl
@@ -28,7 +28,7 @@ NS = {"m": "http://schemas.openxmlformats.org/spreadsheetml/2006/main"}
         pytest.param(
             lambda: pl.LazyFrame({"identifier": ["ID-1"], "explanation": ["说明"]}),
             nx.Autofit(mode="body"),
-            id="lazyframe-two-pass",
+            id="lazyframe-streaming",
         ),
     ],
 )
@@ -134,15 +134,17 @@ def test_header_column_patch_applies_to_generated_and_one_row_custom_headers(
     assert sheet["B1"].font.name == "SimSun"
 
 
-def test_private_direct_writer_carries_header_column_patches(tmp_path: Path) -> None:
-    output = tmp_path / "direct.xlsx"
+def test_private_batch_writer_carries_header_column_patches(tmp_path: Path) -> None:
+    output = tmp_path / "batches.xlsx"
+    data = pl.DataFrame({"identifier": ["ID-1"], "explanation": ["说明"]})
     writer = _native.XlsxWriter(
         str(output),
         fmt_header=nx.Format(font_name="Times New Roman"),
     )
-    writer.write_sheet(
-        pl.DataFrame({"identifier": ["ID-1"], "explanation": ["说明"]}),
+    writer.write_sheet_batches(
+        collect_batches(data.lazy(), chunk_size=1),
         "Data",
+        schema_body=pl.DataFrame(schema=data.schema),
         header_column_formats=((1, nx.Format(font_name="SimSun")),),
     )
     writer.close()
@@ -152,12 +154,10 @@ def test_private_direct_writer_carries_header_column_patches(tmp_path: Path) -> 
     assert sheet["B1"].font.name == "SimSun"
 
 
-@pytest.mark.parametrize("entrypoint", ["direct", "batches", "single-pass"])
-def test_private_entrypoint_merge_preflight_preserves_writer_and_sheet_name(
+def test_private_batch_writer_merge_preflight_preserves_writer_and_sheet_name(
     tmp_path: Path,
-    entrypoint: Literal["direct", "batches", "single-pass"],
 ) -> None:
-    output = tmp_path / f"recover-native-{entrypoint}.xlsx"
+    output = tmp_path / "recover-native-batches.xlsx"
     data = pl.DataFrame({"identifier": ["ID-1"], "explanation": ["说明"]})
     header = pl.DataFrame(
         {
@@ -175,24 +175,13 @@ def test_private_entrypoint_merge_preflight_preserves_writer_and_sheet_name(
         }
         if reject:
             kwargs["header_column_formats"] = ((1, nx.Format(font_name="SimSun")),)
-        if entrypoint == "direct":
-            writer.write_sheet(data, "Data", **kwargs)
-        elif entrypoint == "batches":
-            writer.write_sheet_batches(
-                collect_batches(data.lazy(), chunk_size=1),
-                collect_batches(data.lazy(), chunk_size=1),
-                "Data",
-                schema_body=schema_body,
-                policy_autofit=nx.Autofit(mode="body"),
-                **kwargs,
-            )
-        else:
-            writer.write_sheet_batches_single_pass(
-                collect_batches(data.lazy(), chunk_size=1),
-                "Data",
-                schema_body=schema_body,
-                **kwargs,
-            )
+        writer.write_sheet_batches(
+            collect_batches(data.lazy(), chunk_size=1),
+            "Data",
+            schema_body=schema_body,
+            policy_autofit=nx.Autofit(mode="body"),
+            **kwargs,
+        )
 
     with pytest.raises(
         ValueError,
@@ -210,6 +199,37 @@ def test_private_entrypoint_merge_preflight_preserves_writer_and_sheet_name(
     assert [str(cell_range) for cell_range in book["Data"].merged_cells.ranges] == [
         "A1:B1"
     ]
+
+
+def test_private_batch_writer_is_poisoned_after_partial_stream_failure(
+    tmp_path: Path,
+) -> None:
+    output = tmp_path / "poisoned-native-batches.xlsx"
+    data = pl.DataFrame({"value": [1, 2]})
+    source = iter(collect_batches(data.lazy(), chunk_size=1))
+    schema_body = pl.DataFrame(schema=data.schema)
+    writer = _native.XlsxWriter(str(output))
+
+    def broken_batches() -> Any:
+        yield next(source)
+        raise RuntimeError("injected stream failure")
+
+    with pytest.raises(ValueError, match="injected stream failure"):
+        writer.write_sheet_batches(
+            broken_batches(),
+            "Partial",
+            schema_body=schema_body,
+        )
+
+    assert writer.report() == ()
+    with pytest.raises(ValueError, match="poisoned workbook"):
+        writer.write_sheet_batches(
+            collect_batches(data.lazy(), chunk_size=1),
+            "After",
+            schema_body=schema_body,
+        )
+    with pytest.raises(RuntimeError, match="poisoned workbook"):
+        writer.close()
 
 
 def test_invalid_format_rules_fail_before_backend_and_workbook_remains_usable(
@@ -310,10 +330,6 @@ def test_merged_header_rejection_happens_before_backend_and_is_recoverable(
             self.entered = True
             raise AssertionError("backend must not be entered")
 
-        def write_sheet_batches_single_pass(self, *args: Any, **kwargs: Any) -> None:
-            self.entered = True
-            raise AssertionError("backend must not be entered")
-
     output = tmp_path / "recover-merged-header.xlsx"
     data = pl.DataFrame({"identifier": ["ID-1"], "explanation": ["说明"]})
     header = pl.DataFrame(
@@ -364,7 +380,7 @@ def test_merged_header_rejection_happens_before_backend_and_is_recoverable(
         pytest.param(
             pl.LazyFrame({"score": [0.00000001]}),
             nx.Autofit(mode="body"),
-            id="two-pass",
+            id="lazyframe-streaming",
         ),
     ],
 )
@@ -424,7 +440,7 @@ def test_column_patch_survives_scientific_overlay_in_all_streaming_paths(
         pytest.param(
             pl.LazyFrame({"score": [0.00000001]}),
             nx.Autofit(mode="body"),
-            id="two-pass",
+            id="lazyframe-streaming",
         ),
     ],
 )
@@ -470,6 +486,35 @@ def test_omitted_column_formats_keep_the_original_scientific_style(
     assert font.find("m:b", NS) is None
 
 
+def test_body_autofit_uses_the_selected_scientific_format_for_width(
+    tmp_path: Path,
+) -> None:
+    widths: dict[str, float] = {}
+    for label, num_format in {
+        "compact": "0.0E+0",
+        "expanded": "0.000000000E+00",
+    }.items():
+        output = tmp_path / f"scientific-width-{label}.xlsx"
+        with nx.Workbook(
+            output,
+            scientific_format=nx.Format(num_format=num_format),
+            use_zip64=False,
+        ) as workbook:
+            workbook.write_sheet(
+                pl.LazyFrame({"score": [0.00000001]}),
+                "Data",
+                scientific_notation=nx.ScientificNotation(scope="decimal"),
+                autofit=nx.Autofit(mode="body", min_width=1, padding=0),
+            )
+        with zipfile.ZipFile(output) as archive:
+            worksheet = ET.fromstring(archive.read("xl/worksheets/sheet1.xml"))
+        column = worksheet.find("m:cols/m:col", NS)
+        assert column is not None
+        widths[label] = float(column.attrib["width"])
+
+    assert widths["expanded"] > widths["compact"]
+
+
 @pytest.mark.skipif(
     os.environ.get("NEATXLSX_INCLUDE_LARGE") != "1",
     reason="real Excel-limit pagination runs only in the explicit release gate",
@@ -492,7 +537,7 @@ def test_header_column_formats_survive_physical_column_pagination(
                 0: nx.Format(font_name="Times New Roman"),
                 16_384: nx.Format(font_name="SimSun"),
             },
-            autofit=nx.Autofit(mode="none"),
+            autofit=nx.Autofit(mode="all"),
         )
         parts = workbook.report()[0].worksheets
 
@@ -504,6 +549,14 @@ def test_header_column_formats_survive_physical_column_pagination(
     assert book[parts[0].name]["A1"].font.name == "Times New Roman"
     assert book[parts[1].name]["A1"].font.name == "SimSun"
     book.close()
+    with zipfile.ZipFile(output) as archive:
+        first_xml = ET.fromstring(archive.read("xl/worksheets/sheet1.xml"))
+        second_xml = ET.fromstring(archive.read("xl/worksheets/sheet2.xml"))
+    first_width = first_xml.find("m:cols/m:col[@min='1']", NS)
+    second_width = second_xml.find("m:cols/m:col[@min='1']", NS)
+    assert first_width is not None
+    assert second_width is not None
+    assert float(second_width.attrib["width"]) > float(first_width.attrib["width"])
 
 
 @pytest.mark.skipif(

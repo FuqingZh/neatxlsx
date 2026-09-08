@@ -1,0 +1,175 @@
+{
+  "timestamp_utc": "2026-09-01T04:48:02.457751+00:00",
+  "command": "scripts/benchmark_xlsx_writer.py --profile huge --repeat 2 --warmup 1 --out-dir /tmp/neatxlsx-v5-benchmark/huge-run1",
+  "platform": "Linux-4.18.0-348.7.1.el8_5.x86_64-x86_64-with-glibc2.28",
+  "python_version": "3.13.11",
+  "packages": {
+    "neatxlsx": "0.2.0",
+    "polars": "1.43.1"
+  },
+  "rust_backend_binary": "/tmp/neatxlsx-v5-benchmark/archive/python/neatxlsx/_native.abi3.so",
+  "validation_policy": "enforce_release_backend + validate sheet1 dimension/rows/cols",
+  "input_timing_policy": "DataFrame construction and Parquet fixture generation are excluded. Parquet LazyFrame timing starts before scan_parquet/filter/expression/projection plan construction and ends after XLSX save.",
+  "repeat": 2,
+  "warmup": 1,
+  "profile": "huge",
+  "backend": "rust",
+  "scenarios": [
+    {
+      "backend": "rust",
+      "scenario": {
+        "name": "huge_tall_dataframe_header",
+        "n_rows": 250000,
+        "n_numeric_cols": 10,
+        "n_text_cols": 4,
+        "should_autofit_columns": true,
+        "rule_autofit_columns": "header",
+        "input_kind": "dataframe",
+        "chunk_size": 8192
+      },
+      "n_cols": 15,
+      "repeats": 2,
+      "warmup_runs": 1,
+      "times_seconds": [
+        6.882475324906409,
+        6.719914962071925
+      ],
+      "mean_seconds": 6.801195143489167,
+      "median_seconds": 6.801195143489167,
+      "min_seconds": 6.719914962071925,
+      "max_seconds": 6.882475324906409,
+      "stdev_seconds": 0.11494753491240882,
+      "output_size_bytes_mean": 23862190
+    },
+    {
+      "backend": "rust",
+      "scenario": {
+        "name": "huge_wide_dataframe_all",
+        "n_rows": 50000,
+        "n_numeric_cols": 40,
+        "n_text_cols": 20,
+        "should_autofit_columns": true,
+        "rule_autofit_columns": "all",
+        "input_kind": "dataframe",
+        "chunk_size": 8192
+      },
+      "n_cols": 61,
+      "repeats": 2,
+      "warmup_runs": 1,
+      "times_seconds": [
+        6.743310963269323,
+        6.664561054203659
+      ],
+      "mean_seconds": 6.703936008736491,
+      "median_seconds": 6.703936008736491,
+      "min_seconds": 6.664561054203659,
+      "max_seconds": 6.743310963269323,
+      "stdev_seconds": 0.05568459471815486,
+      "output_size_bytes_mean": 21465583
+    },
+    {
+      "backend": "rust",
+      "scenario": {
+        "name": "huge_tall_parquet_lazyframe_none",
+        "n_rows": 250000,
+        "n_numeric_cols": 10,
+        "n_text_cols": 4,
+        "should_autofit_columns": false,
+        "rule_autofit_columns": "none",
+        "input_kind": "parquet_lazyframe",
+        "chunk_size": 8192
+      },
+      "n_cols": 15,
+      "repeats": 2,
+      "warmup_runs": 1,
+      "times_seconds": [
+        7.750751797109842,
+        7.459421577863395
+      ],
+      "mean_seconds": 7.605086687486619,
+      "median_seconds": 7.605086687486619,
+      "min_seconds": 7.459421577863395,
+      "max_seconds": 7.750751797109842,
+      "stdev_seconds": 0.20600157359372637,
+      "output_size_bytes_mean": 23862129
+    },
+    {
+      "backend": "rust",
+      "scenario": {
+        "name": "huge_tall_parquet_lazyframe_header",
+        "n_rows": 250000,
+        "n_numeric_cols": 10,
+        "n_text_cols": 4,
+        "should_autofit_columns": true,
+        "rule_autofit_columns": "header",
+        "input_kind": "parquet_lazyframe",
+        "chunk_size": 8192
+      },
+      "n_cols": 15,
+      "repeats": 2,
+      "warmup_runs": 1,
+      "times_seconds": [
+        7.343231387902051,
+        7.390678911935538
+      ],
+      "mean_seconds": 7.366955149918795,
+      "median_seconds": 7.366955149918795,
+      "min_seconds": 7.343231387902051,
+      "max_seconds": 7.390678911935538,
+      "stdev_seconds": 0.03355046599459024,
+      "output_size_bytes_mean": 23862191
+    },
+    {
+      "backend": "rust",
+      "scenario": {
+        "name": "huge_wide_parquet_lazyframe_body",
+        "n_rows": 50000,
+        "n_numeric_cols": 40,
+        "n_text_cols": 20,
+        "should_autofit_columns": true,
+        "rule_autofit_columns": "body",
+        "input_kind": "parquet_lazyframe",
+        "chunk_size": 8192
+      },
+      "n_cols": 61,
+      "repeats": 2,
+      "warmup_runs": 1,
+      "times_seconds": [
+        6.450257934164256,
+        7.200573133770376
+      ],
+      "mean_seconds": 6.825415533967316,
+      "median_seconds": 6.825415533967316,
+      "min_seconds": 6.450257934164256,
+      "max_seconds": 7.200573133770376,
+      "stdev_seconds": 0.5305529656688258,
+      "output_size_bytes_mean": 21465583
+    },
+    {
+      "backend": "rust",
+      "scenario": {
+        "name": "huge_wide_parquet_lazyframe_all",
+        "n_rows": 50000,
+        "n_numeric_cols": 40,
+        "n_text_cols": 20,
+        "should_autofit_columns": true,
+        "rule_autofit_columns": "all",
+        "input_kind": "parquet_lazyframe",
+        "chunk_size": 8192
+      },
+      "n_cols": 61,
+      "repeats": 2,
+      "warmup_runs": 1,
+      "times_seconds": [
+        6.53621945111081,
+        6.669788142200559
+      ],
+      "mean_seconds": 6.603003796655685,
+      "median_seconds": 6.603003796655685,
+      "min_seconds": 6.53621945111081,
+      "max_seconds": 6.669788142200559,
+      "stdev_seconds": 0.09444732722377294,
+      "output_size_bytes_mean": 21465583
+    }
+  ]
+}

@@ -5,16 +5,15 @@ from __future__ import annotations
 
 import argparse
 import difflib
+import importlib.metadata
 import json
-import math
+import subprocess
 import sys
-from datetime import date, datetime, time, timedelta
 from pathlib import Path
 from typing import Any
 
 import neatxlsx as nx
-import openpyxl
-from openpyxl.utils import get_column_letter
+from neatxlsx import _native
 
 ROOT = Path(__file__).resolve().parents[1]
 FIXTURE_DIR = ROOT / "tests" / "fixtures" / "report-reference"
@@ -23,10 +22,14 @@ if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
 from tests.reference_cases import (  # noqa: E402
-    MANIFEST_SCHEMA_VERSION,
     ReferenceCase,
     build_reference_case,
     scenario_ids,
+)
+from tests.reference_manifest import (  # noqa: E402
+    BASELINE_PROVENANCE,
+    manifest_from_workbook,
+    v5_compatibility_projection,
 )
 
 
@@ -59,131 +62,32 @@ def _parse_args() -> argparse.Namespace:
     return parser.parse_args()
 
 
-def _canonical_value(value: Any) -> Any:
-    if value is None or isinstance(value, (bool, int, str)):
-        return value
-    if isinstance(value, float):
-        if math.isnan(value):
-            return "NaN"
-        if math.isinf(value):
-            return "Inf" if value > 0 else "-Inf"
-        return value
-    if isinstance(value, (datetime, date, time)):
-        return value.isoformat()
-    if isinstance(value, timedelta):
-        return value.total_seconds()
-    return str(value)
-
-
-def _cell_manifest(cell: Any) -> dict[str, Any]:
-    data_type = cell.data_type
-    kind = {
-        "b": "boolean",
-        "e": "error",
-        "f": "formula",
-        "n": "blank" if cell.value is None else "number",
-    }.get(data_type, "string")
-    if cell.value is None:
-        kind = "blank"
-    return {
-        "address": cell.coordinate,
-        "kind": kind,
-        "value": _canonical_value(cell.value),
-        "number_format": cell.number_format,
+def _validate_baseline_acceptance() -> None:
+    revision = subprocess.run(
+        ["git", "rev-parse", "HEAD"],
+        cwd=ROOT,
+        check=True,
+        capture_output=True,
+        text=True,
+    ).stdout.strip()
+    actual = {
+        "bridge_abi": _native.__bridge_abi__,
+        "bridge_contract": _native.__bridge_contract__,
+        "package_version": importlib.metadata.version("neatxlsx"),
+        "source_revision": revision,
     }
-
-
-def _worksheet_manifest(
-    worksheet: Any, *, include_widths: bool = True
-) -> dict[str, Any]:
-    max_column = worksheet.max_column or 0
-    widths: dict[str, float] = {}
-    if include_widths:
-        for column_index in range(1, min(max_column, 4) + 1):
-            letter = get_column_letter(column_index)
-            width = worksheet.column_dimensions[letter].width
-            if width is not None:
-                widths[letter] = round(float(width), 4)
-    merged_cells = getattr(worksheet, "merged_cells", None)
-    return {
-        "name": worksheet.title,
-        "dimensions": [worksheet.max_row or 0, max_column],
-        "freeze_panes": getattr(worksheet, "freeze_panes", None),
-        "merges": sorted(str(value) for value in merged_cells.ranges)
-        if merged_cells is not None
-        else [],
-        "widths": widths,
-    }
-
-
-def _report_manifest(reports: tuple[nx.SheetReport, ...]) -> list[dict[str, Any]]:
-    return [
-        {
-            "requested_name": report.requested_name,
-            "worksheets": [
-                {
-                    "name": part.name,
-                    "rows": [part.row_start, part.row_stop],
-                    "columns": [part.column_start, part.column_stop],
-                }
-                for part in report.worksheets
-            ],
-            "warnings": list(report.warnings),
-        }
-        for report in reports
-    ]
-
-
-def manifest_from_workbook(
-    output: Path,
-    case: ReferenceCase,
-    reports: tuple[nx.SheetReport, ...],
-) -> dict[str, Any]:
-    """Build the compact manifest for one generated workbook."""
-    if case.split_planning is not None:
-        return {
-            "schema_version": MANIFEST_SCHEMA_VERSION,
-            "scenario": case.scenario_id,
-            "kind": "split-planning",
-            "split_planning": case.split_planning,
-            "known_gaps": [dict(gap) for gap in case.known_gaps],
-        }
-
-    read_only = case.scenario_id == "large-row-split"
-    workbook = openpyxl.load_workbook(
-        output,
-        data_only=False,
-        read_only=read_only,
-    )
-    sentinels: dict[str, list[dict[str, Any]]] = {}
-    for sheet_spec in case.sheets:
-        if not sheet_spec.sentinels:
-            continue
-        worksheet = workbook[sheet_spec.name]
-        sentinels[sheet_spec.name] = [
-            _cell_manifest(worksheet[address]) for address in sheet_spec.sentinels
-        ]
-    manifest = {
-        "schema_version": MANIFEST_SCHEMA_VERSION,
-        "scenario": case.scenario_id,
-        "kind": "workbook",
-        "reports": _report_manifest(reports),
-        "worksheets": [
-            _worksheet_manifest(worksheet, include_widths=not read_only)
-            for worksheet in workbook.worksheets
-        ],
-        "sentinels": sentinels,
-        "known_gaps": [dict(gap) for gap in case.known_gaps],
-    }
-    workbook.close()
-    return manifest
+    if actual != BASELINE_PROVENANCE:
+        raise RuntimeError(
+            "Baseline fixtures can only be accepted from the pinned v5 source: "
+            f"expected {BASELINE_PROVENANCE!r}, got {actual!r}."
+        )
 
 
 def _write_case_workbook(
     output: Path, case: ReferenceCase
 ) -> tuple[nx.SheetReport, ...]:
     output.parent.mkdir(parents=True, exist_ok=True)
-    with nx.Workbook(output) as workbook:
+    with nx.Workbook(output, **(case.workbook_kwargs or {})) as workbook:
         for sheet in case.sheets:
             workbook.write_sheet(sheet.data, sheet.name, **sheet.kwargs)
         return workbook.report()
@@ -197,6 +101,10 @@ def generate_scenario(
     accept: bool = False,
 ) -> dict[str, Any]:
     """Generate one scenario and compare or explicitly accept its manifest."""
+    if accept:
+        # Keep the immutable-oracle check at the mutation boundary.  Callers may
+        # invoke this function directly instead of going through ``main()``.
+        _validate_baseline_acceptance()
     case = build_reference_case(scenario_id)
     output_dir.mkdir(parents=True, exist_ok=True)
     output = output_dir / f"{scenario_id}.xlsx"
@@ -218,13 +126,18 @@ def generate_scenario(
             f"Missing expected fixture {expected_path}; rerun with --accept."
         )
     else:
-        expected = expected_path.read_text(encoding="utf-8").splitlines(keepends=True)
-        actual = actual_path.read_text(encoding="utf-8").splitlines(keepends=True)
-        if expected != actual:
+        expected = json.loads(expected_path.read_text(encoding="utf-8"))
+        expected_lines = json.dumps(
+            v5_compatibility_projection(expected), indent=2, sort_keys=True
+        ).splitlines(keepends=True)
+        actual_lines = json.dumps(
+            v5_compatibility_projection(manifest), indent=2, sort_keys=True
+        ).splitlines(keepends=True)
+        if expected_lines != actual_lines:
             diff = "".join(
                 difflib.unified_diff(
-                    expected,
-                    actual,
+                    expected_lines,
+                    actual_lines,
                     fromfile=str(expected_path),
                     tofile=str(actual_path),
                 )

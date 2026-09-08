@@ -1,0 +1,658 @@
+{
+  "baseline": {
+    "bridge_abi": 5,
+    "bridge_contract": "neatxlsx.xlsx.writer.v5",
+    "package_version": "0.2.0",
+    "source_revision": "85c3519e7fd830c83dd0b3e52b00ff8db19c4ab3"
+  },
+  "inputs": {
+    "sheets": [
+      {
+        "data_kind": "DataFrame",
+        "kwargs": {
+          "autofit": {
+            "max_rows": 20000,
+            "max_width": 60,
+            "min_width": 8,
+            "mode": "none",
+            "padding": 2
+          }
+        },
+        "name": "None",
+        "schema": [
+          [
+            "body-is-long",
+            "String"
+          ]
+        ],
+        "sentinels": [
+          "A1",
+          "A2"
+        ]
+      },
+      {
+        "data_kind": "DataFrame",
+        "kwargs": {
+          "autofit": {
+            "max_rows": 20000,
+            "max_width": 60,
+            "min_width": 8,
+            "mode": "header",
+            "padding": 2
+          }
+        },
+        "name": "Header",
+        "schema": [
+          [
+            "wide-header-name",
+            "String"
+          ]
+        ],
+        "sentinels": [
+          "A1",
+          "A2"
+        ]
+      },
+      {
+        "data_kind": "LazyFrame",
+        "kwargs": {
+          "autofit": {
+            "max_rows": 3,
+            "max_width": 60,
+            "min_width": 8,
+            "mode": "body",
+            "padding": 2
+          }
+        },
+        "name": "Body Bounded",
+        "schema": [
+          [
+            "value",
+            "String"
+          ],
+          [
+            "missing",
+            "String"
+          ]
+        ],
+        "sentinels": [
+          "A2",
+          "A4",
+          "A5",
+          "B3"
+        ]
+      },
+      {
+        "data_kind": "LazyFrame",
+        "kwargs": {
+          "autofit": {
+            "max_rows": null,
+            "max_width": 60,
+            "min_width": 8,
+            "mode": "all",
+            "padding": 2
+          }
+        },
+        "name": "All Unlimited",
+        "schema": [
+          [
+            "value",
+            "String"
+          ]
+        ],
+        "sentinels": [
+          "A1",
+          "A4"
+        ]
+      },
+      {
+        "data_kind": "DataFrame",
+        "kwargs": {
+          "autofit": {
+            "max_rows": 20000,
+            "max_width": 60,
+            "min_width": 8,
+            "mode": "all",
+            "padding": 2
+          }
+        },
+        "name": "Empty Rows",
+        "schema": [
+          [
+            "empty",
+            "String"
+          ]
+        ],
+        "sentinels": [
+          "A1"
+        ]
+      },
+      {
+        "data_kind": "DataFrame",
+        "kwargs": {
+          "autofit": {
+            "max_rows": 20000,
+            "max_width": 60,
+            "min_width": 8,
+            "mode": "header",
+            "padding": 2
+          }
+        },
+        "name": "Duplicate",
+        "schema": [
+          [
+            "value",
+            "Int64"
+          ]
+        ],
+        "sentinels": []
+      },
+      {
+        "data_kind": "DataFrame",
+        "kwargs": {
+          "autofit": {
+            "max_rows": 20000,
+            "max_width": 60,
+            "min_width": 8,
+            "mode": "body",
+            "padding": 2
+          }
+        },
+        "name": "Duplicate",
+        "schema": [
+          [
+            "value",
+            "Int64"
+          ]
+        ],
+        "sentinels": []
+      }
+    ],
+    "workbook_kwargs": {
+      "chunk_size": 2,
+      "keep_missing_values": true,
+      "missing_value": "\u7f3a\u5931"
+    }
+  },
+  "kind": "workbook",
+  "known_gaps": [],
+  "ooxml": {
+    "styles": {
+      "cell_xfs": [
+        {
+          "borderId": "0",
+          "fillId": "0",
+          "fontId": "0",
+          "numFmtId": "0",
+          "xfId": "0"
+        },
+        {
+          "applyAlignment": "1",
+          "applyBorder": "1",
+          "applyFont": "1",
+          "borderId": "1",
+          "fillId": "0",
+          "fontId": "1",
+          "numFmtId": "0",
+          "xfId": "0"
+        },
+        {
+          "applyAlignment": "1",
+          "applyFont": "1",
+          "borderId": "0",
+          "fillId": "0",
+          "fontId": "2",
+          "numFmtId": "0",
+          "xfId": "0"
+        },
+        {
+          "applyAlignment": "1",
+          "applyFont": "1",
+          "applyNumberFormat": "1",
+          "borderId": "0",
+          "fillId": "0",
+          "fontId": "2",
+          "numFmtId": "164",
+          "xfId": "0"
+        }
+      ],
+      "number_formats": [
+        {
+          "formatCode": "0",
+          "numFmtId": "164"
+        }
+      ]
+    },
+    "workbook_sheets": [
+      {
+        "name": "None",
+        "relationship_id": "rId1",
+        "target": "xl/worksheets/sheet1.xml"
+      },
+      {
+        "name": "Header",
+        "relationship_id": "rId2",
+        "target": "xl/worksheets/sheet2.xml"
+      },
+      {
+        "name": "Body Bounded",
+        "relationship_id": "rId3",
+        "target": "xl/worksheets/sheet3.xml"
+      },
+      {
+        "name": "All Unlimited",
+        "relationship_id": "rId4",
+        "target": "xl/worksheets/sheet4.xml"
+      },
+      {
+        "name": "Empty Rows",
+        "relationship_id": "rId5",
+        "target": "xl/worksheets/sheet5.xml"
+      },
+      {
+        "name": "Duplicate",
+        "relationship_id": "rId6",
+        "target": "xl/worksheets/sheet6.xml"
+      },
+      {
+        "name": "Duplicate__2",
+        "relationship_id": "rId7",
+        "target": "xl/worksheets/sheet7.xml"
+      }
+    ],
+    "worksheets": [
+      {
+        "columns": [],
+        "dimension_ref": "A1:A2",
+        "formula_like_cells": [],
+        "merges": [],
+        "name": "None",
+        "target": "xl/worksheets/sheet1.xml"
+      },
+      {
+        "columns": [
+          {
+            "customWidth": "1",
+            "max": "1",
+            "min": "1",
+            "width": "18.7109375"
+          }
+        ],
+        "dimension_ref": "A1:A2",
+        "formula_like_cells": [],
+        "merges": [],
+        "name": "Header",
+        "target": "xl/worksheets/sheet2.xml"
+      },
+      {
+        "columns": [
+          {
+            "customWidth": "1",
+            "max": "1",
+            "min": "1",
+            "width": "17.7109375"
+          },
+          {
+            "customWidth": "1",
+            "max": "2",
+            "min": "2",
+            "width": "8.7109375"
+          }
+        ],
+        "dimension_ref": "A1:B5",
+        "formula_like_cells": [],
+        "merges": [],
+        "name": "Body Bounded",
+        "target": "xl/worksheets/sheet3.xml"
+      },
+      {
+        "columns": [
+          {
+            "customWidth": "1",
+            "max": "1",
+            "min": "1",
+            "width": "42.7109375"
+          }
+        ],
+        "dimension_ref": "A1:A4",
+        "formula_like_cells": [],
+        "merges": [],
+        "name": "All Unlimited",
+        "target": "xl/worksheets/sheet4.xml"
+      },
+      {
+        "columns": [
+          {
+            "customWidth": "1",
+            "max": "1",
+            "min": "1",
+            "width": "8.7109375"
+          }
+        ],
+        "dimension_ref": "A1",
+        "formula_like_cells": [],
+        "merges": [],
+        "name": "Empty Rows",
+        "target": "xl/worksheets/sheet5.xml"
+      },
+      {
+        "columns": [
+          {
+            "customWidth": "1",
+            "max": "1",
+            "min": "1",
+            "width": "8.7109375"
+          }
+        ],
+        "dimension_ref": "A1:A2",
+        "formula_like_cells": [],
+        "merges": [],
+        "name": "Duplicate",
+        "target": "xl/worksheets/sheet6.xml"
+      },
+      {
+        "columns": [
+          {
+            "customWidth": "1",
+            "max": "1",
+            "min": "1",
+            "width": "8.7109375"
+          }
+        ],
+        "dimension_ref": "A1:A2",
+        "formula_like_cells": [],
+        "merges": [],
+        "name": "Duplicate__2",
+        "target": "xl/worksheets/sheet7.xml"
+      }
+    ]
+  },
+  "reports": [
+    {
+      "requested_name": "None",
+      "warnings": [],
+      "worksheets": [
+        {
+          "columns": [
+            0,
+            1
+          ],
+          "name": "None",
+          "rows": [
+            0,
+            1
+          ]
+        }
+      ]
+    },
+    {
+      "requested_name": "Header",
+      "warnings": [],
+      "worksheets": [
+        {
+          "columns": [
+            0,
+            1
+          ],
+          "name": "Header",
+          "rows": [
+            0,
+            1
+          ]
+        }
+      ]
+    },
+    {
+      "requested_name": "Body Bounded",
+      "warnings": [],
+      "worksheets": [
+        {
+          "columns": [
+            0,
+            2
+          ],
+          "name": "Body Bounded",
+          "rows": [
+            0,
+            4
+          ]
+        }
+      ]
+    },
+    {
+      "requested_name": "All Unlimited",
+      "warnings": [],
+      "worksheets": [
+        {
+          "columns": [
+            0,
+            1
+          ],
+          "name": "All Unlimited",
+          "rows": [
+            0,
+            3
+          ]
+        }
+      ]
+    },
+    {
+      "requested_name": "Empty Rows",
+      "warnings": [],
+      "worksheets": [
+        {
+          "columns": [
+            0,
+            1
+          ],
+          "name": "Empty Rows",
+          "rows": [
+            0,
+            0
+          ]
+        }
+      ]
+    },
+    {
+      "requested_name": "Duplicate",
+      "warnings": [],
+      "worksheets": [
+        {
+          "columns": [
+            0,
+            1
+          ],
+          "name": "Duplicate",
+          "rows": [
+            0,
+            1
+          ]
+        }
+      ]
+    },
+    {
+      "requested_name": "Duplicate",
+      "warnings": [],
+      "worksheets": [
+        {
+          "columns": [
+            0,
+            1
+          ],
+          "name": "Duplicate__2",
+          "rows": [
+            0,
+            1
+          ]
+        }
+      ]
+    }
+  ],
+  "scenario": "autofit-sampling",
+  "schema_version": 2,
+  "sentinels": {
+    "All Unlimited": [
+      {
+        "address": "A1",
+        "kind": "string",
+        "number_format": "General",
+        "value": "value"
+      },
+      {
+        "address": "A4",
+        "kind": "string",
+        "number_format": "General",
+        "value": "the-longest-value-after-a-batch-boundary"
+      }
+    ],
+    "Body Bounded": [
+      {
+        "address": "A2",
+        "kind": "string",
+        "number_format": "General",
+        "value": "a"
+      },
+      {
+        "address": "A4",
+        "kind": "string",
+        "number_format": "General",
+        "value": "widest-included"
+      },
+      {
+        "address": "A5",
+        "kind": "string",
+        "number_format": "General",
+        "value": "excluded-value-is-much-longer"
+      },
+      {
+        "address": "B3",
+        "kind": "string",
+        "number_format": "General",
+        "value": "\u7f3a\u5931"
+      }
+    ],
+    "Empty Rows": [
+      {
+        "address": "A1",
+        "kind": "string",
+        "number_format": "General",
+        "value": "empty"
+      }
+    ],
+    "Header": [
+      {
+        "address": "A1",
+        "kind": "string",
+        "number_format": "General",
+        "value": "wide-header-name"
+      },
+      {
+        "address": "A2",
+        "kind": "string",
+        "number_format": "General",
+        "value": "tiny"
+      }
+    ],
+    "None": [
+      {
+        "address": "A1",
+        "kind": "string",
+        "number_format": "General",
+        "value": "body-is-long"
+      },
+      {
+        "address": "A2",
+        "kind": "string",
+        "number_format": "General",
+        "value": "ignored-for-width"
+      }
+    ]
+  },
+  "worksheets": [
+    {
+      "dimensions": [
+        2,
+        1
+      ],
+      "freeze_panes": "A2",
+      "merges": [],
+      "name": "None",
+      "widths": {
+        "A": 13.0
+      }
+    },
+    {
+      "dimensions": [
+        2,
+        1
+      ],
+      "freeze_panes": "A2",
+      "merges": [],
+      "name": "Header",
+      "widths": {
+        "A": 18.7109
+      }
+    },
+    {
+      "dimensions": [
+        5,
+        2
+      ],
+      "freeze_panes": "A2",
+      "merges": [],
+      "name": "Body Bounded",
+      "widths": {
+        "A": 17.7109,
+        "B": 8.7109
+      }
+    },
+    {
+      "dimensions": [
+        4,
+        1
+      ],
+      "freeze_panes": "A2",
+      "merges": [],
+      "name": "All Unlimited",
+      "widths": {
+        "A": 42.7109
+      }
+    },
+    {
+      "dimensions": [
+        1,
+        1
+      ],
+      "freeze_panes": "A2",
+      "merges": [],
+      "name": "Empty Rows",
+      "widths": {
+        "A": 8.7109
+      }
+    },
+    {
+      "dimensions": [
+        2,
+        1
+      ],
+      "freeze_panes": "A2",
+      "merges": [],
+      "name": "Duplicate",
+      "widths": {
+        "A": 8.7109
+      }
+    },
+    {
+      "dimensions": [
+        2,
+        1
+      ],
+      "freeze_panes": "A2",
+      "merges": [],
+      "name": "Duplicate__2",
+      "widths": {
+        "A": 8.7109
+      }
+    }
+  ]
+}

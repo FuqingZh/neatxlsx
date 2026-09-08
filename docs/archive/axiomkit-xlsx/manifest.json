@@ -1,0 +1,146 @@
+{
+  "source_repository": "https://github.com/FuqingZh/axiomkit",
+  "source_commit": "d111dfa23e40e0a18a956bb2c5c3ee28641239d1",
+  "import_date": "2026-08-31",
+  "scope": [
+    "docs/migration/xlsx*.md",
+    "benchmarks/xlsx_writer/"
+  ],
+  "files": [
+    {
+      "path": "benchmarks/xlsx_writer/README.md",
+      "bytes": 1071,
+      "sha256": "d5d8136bea817ed0ea7860fd8d12bb896d00e65499876a37c92bcf7b541ae886"
+    },
+    {
+      "path": "benchmarks/xlsx_writer/results/INDEX.md",
+      "bytes": 1832,
+      "sha256": "6efabacf14e0e95bdfbb2295b2949a4ae45ac33fd78bba3a5ac7aaa5bd41e1fc"
+    },
+    {
+      "path": "benchmarks/xlsx_writer/results/xlsx_writer_20260212T070409Z.json",
+      "bytes": 1730,
+      "sha256": "6f569bbba7090861a23efc3e2e606a84ba97909711bfbd9fa5295f8008e5e415"
+    },
+    {
+      "path": "benchmarks/xlsx_writer/results/xlsx_writer_20260212T070409Z.md",
+      "bytes": 937,
+      "sha256": "cf8d973c907ead514cdda432f008cd0fcc637dd662ca9c3e947a2d5b900c825f"
+    },
+    {
+      "path": "benchmarks/xlsx_writer/results/xlsx_writer_20260212T070704Z.json",
+      "bytes": 1716,
+      "sha256": "c3622712d84c2047d642a5ac96daaae996eb85293a0dbd23a0e0a7375fe7440a"
+    },
+    {
+      "path": "benchmarks/xlsx_writer/results/xlsx_writer_20260212T070704Z.md",
+      "bytes": 930,
+      "sha256": "7ebb7c2cc59c157cc29a6d383309034a6f3003d3c3dac8b461c953a0106a2260"
+    },
+    {
+      "path": "benchmarks/xlsx_writer/results/xlsx_writer_20260212T074644Z.json",
+      "bytes": 3247,
+      "sha256": "d25a99dba9ad5927e87d1f823ed105217b16f1ecbc7dd3b949b9b006d21d3fc5"
+    },
+    {
+      "path": "benchmarks/xlsx_writer/results/xlsx_writer_20260212T074644Z.md",
+      "bytes": 1435,
+      "sha256": "c955ac2b52d88f07e62b184caa097b45ac4ce853840888c9083c8ed32de37575"
+    },
+    {
+      "path": "benchmarks/xlsx_writer/results/xlsx_writer_20260212T074839Z.json",
+      "bytes": 3153,
+      "sha256": "a3ba27980f64979490b7d217965ea8ac1e30dec263261a90fdcfe827f70c83d6"
+    },
+    {
+      "path": "benchmarks/xlsx_writer/results/xlsx_writer_20260212T074839Z.md",
+      "bytes": 1391,
+      "sha256": "ae16fd139a54141230580001999ca8fae22959c52d10c4cccc3d7fa7bb059332"
+    },
+    {
+      "path": "benchmarks/xlsx_writer/results/xlsx_writer_20260212T084801Z.json",
+      "bytes": 1816,
+      "sha256": "c5fa6d9c9d9e800349c98b0cc6ee59e676a49de0916901e3b591f142711cd73a"
+    },
+    {
+      "path": "benchmarks/xlsx_writer/results/xlsx_writer_20260212T084801Z.md",
+      "bytes": 1003,
+      "sha256": "ea147e6a8aaf6b7d8f7946151fbb33fd9b63db4539ab5830b4dd263c5e450137"
+    },
+    {
+      "path": "benchmarks/xlsx_writer/results/xlsx_writer_20260212T085030Z.json",
+      "bytes": 1869,
+      "sha256": "761e39e1aec8dfb5d42fa90b395dd6337808bc2b10aeacddacc66e06ae5167e3"
+    },
+    {
+      "path": "benchmarks/xlsx_writer/results/xlsx_writer_20260212T085030Z.md",
+      "bytes": 1029,
+      "sha256": "0e60898b2c25876b25fdf8e342e6e5b3b8bd2891b6e18cd14497b681f27d32bb"
+    },
+    {
+      "path": "benchmarks/xlsx_writer/results/xlsx_writer_20260212T092801Z.json",
+      "bytes": 1816,
+      "sha256": "e6d276b32a53d7b3db22c8360b5d9a6215e29dee808c3c3af2e9b7c01ddaec2a"
+    },
+    {
+      "path": "benchmarks/xlsx_writer/results/xlsx_writer_20260212T092801Z.md",
+      "bytes": 996,
+      "sha256": "bf0a10000fef7518bb1a012f07532413938aa5428315a8993b16459bc209ab7c"
+    },
+    {
+      "path": "benchmarks/xlsx_writer/results/xlsx_writer_20260212T092844Z.json",
+      "bytes": 1876,
+      "sha256": "f5bf275f09e04a9d5e6fc12561889a9ac8f26ecc4ccede48bc2cb6bdeec32986"
+    },
+    {
+      "path": "benchmarks/xlsx_writer/results/xlsx_writer_20260212T092844Z.md",
+      "bytes": 1031,
+      "sha256": "1b0dfc85a6818895d3ef251b345bfd2ebb05e4585a55b5fdb5e0f62ed8e814ff"
+    },
+    {
+      "path": "benchmarks/xlsx_writer/results/xlsx_writer_20260212T100808Z.json",
+      "bytes": 2060,
+      "sha256": "ad3449984920ed296e11a9c1274e261f931cb4a8e5d28667df99d929e45cf6c3"
+    },
+    {
+      "path": "benchmarks/xlsx_writer/results/xlsx_writer_20260212T100808Z.md",
+      "bytes": 1202,
+      "sha256": "0dc10b17aeb5ad098076cc64f0402f58f7c8b6af50b032b8b2d4b8fa4e8d0593"
+    },
+    {
+      "path": "benchmarks/xlsx_writer/results/xlsx_writer_20260212T100817Z.json",
+      "bytes": 1995,
+      "sha256": "6586be9b65197339d733d8ab060ef7d0e97f8beb08fb1f0bce6725e355ed71f1"
+    },
+    {
+      "path": "benchmarks/xlsx_writer/results/xlsx_writer_20260212T100817Z.md",
+      "bytes": 1166,
+      "sha256": "2825acebaa3a2fa6780fcd2f1cee7a51218abb1572b066344d9c8b9a71d82c4c"
+    },
+    {
+      "path": "benchmarks/xlsx_writer/results/xlsx_writer_compare_20260212T0850Z.md",
+      "bytes": 747,
+      "sha256": "90b723f9951b7416c289f9a0f912a0dadcf64fd5f9c83dc97b88284bdefda5b3"
+    },
+    {
+      "path": "benchmarks/xlsx_writer/results/xlsx_writer_compare_20260212T1008Z.md",
+      "bytes": 613,
+      "sha256": "32e5c43f3a85110710dfe0d23e678d0fe991e6b2008996a238339c272c196900"
+    },
+    {
+      "path": "docs/migration/xlsx_streaming_single_pass_plan.md",
+      "bytes": 1715,
+      "sha256": "05aa65cd30790cd4c15bcf4f05eaa31607d918ade78c50c3f1ced7c314d4e1a8"
+    },
+    {
+      "path": "docs/migration/xlsx_writer_v2.md",
+      "bytes": 1683,
+      "sha256": "4d12ff9b053fc189a7d20e3b01bf1fe1c332fad77f840d3af9d608e576e4cd8e"
+    },
+    {
+      "path": "docs/migration/xlsx_zip64_default.md",
+      "bytes": 796,
+      "sha256": "727450454ee48dfa8118e9c92178de7696f5e2488a6870dd0d17517c95e1b72f"
+    }
+  ]
+}

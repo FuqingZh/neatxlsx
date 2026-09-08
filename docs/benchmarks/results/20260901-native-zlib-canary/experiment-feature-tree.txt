@@ -1,0 +1,1213 @@
+neatxlsx-py v0.2.0 (/tmp/neatxlsx-zlib-canary/source/crates/neatxlsx_py)
+├── polars-arrow v0.51.0
+│   ├── polars-error v0.51.0
+│   │   ├── parking_lot feature "default"
+│   │   │   └── parking_lot v0.12.5
+│   │   │       ├── lock_api feature "default"
+│   │   │       │   ├── lock_api v0.4.14
+│   │   │       │   │   └── scopeguard v1.2.0
+│   │   │       │   └── lock_api feature "atomic_usize"
+│   │   │       │       └── lock_api v0.4.14 (*)
+│   │   │       └── parking_lot_core feature "default"
+│   │   │           └── parking_lot_core v0.9.12
+│   │   │               ├── cfg-if feature "default"
+│   │   │               │   └── cfg-if v1.0.4
+│   │   │               ├── libc feature "default"
+│   │   │               │   ├── libc v0.2.189
+│   │   │               │   └── libc feature "std"
+│   │   │               │       └── libc v0.2.189
+│   │   │               └── smallvec feature "default"
+│   │   │                   └── smallvec v1.15.2
+│   │   ├── regex feature "default"
+│   │   │   ├── regex v1.13.1
+│   │   │   │   ├── aho-corasick v1.1.4
+│   │   │   │   │   └── memchr v2.8.3
+│   │   │   │   ├── memchr v2.8.3
+│   │   │   │   ├── regex-syntax v0.8.11
+│   │   │   │   ├── regex-automata feature "alloc"
+│   │   │   │   │   └── regex-automata v0.4.16
+│   │   │   │   │       ├── aho-corasick v1.1.4 (*)
+│   │   │   │   │       ├── memchr v2.8.3
+│   │   │   │   │       └── regex-syntax v0.8.11
+│   │   │   │   ├── regex-automata feature "meta"
+│   │   │   │   │   ├── regex-automata v0.4.16 (*)
+│   │   │   │   │   ├── regex-automata feature "nfa-pikevm"
+│   │   │   │   │   │   ├── regex-automata v0.4.16 (*)
+│   │   │   │   │   │   └── regex-automata feature "nfa-thompson"
+│   │   │   │   │   │       ├── regex-automata v0.4.16 (*)
+│   │   │   │   │   │       └── regex-automata feature "alloc" (*)
+│   │   │   │   │   └── regex-automata feature "syntax"
+│   │   │   │   │       ├── regex-automata v0.4.16 (*)
+│   │   │   │   │       └── regex-automata feature "alloc" (*)
+│   │   │   │   ├── regex-automata feature "nfa-pikevm" (*)
+│   │   │   │   └── regex-automata feature "syntax" (*)
+│   │   │   ├── regex feature "perf"
+│   │   │   │   ├── regex v1.13.1 (*)
+│   │   │   │   ├── regex feature "perf-backtrack"
+│   │   │   │   │   ├── regex v1.13.1 (*)
+│   │   │   │   │   └── regex-automata feature "nfa-backtrack"
+│   │   │   │   │       ├── regex-automata v0.4.16 (*)
+│   │   │   │   │       └── regex-automata feature "nfa-thompson" (*)
+│   │   │   │   ├── regex feature "perf-cache"
+│   │   │   │   │   └── regex v1.13.1 (*)
+│   │   │   │   ├── regex feature "perf-dfa"
+│   │   │   │   │   ├── regex v1.13.1 (*)
+│   │   │   │   │   └── regex-automata feature "hybrid"
+│   │   │   │   │       ├── regex-automata v0.4.16 (*)
+│   │   │   │   │       ├── regex-automata feature "alloc" (*)
+│   │   │   │   │       └── regex-automata feature "nfa-thompson" (*)
+│   │   │   │   ├── regex feature "perf-inline"
+│   │   │   │   │   ├── regex v1.13.1 (*)
+│   │   │   │   │   └── regex-automata feature "perf-inline"
+│   │   │   │   │       └── regex-automata v0.4.16 (*)
+│   │   │   │   ├── regex feature "perf-literal"
+│   │   │   │   │   ├── regex v1.13.1 (*)
+│   │   │   │   │   └── regex-automata feature "perf-literal"
+│   │   │   │   │       ├── regex-automata v0.4.16 (*)
+│   │   │   │   │       ├── regex-automata feature "perf-literal-multisubstring"
+│   │   │   │   │       │   └── regex-automata v0.4.16 (*)
+│   │   │   │   │       └── regex-automata feature "perf-literal-substring"
+│   │   │   │   │           ├── regex-automata v0.4.16 (*)
+│   │   │   │   │           └── aho-corasick feature "perf-literal"
+│   │   │   │   │               └── aho-corasick v1.1.4 (*)
+│   │   │   │   └── regex feature "perf-onepass"
+│   │   │   │       ├── regex v1.13.1 (*)
+│   │   │   │       └── regex-automata feature "dfa-onepass"
+│   │   │   │           ├── regex-automata v0.4.16 (*)
+│   │   │   │           └── regex-automata feature "nfa-thompson" (*)
+│   │   │   ├── regex feature "std"
+│   │   │   │   ├── regex v1.13.1 (*)
+│   │   │   │   ├── aho-corasick feature "std"
+│   │   │   │   │   ├── aho-corasick v1.1.4 (*)
+│   │   │   │   │   └── memchr feature "std"
+│   │   │   │   │       ├── memchr v2.8.3
+│   │   │   │   │       └── memchr feature "alloc"
+│   │   │   │   │           └── memchr v2.8.3
+│   │   │   │   ├── memchr feature "std" (*)
+│   │   │   │   ├── regex-automata feature "std"
+│   │   │   │   │   ├── regex-automata v0.4.16 (*)
+│   │   │   │   │   ├── aho-corasick feature "std" (*)
+│   │   │   │   │   ├── memchr feature "std" (*)
+│   │   │   │   │   ├── regex-automata feature "alloc" (*)
+│   │   │   │   │   └── regex-syntax feature "std"
+│   │   │   │   │       └── regex-syntax v0.8.11
+│   │   │   │   └── regex-syntax feature "std" (*)
+│   │   │   ├── regex feature "unicode"
+│   │   │   │   ├── regex v1.13.1 (*)
+│   │   │   │   ├── regex feature "unicode-age"
+│   │   │   │   │   ├── regex v1.13.1 (*)
+│   │   │   │   │   ├── regex-automata feature "unicode-age"
+│   │   │   │   │   │   ├── regex-automata v0.4.16 (*)
+│   │   │   │   │   │   └── regex-syntax feature "unicode-age"
+│   │   │   │   │   │       └── regex-syntax v0.8.11
+│   │   │   │   │   └── regex-syntax feature "unicode-age" (*)
+│   │   │   │   ├── regex feature "unicode-bool"
+│   │   │   │   │   ├── regex v1.13.1 (*)
+│   │   │   │   │   ├── regex-automata feature "unicode-bool"
+│   │   │   │   │   │   ├── regex-automata v0.4.16 (*)
+│   │   │   │   │   │   └── regex-syntax feature "unicode-bool"
+│   │   │   │   │   │       └── regex-syntax v0.8.11
+│   │   │   │   │   └── regex-syntax feature "unicode-bool" (*)
+│   │   │   │   ├── regex feature "unicode-case"
+│   │   │   │   │   ├── regex v1.13.1 (*)
+│   │   │   │   │   ├── regex-automata feature "unicode-case"
+│   │   │   │   │   │   ├── regex-automata v0.4.16 (*)
+│   │   │   │   │   │   └── regex-syntax feature "unicode-case"
+│   │   │   │   │   │       └── regex-syntax v0.8.11
+│   │   │   │   │   └── regex-syntax feature "unicode-case" (*)
+│   │   │   │   ├── regex feature "unicode-gencat"
+│   │   │   │   │   ├── regex v1.13.1 (*)
+│   │   │   │   │   ├── regex-automata feature "unicode-gencat"
+│   │   │   │   │   │   ├── regex-automata v0.4.16 (*)
+│   │   │   │   │   │   └── regex-syntax feature "unicode-gencat"
+│   │   │   │   │   │       └── regex-syntax v0.8.11
+│   │   │   │   │   └── regex-syntax feature "unicode-gencat" (*)
+│   │   │   │   ├── regex feature "unicode-perl"
+│   │   │   │   │   ├── regex v1.13.1 (*)
+│   │   │   │   │   ├── regex-automata feature "unicode-perl"
+│   │   │   │   │   │   ├── regex-automata v0.4.16 (*)
+│   │   │   │   │   │   └── regex-syntax feature "unicode-perl"
+│   │   │   │   │   │       └── regex-syntax v0.8.11
+│   │   │   │   │   ├── regex-automata feature "unicode-word-boundary"
+│   │   │   │   │   │   └── regex-automata v0.4.16 (*)
+│   │   │   │   │   └── regex-syntax feature "unicode-perl" (*)
+│   │   │   │   ├── regex feature "unicode-script"
+│   │   │   │   │   ├── regex v1.13.1 (*)
+│   │   │   │   │   ├── regex-automata feature "unicode-script"
+│   │   │   │   │   │   ├── regex-automata v0.4.16 (*)
+│   │   │   │   │   │   └── regex-syntax feature "unicode-script"
+│   │   │   │   │   │       └── regex-syntax v0.8.11
+│   │   │   │   │   └── regex-syntax feature "unicode-script" (*)
+│   │   │   │   ├── regex feature "unicode-segment"
+│   │   │   │   │   ├── regex v1.13.1 (*)
+│   │   │   │   │   ├── regex-automata feature "unicode-segment"
+│   │   │   │   │   │   ├── regex-automata v0.4.16 (*)
+│   │   │   │   │   │   └── regex-syntax feature "unicode-segment"
+│   │   │   │   │   │       └── regex-syntax v0.8.11
+│   │   │   │   │   └── regex-syntax feature "unicode-segment" (*)
+│   │   │   │   ├── regex-automata feature "unicode"
+│   │   │   │   │   ├── regex-automata v0.4.16 (*)
+│   │   │   │   │   ├── regex-automata feature "unicode-age" (*)
+│   │   │   │   │   ├── regex-automata feature "unicode-bool" (*)
+│   │   │   │   │   ├── regex-automata feature "unicode-case" (*)
+│   │   │   │   │   ├── regex-automata feature "unicode-gencat" (*)
+│   │   │   │   │   ├── regex-automata feature "unicode-perl" (*)
+│   │   │   │   │   ├── regex-automata feature "unicode-script" (*)
+│   │   │   │   │   ├── regex-automata feature "unicode-segment" (*)
+│   │   │   │   │   ├── regex-automata feature "unicode-word-boundary" (*)
+│   │   │   │   │   └── regex-syntax feature "unicode"
+│   │   │   │   │       ├── regex-syntax v0.8.11
+│   │   │   │   │       ├── regex-syntax feature "unicode-age" (*)
+│   │   │   │   │       ├── regex-syntax feature "unicode-bool" (*)
+│   │   │   │   │       ├── regex-syntax feature "unicode-case" (*)
+│   │   │   │   │       ├── regex-syntax feature "unicode-gencat" (*)
+│   │   │   │   │       ├── regex-syntax feature "unicode-perl" (*)
+│   │   │   │   │       ├── regex-syntax feature "unicode-script" (*)
+│   │   │   │   │       └── regex-syntax feature "unicode-segment" (*)
+│   │   │   │   └── regex-syntax feature "unicode" (*)
+│   │   │   └── regex-syntax feature "default"
+│   │   │       ├── regex-syntax v0.8.11
+│   │   │       ├── regex-syntax feature "std" (*)
+│   │   │       └── regex-syntax feature "unicode" (*)
+│   │   ├── signal-hook feature "default"
+│   │   │   ├── signal-hook v0.3.18
+│   │   │   │   ├── libc feature "default" (*)
+│   │   │   │   └── signal-hook-registry feature "default"
+│   │   │   │       └── signal-hook-registry v1.4.8
+│   │   │   │           ├── libc feature "default" (*)
+│   │   │   │           └── errno feature "default"
+│   │   │   │               ├── errno v0.3.14
+│   │   │   │               │   └── libc v0.2.189
+│   │   │   │               └── errno feature "std"
+│   │   │   │                   ├── errno v0.3.14 (*)
+│   │   │   │                   └── libc feature "std" (*)
+│   │   │   ├── signal-hook feature "channel"
+│   │   │   │   └── signal-hook v0.3.18 (*)
+│   │   │   └── signal-hook feature "iterator"
+│   │   │       ├── signal-hook v0.3.18 (*)
+│   │   │       └── signal-hook feature "channel" (*)
+│   │   └── simdutf8 feature "default"
+│   │       ├── simdutf8 v0.1.5
+│   │       └── simdutf8 feature "std"
+│   │           └── simdutf8 v0.1.5
+│   ├── polars-schema v0.51.0
+│   │   ├── polars-error v0.51.0 (*)
+│   │   ├── polars-utils v0.51.0
+│   │   │   ├── polars-error v0.51.0 (*)
+│   │   │   ├── num-traits feature "default"
+│   │   │   │   ├── num-traits v0.2.19
+│   │   │   │   │   [build-dependencies]
+│   │   │   │   │   └── autocfg feature "default"
+│   │   │   │   │       └── autocfg v1.5.1
+│   │   │   │   └── num-traits feature "std"
+│   │   │   │       └── num-traits v0.2.19 (*)
+│   │   │   ├── bytemuck feature "default"
+│   │   │   │   └── bytemuck v1.25.2
+│   │   │   │       └── bytemuck_derive feature "default"
+│   │   │   │           └── bytemuck_derive v1.11.0 (proc-macro)
+│   │   │   │               ├── proc-macro2 feature "default"
+│   │   │   │               │   ├── proc-macro2 v1.0.107
+│   │   │   │               │   │   └── unicode-ident feature "default"
+│   │   │   │               │   │       └── unicode-ident v1.0.24
+│   │   │   │               │   └── proc-macro2 feature "proc-macro"
+│   │   │   │               │       └── proc-macro2 v1.0.107 (*)
+│   │   │   │               ├── quote feature "default"
+│   │   │   │               │   ├── quote v1.0.47
+│   │   │   │               │   │   └── proc-macro2 v1.0.107 (*)
+│   │   │   │               │   └── quote feature "proc-macro"
+│   │   │   │               │       ├── quote v1.0.47 (*)
+│   │   │   │               │       └── proc-macro2 feature "proc-macro" (*)
+│   │   │   │               └── syn feature "default"
+│   │   │   │                   ├── syn v2.0.119
+│   │   │   │                   │   ├── proc-macro2 v1.0.107 (*)
+│   │   │   │                   │   ├── quote v1.0.47 (*)
+│   │   │   │                   │   └── unicode-ident feature "default" (*)
+│   │   │   │                   ├── syn feature "clone-impls"
+│   │   │   │                   │   └── syn v2.0.119 (*)
+│   │   │   │                   ├── syn feature "derive"
+│   │   │   │                   │   └── syn v2.0.119 (*)
+│   │   │   │                   ├── syn feature "parsing"
+│   │   │   │                   │   └── syn v2.0.119 (*)
+│   │   │   │                   ├── syn feature "printing"
+│   │   │   │                   │   └── syn v2.0.119 (*)
+│   │   │   │                   └── syn feature "proc-macro"
+│   │   │   │                       ├── syn v2.0.119 (*)
+│   │   │   │                       ├── proc-macro2 feature "proc-macro" (*)
+│   │   │   │                       └── quote feature "proc-macro" (*)
+│   │   │   ├── bytemuck feature "derive"
+│   │   │   │   ├── bytemuck v1.25.2 (*)
+│   │   │   │   └── bytemuck feature "bytemuck_derive"
+│   │   │   │       └── bytemuck v1.25.2 (*)
+│   │   │   ├── bytemuck feature "extern_crate_alloc"
+│   │   │   │   └── bytemuck v1.25.2 (*)
+│   │   │   ├── either feature "default"
+│   │   │   │   ├── either v1.17.0
+│   │   │   │   └── either feature "std"
+│   │   │   │       └── either v1.17.0
+│   │   │   ├── hashbrown feature "default"
+│   │   │   │   ├── hashbrown v0.15.5
+│   │   │   │   │   ├── equivalent v1.0.2
+│   │   │   │   │   ├── foldhash v0.1.5
+│   │   │   │   │   ├── serde v1.0.229
+│   │   │   │   │   │   ├── serde_core feature "result"
+│   │   │   │   │   │   │   └── serde_core v1.0.229
+│   │   │   │   │   │   └── serde_derive feature "default"
+│   │   │   │   │   │       └── serde_derive v1.0.229 (proc-macro)
+│   │   │   │   │   │           ├── proc-macro2 feature "proc-macro" (*)
+│   │   │   │   │   │           ├── quote feature "proc-macro" (*)
+│   │   │   │   │   │           ├── syn feature "clone-impls"
+│   │   │   │   │   │           │   └── syn v3.0.3
+│   │   │   │   │   │           │       ├── proc-macro2 v1.0.107 (*)
+│   │   │   │   │   │           │       ├── quote v1.0.47 (*)
+│   │   │   │   │   │           │       └── unicode-ident feature "default" (*)
+│   │   │   │   │   │           ├── syn feature "derive"
+│   │   │   │   │   │           │   └── syn v3.0.3 (*)
+│   │   │   │   │   │           ├── syn feature "parsing"
+│   │   │   │   │   │           │   └── syn v3.0.3 (*)
+│   │   │   │   │   │           ├── syn feature "printing"
+│   │   │   │   │   │           │   └── syn v3.0.3 (*)
+│   │   │   │   │   │           └── syn feature "proc-macro"
+│   │   │   │   │   │               ├── syn v3.0.3 (*)
+│   │   │   │   │   │               ├── proc-macro2 feature "proc-macro" (*)
+│   │   │   │   │   │               └── quote feature "proc-macro" (*)
+│   │   │   │   │   ├── allocator-api2 feature "alloc"
+│   │   │   │   │   │   └── allocator-api2 v0.2.21
+│   │   │   │   │   └── rayon feature "default"
+│   │   │   │   │       └── rayon v1.12.0
+│   │   │   │   │           ├── either v1.17.0
+│   │   │   │   │           └── rayon-core feature "default"
+│   │   │   │   │               └── rayon-core v1.13.0
+│   │   │   │   │                   ├── crossbeam-deque feature "default"
+│   │   │   │   │                   │   ├── crossbeam-deque v0.8.7
+│   │   │   │   │                   │   │   ├── crossbeam-epoch v0.9.20
+│   │   │   │   │                   │   │   │   └── crossbeam-utils v0.8.22
+│   │   │   │   │                   │   │   └── crossbeam-utils v0.8.22
+│   │   │   │   │                   │   └── crossbeam-deque feature "std"
+│   │   │   │   │                   │       ├── crossbeam-deque v0.8.7 (*)
+│   │   │   │   │                   │       ├── crossbeam-epoch feature "std"
+│   │   │   │   │                   │       │   ├── crossbeam-epoch v0.9.20 (*)
+│   │   │   │   │                   │       │   ├── crossbeam-epoch feature "alloc"
+│   │   │   │   │                   │       │   │   └── crossbeam-epoch v0.9.20 (*)
+│   │   │   │   │                   │       │   └── crossbeam-utils feature "std"
+│   │   │   │   │                   │       │       └── crossbeam-utils v0.8.22
+│   │   │   │   │                   │       └── crossbeam-utils feature "std" (*)
+│   │   │   │   │                   └── crossbeam-utils feature "default"
+│   │   │   │   │                       ├── crossbeam-utils v0.8.22
+│   │   │   │   │                       └── crossbeam-utils feature "std" (*)
+│   │   │   │   ├── hashbrown feature "allocator-api2"
+│   │   │   │   │   └── hashbrown v0.15.5 (*)
+│   │   │   │   ├── hashbrown feature "default-hasher"
+│   │   │   │   │   └── hashbrown v0.15.5 (*)
+│   │   │   │   ├── hashbrown feature "equivalent"
+│   │   │   │   │   └── hashbrown v0.15.5 (*)
+│   │   │   │   ├── hashbrown feature "inline-more"
+│   │   │   │   │   └── hashbrown v0.15.5 (*)
+│   │   │   │   └── hashbrown feature "raw-entry"
+│   │   │   │       └── hashbrown v0.15.5 (*)
+│   │   │   ├── hashbrown feature "rayon"
+│   │   │   │   └── hashbrown v0.15.5 (*)
+│   │   │   ├── hashbrown feature "serde"
+│   │   │   │   └── hashbrown v0.15.5 (*)
+│   │   │   ├── foldhash feature "default"
+│   │   │   │   ├── foldhash v0.1.5
+│   │   │   │   └── foldhash feature "std"
+│   │   │   │       └── foldhash v0.1.5
+│   │   │   ├── rayon feature "default" (*)
+│   │   │   ├── libc feature "default" (*)
+│   │   │   ├── regex feature "default" (*)
+│   │   │   ├── indexmap feature "default"
+│   │   │   │   ├── indexmap v2.14.0
+│   │   │   │   │   ├── equivalent v1.0.2
+│   │   │   │   │   ├── hashbrown v0.17.1
+│   │   │   │   │   └── serde_core v1.0.229
+│   │   │   │   └── indexmap feature "std"
+│   │   │   │       └── indexmap v2.14.0 (*)
+│   │   │   ├── indexmap feature "serde"
+│   │   │   │   └── indexmap v2.14.0 (*)
+│   │   │   ├── indexmap feature "std" (*)
+│   │   │   ├── bytes feature "default"
+│   │   │   │   ├── bytes v1.12.1
+│   │   │   │   └── bytes feature "std"
+│   │   │   │       └── bytes v1.12.1
+│   │   │   ├── compact_str feature "default"
+│   │   │   │   ├── compact_str v0.9.1
+│   │   │   │   │   ├── serde feature "alloc"
+│   │   │   │   │   │   ├── serde v1.0.229 (*)
+│   │   │   │   │   │   └── serde_core feature "alloc"
+│   │   │   │   │   │       └── serde_core v1.0.229
+│   │   │   │   │   ├── serde feature "derive"
+│   │   │   │   │   │   ├── serde v1.0.229 (*)
+│   │   │   │   │   │   └── serde feature "serde_derive"
+│   │   │   │   │   │       └── serde v1.0.229 (*)
+│   │   │   │   │   ├── itoa feature "default"
+│   │   │   │   │   │   └── itoa v1.0.18
+│   │   │   │   │   ├── cfg-if feature "default" (*)
+│   │   │   │   │   ├── castaway feature "alloc"
+│   │   │   │   │   │   └── castaway v0.2.4
+│   │   │   │   │   │       └── rustversion feature "default"
+│   │   │   │   │   │           └── rustversion v1.0.23 (proc-macro)
+│   │   │   │   │   ├── rustversion feature "default" (*)
+│   │   │   │   │   ├── ryu feature "default"
+│   │   │   │   │   │   └── ryu v1.0.23
+│   │   │   │   │   └── static_assertions feature "default"
+│   │   │   │   │       └── static_assertions v1.1.0
+│   │   │   │   └── compact_str feature "std"
+│   │   │   │       └── compact_str v0.9.1 (*)
+│   │   │   ├── compact_str feature "serde"
+│   │   │   │   └── compact_str v0.9.1 (*)
+│   │   │   ├── memmap2 feature "default"
+│   │   │   │   └── memmap2 v0.9.11
+│   │   │   │       └── libc feature "default" (*)
+│   │   │   ├── rand feature "default"
+│   │   │   │   ├── rand v0.9.5
+│   │   │   │   │   ├── rand_chacha v0.9.0
+│   │   │   │   │   │   ├── ppv-lite86 feature "simd"
+│   │   │   │   │   │   │   └── ppv-lite86 v0.2.21
+│   │   │   │   │   │   │       ├── zerocopy feature "default"
+│   │   │   │   │   │   │       │   └── zerocopy v0.8.55
+│   │   │   │   │   │   │       └── zerocopy feature "simd"
+│   │   │   │   │   │   │           └── zerocopy v0.8.55
+│   │   │   │   │   │   └── rand_core feature "default"
+│   │   │   │   │   │       └── rand_core v0.9.5
+│   │   │   │   │   │           └── getrandom feature "default"
+│   │   │   │   │   │               └── getrandom v0.3.4
+│   │   │   │   │   │                   ├── libc v0.2.189
+│   │   │   │   │   │                   └── cfg-if feature "default" (*)
+│   │   │   │   │   └── rand_core v0.9.5 (*)
+│   │   │   │   ├── rand feature "os_rng"
+│   │   │   │   │   ├── rand v0.9.5 (*)
+│   │   │   │   │   └── rand_core feature "os_rng"
+│   │   │   │   │       └── rand_core v0.9.5 (*)
+│   │   │   │   ├── rand feature "small_rng"
+│   │   │   │   │   └── rand v0.9.5 (*)
+│   │   │   │   ├── rand feature "std"
+│   │   │   │   │   ├── rand v0.9.5 (*)
+│   │   │   │   │   ├── rand feature "alloc"
+│   │   │   │   │   │   └── rand v0.9.5 (*)
+│   │   │   │   │   ├── rand_chacha feature "std"
+│   │   │   │   │   │   ├── rand_chacha v0.9.0 (*)
+│   │   │   │   │   │   ├── ppv-lite86 feature "std"
+│   │   │   │   │   │   │   └── ppv-lite86 v0.2.21 (*)
+│   │   │   │   │   │   └── rand_core feature "std"
+│   │   │   │   │   │       ├── rand_core v0.9.5 (*)
+│   │   │   │   │   │       └── getrandom feature "std"
+│   │   │   │   │   │           └── getrandom v0.3.4 (*)
+│   │   │   │   │   └── rand_core feature "std" (*)
+│   │   │   │   ├── rand feature "std_rng"
+│   │   │   │   │   └── rand v0.9.5 (*)
+│   │   │   │   └── rand feature "thread_rng"
+│   │   │   │       ├── rand v0.9.5 (*)
+│   │   │   │       ├── rand feature "os_rng" (*)
+│   │   │   │       ├── rand feature "std" (*)
+│   │   │   │       └── rand feature "std_rng" (*)
+│   │   │   ├── raw-cpuid feature "default"
+│   │   │   │   └── raw-cpuid v11.6.0
+│   │   │   │       └── bitflags feature "default"
+│   │   │   │           └── bitflags v2.13.1
+│   │   │   ├── slotmap feature "default"
+│   │   │   │   ├── slotmap v1.1.1
+│   │   │   │   │   [build-dependencies]
+│   │   │   │   │   └── version_check feature "default"
+│   │   │   │   │       └── version_check v0.9.5
+│   │   │   │   └── slotmap feature "std"
+│   │   │   │       └── slotmap v1.1.1 (*)
+│   │   │   ├── stacker feature "default"
+│   │   │   │   └── stacker v0.1.24
+│   │   │   │       ├── cfg-if feature "default" (*)
+│   │   │   │       ├── libc feature "default" (*)
+│   │   │   │       └── psm feature "default"
+│   │   │   │           └── psm v0.1.31
+│   │   │   │               [build-dependencies]
+│   │   │   │               ├── cc feature "default"
+│   │   │   │               │   └── cc v1.4.0
+│   │   │   │               │       ├── find-msvc-tools feature "default"
+│   │   │   │               │       │   └── find-msvc-tools v0.1.9
+│   │   │   │               │       └── shlex feature "default"
+│   │   │   │               │           ├── shlex v2.0.1
+│   │   │   │               │           └── shlex feature "std"
+│   │   │   │               │               └── shlex v2.0.1
+│   │   │   │               └── ar_archive_writer feature "default"
+│   │   │   │                   └── ar_archive_writer v0.5.2
+│   │   │   │                       ├── object feature "read"
+│   │   │   │                       │   ├── object v0.37.3
+│   │   │   │                       │   │   └── memchr v2.8.3
+│   │   │   │                       │   ├── object feature "archive"
+│   │   │   │                       │   │   └── object v0.37.3 (*)
+│   │   │   │                       │   ├── object feature "coff"
+│   │   │   │                       │   │   └── object v0.37.3 (*)
+│   │   │   │                       │   ├── object feature "elf"
+│   │   │   │                       │   │   └── object v0.37.3 (*)
+│   │   │   │                       │   ├── object feature "macho"
+│   │   │   │                       │   │   └── object v0.37.3 (*)
+│   │   │   │                       │   ├── object feature "pe"
+│   │   │   │                       │   │   ├── object v0.37.3 (*)
+│   │   │   │                       │   │   └── object feature "coff" (*)
+│   │   │   │                       │   ├── object feature "read_core"
+│   │   │   │                       │   │   └── object v0.37.3 (*)
+│   │   │   │                       │   ├── object feature "unaligned"
+│   │   │   │                       │   │   └── object v0.37.3 (*)
+│   │   │   │                       │   └── object feature "xcoff"
+│   │   │   │                       │       └── object v0.37.3 (*)
+│   │   │   │                       └── object feature "std"
+│   │   │   │                           ├── object v0.37.3 (*)
+│   │   │   │                           └── memchr feature "std"
+│   │   │   │                               ├── memchr v2.8.3
+│   │   │   │                               └── memchr feature "alloc"
+│   │   │   │                                   └── memchr v2.8.3
+│   │   │   │       [build-dependencies]
+│   │   │   │       └── cc feature "default" (*)
+│   │   │   ├── uuid feature "default"
+│   │   │   │   ├── uuid v1.24.0
+│   │   │   │   │   └── getrandom feature "default"
+│   │   │   │   │       └── getrandom v0.4.3
+│   │   │   │   │           ├── libc v0.2.189
+│   │   │   │   │           └── cfg-if feature "default" (*)
+│   │   │   │   └── uuid feature "std"
+│   │   │   │       └── uuid v1.24.0 (*)
+│   │   │   └── uuid feature "v4"
+│   │   │       ├── uuid v1.24.0 (*)
+│   │   │       └── uuid feature "rng"
+│   │   │           └── uuid v1.24.0 (*)
+│   │   │   [build-dependencies]
+│   │   │   └── version_check feature "default" (*)
+│   │   ├── indexmap feature "default" (*)
+│   │   ├── indexmap feature "serde" (*)
+│   │   └── indexmap feature "std" (*)
+│   │   [build-dependencies]
+│   │   └── version_check feature "default" (*)
+│   ├── polars-utils v0.51.0 (*)
+│   ├── chrono feature "std"
+│   │   ├── chrono v0.4.45
+│   │   │   ├── num-traits v0.2.19 (*)
+│   │   │   ├── iana-time-zone feature "default"
+│   │   │   │   └── iana-time-zone v0.1.65
+│   │   │   └── iana-time-zone feature "fallback"
+│   │   │       └── iana-time-zone v0.1.65
+│   │   └── chrono feature "alloc"
+│   │       └── chrono v0.4.45 (*)
+│   ├── num-traits feature "default" (*)
+│   ├── atoi_simd feature "default"
+│   │   ├── atoi_simd v0.16.1
+│   │   │   └── debug_unsafe feature "default"
+│   │   │       └── debug_unsafe v0.1.4
+│   │   └── atoi_simd feature "std"
+│   │       └── atoi_simd v0.16.1 (*)
+│   ├── bitflags feature "default" (*)
+│   ├── bytemuck feature "default" (*)
+│   ├── bytemuck feature "derive" (*)
+│   ├── bytemuck feature "extern_crate_alloc" (*)
+│   ├── bytemuck feature "must_cast"
+│   │   └── bytemuck v1.25.2 (*)
+│   ├── chrono-tz feature "default"
+│   │   ├── chrono-tz v0.10.4
+│   │   │   ├── chrono v0.4.45 (*)
+│   │   │   └── phf v0.12.1
+│   │   │       └── phf_shared v0.12.1
+│   │   │           └── siphasher feature "default"
+│   │   │               ├── siphasher v1.0.3
+│   │   │               └── siphasher feature "std"
+│   │   │                   └── siphasher v1.0.3
+│   │   └── chrono-tz feature "std"
+│   │       └── chrono-tz v0.10.4 (*)
+│   ├── dyn-clone feature "default"
+│   │   └── dyn-clone v1.0.20
+│   ├── either feature "default" (*)
+│   ├── ethnum feature "default"
+│   │   └── ethnum v1.5.3
+│   ├── hashbrown feature "default" (*)
+│   ├── hashbrown feature "rayon" (*)
+│   ├── hashbrown feature "serde" (*)
+│   ├── itoa feature "default" (*)
+│   ├── simdutf8 feature "default" (*)
+│   ├── streaming-iterator feature "default"
+│   │   └── streaming-iterator v0.1.9
+│   └── strum_macros feature "default"
+│       └── strum_macros v0.27.2 (proc-macro)
+│           ├── proc-macro2 feature "default" (*)
+│           ├── quote feature "default" (*)
+│           ├── syn feature "default" (*)
+│           ├── syn feature "parsing" (*)
+│           └── heck feature "default"
+│               └── heck v0.5.0
+│   [build-dependencies]
+│   └── version_check feature "default" (*)
+├── neatxlsx-core feature "default"
+│   └── neatxlsx-core v0.2.0 (/tmp/neatxlsx-zlib-canary/source/crates/neatxlsx_core)
+│       ├── chrono v0.4.45 (*)
+│       ├── polars-arrow v0.51.0 (*)
+│       ├── rust_xlsxwriter feature "constant_memory"
+│       │   └── rust_xlsxwriter v0.90.2
+│       │       ├── tempfile feature "default"
+│       │       │   ├── tempfile v3.27.0
+│       │       │   │   ├── getrandom v0.4.3 (*)
+│       │       │   │   ├── fastrand feature "default"
+│       │       │   │   │   ├── fastrand v2.5.0
+│       │       │   │   │   └── fastrand feature "std"
+│       │       │   │   │       ├── fastrand v2.5.0
+│       │       │   │   │       └── fastrand feature "alloc"
+│       │       │   │   │           └── fastrand v2.5.0
+│       │       │   │   ├── once_cell feature "std"
+│       │       │   │   │   ├── once_cell v1.21.4
+│       │       │   │   │   └── once_cell feature "alloc"
+│       │       │   │   │       ├── once_cell v1.21.4
+│       │       │   │   │       └── once_cell feature "race"
+│       │       │   │   │           └── once_cell v1.21.4
+│       │       │   │   ├── rustix feature "default"
+│       │       │   │   │   ├── rustix v1.1.4
+│       │       │   │   │   │   ├── bitflags v2.13.1
+│       │       │   │   │   │   ├── linux-raw-sys feature "auxvec"
+│       │       │   │   │   │   │   └── linux-raw-sys v0.12.1
+│       │       │   │   │   │   ├── linux-raw-sys feature "elf"
+│       │       │   │   │   │   │   └── linux-raw-sys v0.12.1
+│       │       │   │   │   │   ├── linux-raw-sys feature "errno"
+│       │       │   │   │   │   │   └── linux-raw-sys v0.12.1
+│       │       │   │   │   │   ├── linux-raw-sys feature "general"
+│       │       │   │   │   │   │   └── linux-raw-sys v0.12.1
+│       │       │   │   │   │   ├── linux-raw-sys feature "ioctl"
+│       │       │   │   │   │   │   └── linux-raw-sys v0.12.1
+│       │       │   │   │   │   └── linux-raw-sys feature "no_std"
+│       │       │   │   │   │       └── linux-raw-sys v0.12.1
+│       │       │   │   │   └── rustix feature "std"
+│       │       │   │   │       ├── rustix v1.1.4 (*)
+│       │       │   │   │       ├── bitflags feature "std"
+│       │       │   │   │       │   └── bitflags v2.13.1
+│       │       │   │   │       └── rustix feature "alloc"
+│       │       │   │   │           └── rustix v1.1.4 (*)
+│       │       │   │   └── rustix feature "fs"
+│       │       │   │       └── rustix v1.1.4 (*)
+│       │       │   └── tempfile feature "getrandom"
+│       │       │       └── tempfile v3.27.0 (*)
+│       │       └── zip feature "deflate"
+│       │           ├── zip v4.6.1
+│       │           │   ├── flate2 v1.1.9
+│       │           │   │   ├── libz-sys v1.1.29
+│       │           │   │   │   [build-dependencies]
+│       │           │   │   │   ├── cc feature "default" (*)
+│       │           │   │   │   ├── pkg-config feature "default"
+│       │           │   │   │   │   └── pkg-config v0.3.33
+│       │           │   │   │   └── vcpkg feature "default"
+│       │           │   │   │       └── vcpkg v0.2.15
+│       │           │   │   ├── crc32fast feature "default"
+│       │           │   │   │   ├── crc32fast v1.5.0
+│       │           │   │   │   │   └── cfg-if feature "default" (*)
+│       │           │   │   │   └── crc32fast feature "std"
+│       │           │   │   │       └── crc32fast v1.5.0 (*)
+│       │           │   │   ├── zlib-rs feature "rust-allocator"
+│       │           │   │   │   └── zlib-rs v0.6.6
+│       │           │   │   └── zlib-rs feature "std"
+│       │           │   │       ├── zlib-rs v0.6.6
+│       │           │   │       └── zlib-rs feature "rust-allocator" (*)
+│       │           │   ├── memchr feature "default"
+│       │           │   │   ├── memchr v2.8.3
+│       │           │   │   └── memchr feature "std" (*)
+│       │           │   ├── indexmap feature "default" (*)
+│       │           │   ├── crc32fast feature "default" (*)
+│       │           │   └── zopfli feature "default"
+│       │           │       ├── zopfli v0.8.3
+│       │           │       │   ├── crc32fast v1.5.0 (*)
+│       │           │       │   ├── simd-adler32 v0.3.10
+│       │           │       │   ├── bumpalo feature "default"
+│       │           │       │   │   └── bumpalo v3.20.3
+│       │           │       │   └── log feature "default"
+│       │           │       │       └── log v0.4.33
+│       │           │       ├── zopfli feature "gzip"
+│       │           │       │   └── zopfli v0.8.3 (*)
+│       │           │       ├── zopfli feature "std"
+│       │           │       │   ├── zopfli v0.8.3 (*)
+│       │           │       │   ├── crc32fast feature "std" (*)
+│       │           │       │   └── simd-adler32 feature "std"
+│       │           │       │       └── simd-adler32 v0.3.10
+│       │           │       └── zopfli feature "zlib"
+│       │           │           └── zopfli v0.8.3 (*)
+│       │           ├── zip feature "deflate-flate2-zlib-rs"
+│       │           │   ├── zip v4.6.1 (*)
+│       │           │   ├── zip feature "deflate-flate2"
+│       │           │   │   ├── zip v4.6.1 (*)
+│       │           │   │   └── zip feature "_deflate-any"
+│       │           │   │       └── zip v4.6.1 (*)
+│       │           │   ├── zip feature "flate2"
+│       │           │   │   └── zip v4.6.1 (*)
+│       │           │   └── flate2 feature "zlib-rs"
+│       │           │       ├── flate2 v1.1.9 (*)
+│       │           │       └── flate2 feature "any_zlib"
+│       │           │           ├── flate2 v1.1.9 (*)
+│       │           │           └── flate2 feature "any_impl"
+│       │           │               └── flate2 v1.1.9 (*)
+│       │           └── zip feature "deflate-zopfli"
+│       │               ├── zip v4.6.1 (*)
+│       │               └── zip feature "_deflate-any" (*)
+│       └── rust_xlsxwriter feature "default"
+│           └── rust_xlsxwriter v0.90.2 (*)
+├── polars feature "dtype-full"
+│   ├── polars v0.51.0
+│   │   ├── polars-error v0.51.0 (*)
+│   │   ├── polars-io v0.51.0
+│   │   │   ├── polars-core v0.51.0
+│   │   │   │   ├── polars-dtype v0.51.0
+│   │   │   │   │   ├── polars-error v0.51.0 (*)
+│   │   │   │   │   ├── polars-utils v0.51.0 (*)
+│   │   │   │   │   ├── polars-arrow feature "compute_aggregate"
+│   │   │   │   │   │   └── polars-arrow v0.51.0 (*)
+│   │   │   │   │   ├── polars-arrow feature "compute_arithmetics"
+│   │   │   │   │   │   ├── polars-arrow v0.51.0 (*)
+│   │   │   │   │   │   └── polars-arrow feature "compute_arithmetics_decimal"
+│   │   │   │   │   │       └── polars-arrow v0.51.0 (*)
+│   │   │   │   │   ├── polars-arrow feature "compute_bitwise"
+│   │   │   │   │   │   └── polars-arrow v0.51.0 (*)
+│   │   │   │   │   ├── polars-arrow feature "compute_boolean"
+│   │   │   │   │   │   └── polars-arrow v0.51.0 (*)
+│   │   │   │   │   ├── polars-arrow feature "compute_boolean_kleene"
+│   │   │   │   │   │   └── polars-arrow v0.51.0 (*)
+│   │   │   │   │   ├── polars-arrow feature "compute_comparison"
+│   │   │   │   │   │   ├── polars-arrow v0.51.0 (*)
+│   │   │   │   │   │   └── polars-arrow feature "compute_boolean" (*)
+│   │   │   │   │   ├── hashbrown feature "default" (*)
+│   │   │   │   │   ├── hashbrown feature "rayon" (*)
+│   │   │   │   │   ├── hashbrown feature "serde" (*)
+│   │   │   │   │   ├── uuid feature "default" (*)
+│   │   │   │   │   ├── uuid feature "v4" (*)
+│   │   │   │   │   └── boxcar feature "default"
+│   │   │   │   │       └── boxcar v0.2.14
+│   │   │   │   ├── polars-error v0.51.0 (*)
+│   │   │   │   ├── polars-row v0.51.0
+│   │   │   │   │   ├── polars-dtype v0.51.0 (*)
+│   │   │   │   │   ├── polars-error v0.51.0 (*)
+│   │   │   │   │   ├── polars-utils v0.51.0 (*)
+│   │   │   │   │   ├── polars-arrow feature "compute_aggregate" (*)
+│   │   │   │   │   ├── polars-arrow feature "compute_arithmetics" (*)
+│   │   │   │   │   ├── polars-arrow feature "compute_bitwise" (*)
+│   │   │   │   │   ├── polars-arrow feature "compute_boolean" (*)
+│   │   │   │   │   ├── polars-arrow feature "compute_boolean_kleene" (*)
+│   │   │   │   │   ├── polars-arrow feature "compute_comparison" (*)
+│   │   │   │   │   ├── bitflags feature "default" (*)
+│   │   │   │   │   ├── bytemuck feature "default" (*)
+│   │   │   │   │   ├── bytemuck feature "derive" (*)
+│   │   │   │   │   ├── bytemuck feature "extern_crate_alloc" (*)
+│   │   │   │   │   └── polars-compute feature "cast"
+│   │   │   │   │       ├── polars-compute v0.51.0
+│   │   │   │   │       │   ├── polars-error v0.51.0 (*)
+│   │   │   │   │       │   ├── polars-utils v0.51.0 (*)
+│   │   │   │   │       │   ├── chrono feature "std" (*)
+│   │   │   │   │       │   ├── num-traits feature "default" (*)
+│   │   │   │   │       │   ├── polars-arrow feature "compute_aggregate" (*)
+│   │   │   │   │       │   ├── polars-arrow feature "compute_arithmetics" (*)
+│   │   │   │   │       │   ├── polars-arrow feature "compute_bitwise" (*)
+│   │   │   │   │       │   ├── polars-arrow feature "compute_boolean" (*)
+│   │   │   │   │       │   ├── polars-arrow feature "compute_boolean_kleene" (*)
+│   │   │   │   │       │   ├── polars-arrow feature "compute_comparison" (*)
+│   │   │   │   │       │   ├── atoi_simd feature "default" (*)
+│   │   │   │   │       │   ├── bytemuck feature "default" (*)
+│   │   │   │   │       │   ├── bytemuck feature "derive" (*)
+│   │   │   │   │       │   ├── bytemuck feature "extern_crate_alloc" (*)
+│   │   │   │   │       │   ├── either feature "default" (*)
+│   │   │   │   │       │   ├── hashbrown feature "default" (*)
+│   │   │   │   │       │   ├── hashbrown feature "rayon" (*)
+│   │   │   │   │       │   ├── hashbrown feature "serde" (*)
+│   │   │   │   │       │   ├── itoa feature "default" (*)
+│   │   │   │   │       │   ├── ryu feature "default" (*)
+│   │   │   │   │       │   ├── rand feature "default" (*)
+│   │   │   │   │       │   ├── strum_macros feature "default" (*)
+│   │   │   │   │       │   ├── fast-float2 feature "default"
+│   │   │   │   │       │   │   ├── fast-float2 v0.2.3
+│   │   │   │   │       │   │   └── fast-float2 feature "std"
+│   │   │   │   │       │   │       └── fast-float2 v0.2.3
+│   │   │   │   │       │   ├── skiplist feature "default"
+│   │   │   │   │       │   │   └── skiplist v0.6.0
+│   │   │   │   │       │   │       ├── rand feature "default" (*)
+│   │   │   │   │       │   │       ├── rand feature "small_rng" (*)
+│   │   │   │   │       │   │       └── thiserror feature "default"
+│   │   │   │   │       │   │           ├── thiserror v2.0.19
+│   │   │   │   │       │   │           │   └── thiserror-impl feature "default"
+│   │   │   │   │       │   │           │       └── thiserror-impl v2.0.19 (proc-macro)
+│   │   │   │   │       │   │           │           ├── proc-macro2 feature "default" (*)
+│   │   │   │   │       │   │           │           ├── quote feature "default" (*)
+│   │   │   │   │       │   │           │           └── syn feature "default"
+│   │   │   │   │       │   │           │               ├── syn v3.0.3 (*)
+│   │   │   │   │       │   │           │               ├── syn feature "clone-impls" (*)
+│   │   │   │   │       │   │           │               ├── syn feature "derive" (*)
+│   │   │   │   │       │   │           │               ├── syn feature "parsing" (*)
+│   │   │   │   │       │   │           │               ├── syn feature "printing" (*)
+│   │   │   │   │       │   │           │               └── syn feature "proc-macro" (*)
+│   │   │   │   │       │   │           └── thiserror feature "std"
+│   │   │   │   │       │   │               └── thiserror v2.0.19 (*)
+│   │   │   │   │       │   └── strength_reduce feature "default"
+│   │   │   │   │       │       └── strength_reduce v0.2.4
+│   │   │   │   │       │   [build-dependencies]
+│   │   │   │   │       │   └── version_check feature "default" (*)
+│   │   │   │   │       ├── polars-arrow feature "chrono-tz"
+│   │   │   │   │       │   └── polars-arrow v0.51.0 (*)
+│   │   │   │   │       └── polars-compute feature "gather"
+│   │   │   │   │           └── polars-compute v0.51.0 (*)
+│   │   │   │   ├── polars-schema v0.51.0 (*)
+│   │   │   │   ├── polars-utils v0.51.0 (*)
+│   │   │   │   ├── chrono feature "std" (*)
+│   │   │   │   ├── num-traits feature "default" (*)
+│   │   │   │   ├── polars-arrow feature "compute_aggregate" (*)
+│   │   │   │   ├── polars-arrow feature "compute_arithmetics" (*)
+│   │   │   │   ├── polars-arrow feature "compute_bitwise" (*)
+│   │   │   │   ├── polars-arrow feature "compute_boolean" (*)
+│   │   │   │   ├── polars-arrow feature "compute_boolean_kleene" (*)
+│   │   │   │   ├── polars-arrow feature "compute_comparison" (*)
+│   │   │   │   ├── bitflags feature "default" (*)
+│   │   │   │   ├── bytemuck feature "default" (*)
+│   │   │   │   ├── bytemuck feature "derive" (*)
+│   │   │   │   ├── bytemuck feature "extern_crate_alloc" (*)
+│   │   │   │   ├── either feature "default" (*)
+│   │   │   │   ├── hashbrown feature "default" (*)
+│   │   │   │   ├── hashbrown feature "rayon" (*)
+│   │   │   │   ├── hashbrown feature "serde" (*)
+│   │   │   │   ├── rayon feature "default" (*)
+│   │   │   │   ├── itoa feature "default" (*)
+│   │   │   │   ├── regex feature "default" (*)
+│   │   │   │   ├── indexmap feature "default" (*)
+│   │   │   │   ├── indexmap feature "serde" (*)
+│   │   │   │   ├── indexmap feature "std" (*)
+│   │   │   │   ├── uuid feature "default" (*)
+│   │   │   │   ├── uuid feature "v4" (*)
+│   │   │   │   ├── strum_macros feature "default" (*)
+│   │   │   │   ├── boxcar feature "default" (*)
+│   │   │   │   ├── polars-compute feature "gather" (*)
+│   │   │   │   ├── xxhash-rust feature "default"
+│   │   │   │   │   └── xxhash-rust v0.8.18
+│   │   │   │   └── xxhash-rust feature "xxh3"
+│   │   │   │       └── xxhash-rust v0.8.18
+│   │   │   │   [build-dependencies]
+│   │   │   │   └── version_check feature "default" (*)
+│   │   │   ├── polars-error v0.51.0 (*)
+│   │   │   ├── polars-schema v0.51.0 (*)
+│   │   │   ├── polars-time v0.51.0
+│   │   │   │   ├── polars-compute v0.51.0 (*)
+│   │   │   │   ├── polars-error v0.51.0 (*)
+│   │   │   │   ├── polars-ops v0.51.0
+│   │   │   │   │   ├── polars-compute v0.51.0 (*)
+│   │   │   │   │   ├── polars-error v0.51.0 (*)
+│   │   │   │   │   ├── polars-schema v0.51.0 (*)
+│   │   │   │   │   ├── polars-utils v0.51.0 (*)
+│   │   │   │   │   ├── num-traits feature "default" (*)
+│   │   │   │   │   ├── polars-arrow feature "compute_aggregate" (*)
+│   │   │   │   │   ├── polars-arrow feature "compute_arithmetics" (*)
+│   │   │   │   │   ├── polars-arrow feature "compute_bitwise" (*)
+│   │   │   │   │   ├── polars-arrow feature "compute_boolean" (*)
+│   │   │   │   │   ├── polars-arrow feature "compute_boolean_kleene" (*)
+│   │   │   │   │   ├── polars-arrow feature "compute_comparison" (*)
+│   │   │   │   │   ├── bytemuck feature "default" (*)
+│   │   │   │   │   ├── bytemuck feature "derive" (*)
+│   │   │   │   │   ├── bytemuck feature "extern_crate_alloc" (*)
+│   │   │   │   │   ├── either feature "default" (*)
+│   │   │   │   │   ├── hashbrown feature "default" (*)
+│   │   │   │   │   ├── hashbrown feature "rayon" (*)
+│   │   │   │   │   ├── hashbrown feature "serde" (*)
+│   │   │   │   │   ├── rayon feature "default" (*)
+│   │   │   │   │   ├── regex feature "default" (*)
+│   │   │   │   │   ├── memchr feature "default" (*)
+│   │   │   │   │   ├── regex-syntax feature "default" (*)
+│   │   │   │   │   ├── indexmap feature "default" (*)
+│   │   │   │   │   ├── indexmap feature "serde" (*)
+│   │   │   │   │   ├── indexmap feature "std" (*)
+│   │   │   │   │   ├── strum_macros feature "default" (*)
+│   │   │   │   │   ├── polars-core feature "algorithm_group_by"
+│   │   │   │   │   │   └── polars-core v0.51.0 (*)
+│   │   │   │   │   ├── polars-core feature "zip_with"
+│   │   │   │   │   │   └── polars-core v0.51.0 (*)
+│   │   │   │   │   ├── argminmax feature "float"
+│   │   │   │   │   │   └── argminmax v0.6.3
+│   │   │   │   │   │       └── num-traits v0.2.19 (*)
+│   │   │   │   │   └── libm feature "default"
+│   │   │   │   │       ├── libm v0.2.16
+│   │   │   │   │       └── libm feature "arch"
+│   │   │   │   │           └── libm v0.2.16
+│   │   │   │   │   [build-dependencies]
+│   │   │   │   │   └── version_check feature "default" (*)
+│   │   │   │   ├── polars-utils v0.51.0 (*)
+│   │   │   │   ├── chrono feature "std" (*)
+│   │   │   │   ├── num-traits feature "default" (*)
+│   │   │   │   ├── polars-arrow feature "compute"
+│   │   │   │   │   ├── polars-arrow v0.51.0 (*)
+│   │   │   │   │   ├── polars-arrow feature "compute_aggregate" (*)
+│   │   │   │   │   ├── polars-arrow feature "compute_arithmetics" (*)
+│   │   │   │   │   ├── polars-arrow feature "compute_bitwise" (*)
+│   │   │   │   │   ├── polars-arrow feature "compute_boolean" (*)
+│   │   │   │   │   ├── polars-arrow feature "compute_boolean_kleene" (*)
+│   │   │   │   │   ├── polars-arrow feature "compute_comparison" (*)
+│   │   │   │   │   └── polars-arrow feature "compute_temporal"
+│   │   │   │   │       └── polars-arrow v0.51.0 (*)
+│   │   │   │   ├── polars-arrow feature "compute_aggregate" (*)
+│   │   │   │   ├── polars-arrow feature "compute_arithmetics" (*)
+│   │   │   │   ├── polars-arrow feature "compute_bitwise" (*)
+│   │   │   │   ├── polars-arrow feature "compute_boolean" (*)
+│   │   │   │   ├── polars-arrow feature "compute_boolean_kleene" (*)
+│   │   │   │   ├── polars-arrow feature "compute_comparison" (*)
+│   │   │   │   ├── polars-arrow feature "temporal"
+│   │   │   │   │   └── polars-arrow v0.51.0 (*)
+│   │   │   │   ├── atoi_simd feature "default" (*)
+│   │   │   │   ├── bytemuck feature "default" (*)
+│   │   │   │   ├── bytemuck feature "derive" (*)
+│   │   │   │   ├── bytemuck feature "extern_crate_alloc" (*)
+│   │   │   │   ├── rayon feature "default" (*)
+│   │   │   │   ├── regex feature "default" (*)
+│   │   │   │   ├── strum_macros feature "default" (*)
+│   │   │   │   ├── polars-core feature "dtype-date"
+│   │   │   │   │   ├── polars-core v0.51.0 (*)
+│   │   │   │   │   └── polars-core feature "temporal"
+│   │   │   │   │       ├── polars-core v0.51.0 (*)
+│   │   │   │   │       ├── polars-error feature "regex"
+│   │   │   │   │       │   └── polars-error v0.51.0 (*)
+│   │   │   │   │       ├── polars-core feature "chrono"
+│   │   │   │   │       │   └── polars-core v0.51.0 (*)
+│   │   │   │   │       └── polars-core feature "regex"
+│   │   │   │   │           └── polars-core v0.51.0 (*)
+│   │   │   │   ├── polars-core feature "dtype-datetime"
+│   │   │   │   │   ├── polars-core v0.51.0 (*)
+│   │   │   │   │   └── polars-core feature "temporal" (*)
+│   │   │   │   ├── polars-core feature "dtype-duration"
+│   │   │   │   │   ├── polars-core v0.51.0 (*)
+│   │   │   │   │   └── polars-core feature "temporal" (*)
+│   │   │   │   ├── polars-core feature "dtype-time"
+│   │   │   │   │   ├── polars-core v0.51.0 (*)
+│   │   │   │   │   └── polars-core feature "temporal" (*)
+│   │   │   │   └── now feature "default"
+│   │   │   │       └── now v0.1.3
+│   │   │   │           ├── chrono feature "clock"
+│   │   │   │           │   ├── chrono v0.4.45 (*)
+│   │   │   │           │   ├── chrono feature "iana-time-zone"
+│   │   │   │           │   │   └── chrono v0.4.45 (*)
+│   │   │   │           │   ├── chrono feature "now"
+│   │   │   │           │   │   ├── chrono v0.4.45 (*)
+│   │   │   │           │   │   └── chrono feature "std" (*)
+│   │   │   │           │   └── chrono feature "winapi"
+│   │   │   │           │       ├── chrono v0.4.45 (*)
+│   │   │   │           │       └── chrono feature "windows-link"
+│   │   │   │           │           └── chrono v0.4.45 (*)
+│   │   │   │           └── chrono feature "std" (*)
+│   │   │   ├── chrono feature "std" (*)
+│   │   │   ├── num-traits feature "default" (*)
+│   │   │   ├── polars-arrow feature "compute_aggregate" (*)
+│   │   │   ├── polars-arrow feature "compute_arithmetics" (*)
+│   │   │   ├── polars-arrow feature "compute_bitwise" (*)
+│   │   │   ├── polars-arrow feature "compute_boolean" (*)
+│   │   │   ├── polars-arrow feature "compute_boolean_kleene" (*)
+│   │   │   ├── polars-arrow feature "compute_comparison" (*)
+│   │   │   ├── hashbrown feature "default" (*)
+│   │   │   ├── hashbrown feature "rayon" (*)
+│   │   │   ├── hashbrown feature "serde" (*)
+│   │   │   ├── rayon feature "default" (*)
+│   │   │   ├── regex feature "default" (*)
+│   │   │   ├── memchr feature "default" (*)
+│   │   │   ├── polars-utils feature "mmap"
+│   │   │   │   ├── polars-utils v0.51.0 (*)
+│   │   │   │   └── polars-utils feature "memmap"
+│   │   │   │       └── polars-utils v0.51.0 (*)
+│   │   │   ├── bytes feature "default" (*)
+│   │   │   ├── memmap2 feature "default" (*)
+│   │   │   ├── glob feature "default"
+│   │   │   │   └── glob v0.3.4
+│   │   │   ├── home feature "default"
+│   │   │   │   └── home v0.5.12
+│   │   │   └── percent-encoding feature "default"
+│   │   │       ├── percent-encoding v2.3.2
+│   │   │       └── percent-encoding feature "std"
+│   │   │           ├── percent-encoding v2.3.2
+│   │   │           └── percent-encoding feature "alloc"
+│   │   │               └── percent-encoding v2.3.2
+│   │   ├── polars-ops v0.51.0 (*)
+│   │   ├── polars-utils v0.51.0 (*)
+│   │   ├── polars-arrow feature "compute_aggregate" (*)
+│   │   ├── polars-arrow feature "compute_arithmetics" (*)
+│   │   ├── polars-arrow feature "compute_bitwise" (*)
+│   │   ├── polars-arrow feature "compute_boolean" (*)
+│   │   ├── polars-arrow feature "compute_boolean_kleene" (*)
+│   │   ├── polars-arrow feature "compute_comparison" (*)
+│   │   └── polars-core feature "algorithm_group_by" (*)
+│   │   [build-dependencies]
+│   │   └── version_check feature "default" (*)
+│   ├── polars feature "dtype-array"
+│   │   ├── polars v0.51.0 (*)
+│   │   ├── polars feature "polars-ops"
+│   │   │   └── polars v0.51.0 (*)
+│   │   ├── polars-core feature "dtype-array"
+│   │   │   ├── polars-core v0.51.0 (*)
+│   │   │   ├── polars-arrow feature "dtype-array"
+│   │   │   │   └── polars-arrow v0.51.0 (*)
+│   │   │   └── polars-compute feature "dtype-array"
+│   │   │       └── polars-compute v0.51.0 (*)
+│   │   └── polars-ops feature "dtype-array"
+│   │       ├── polars-ops v0.51.0 (*)
+│   │       └── polars-core feature "dtype-array" (*)
+│   ├── polars feature "dtype-categorical"
+│   │   ├── polars v0.51.0 (*)
+│   │   ├── polars feature "polars-io"
+│   │   │   └── polars v0.51.0 (*)
+│   │   ├── polars feature "polars-ops" (*)
+│   │   ├── polars-core feature "dtype-categorical"
+│   │   │   └── polars-core v0.51.0 (*)
+│   │   ├── polars-io feature "dtype-categorical"
+│   │   │   ├── polars-io v0.51.0 (*)
+│   │   │   └── polars-core feature "dtype-categorical" (*)
+│   │   └── polars-ops feature "dtype-categorical"
+│   │       ├── polars-ops v0.51.0 (*)
+│   │       └── polars-core feature "dtype-categorical" (*)
+│   ├── polars feature "dtype-date"
+│   │   ├── polars v0.51.0 (*)
+│   │   ├── polars feature "polars-io" (*)
+│   │   ├── polars feature "polars-ops" (*)
+│   │   ├── polars-core feature "dtype-date" (*)
+│   │   ├── polars-io feature "dtype-date"
+│   │   │   ├── polars-io v0.51.0 (*)
+│   │   │   ├── polars-core feature "dtype-date" (*)
+│   │   │   ├── polars-io feature "polars-time"
+│   │   │   │   └── polars-io v0.51.0 (*)
+│   │   │   └── polars-time feature "dtype-date"
+│   │   │       ├── polars-time v0.51.0 (*)
+│   │   │       ├── polars-core feature "dtype-date" (*)
+│   │   │       └── polars-time feature "temporal"
+│   │   │           ├── polars-time v0.51.0 (*)
+│   │   │           └── polars-core feature "temporal" (*)
+│   │   └── polars-ops feature "dtype-date"
+│   │       ├── polars-ops v0.51.0 (*)
+│   │       ├── polars-core feature "dtype-date" (*)
+│   │       └── polars-core feature "temporal" (*)
+│   ├── polars feature "dtype-datetime"
+│   │   ├── polars v0.51.0 (*)
+│   │   ├── polars feature "polars-io" (*)
+│   │   ├── polars feature "polars-ops" (*)
+│   │   ├── polars-core feature "dtype-datetime" (*)
+│   │   ├── polars-io feature "dtype-datetime"
+│   │   │   ├── polars-io v0.51.0 (*)
+│   │   │   ├── polars-core feature "dtype-datetime" (*)
+│   │   │   ├── polars-core feature "temporal" (*)
+│   │   │   ├── polars-io feature "chrono"
+│   │   │   │   └── polars-io v0.51.0 (*)
+│   │   │   ├── polars-io feature "polars-time" (*)
+│   │   │   └── polars-time feature "dtype-datetime"
+│   │   │       ├── polars-time v0.51.0 (*)
+│   │   │       ├── polars-core feature "dtype-datetime" (*)
+│   │   │       └── polars-time feature "temporal" (*)
+│   │   └── polars-ops feature "dtype-datetime"
+│   │       ├── polars-ops v0.51.0 (*)
+│   │       ├── polars-core feature "dtype-datetime" (*)
+│   │       └── polars-core feature "temporal" (*)
+│   ├── polars feature "dtype-decimal"
+│   │   ├── polars v0.51.0 (*)
+│   │   ├── polars feature "polars-io" (*)
+│   │   ├── polars feature "polars-ops" (*)
+│   │   ├── polars-core feature "dtype-decimal"
+│   │   │   ├── polars-core v0.51.0 (*)
+│   │   │   ├── polars-arrow feature "dtype-decimal"
+│   │   │   │   ├── polars-arrow v0.51.0 (*)
+│   │   │   │   ├── polars-arrow feature "atoi_simd"
+│   │   │   │   │   └── polars-arrow v0.51.0 (*)
+│   │   │   │   └── polars-arrow feature "itoa"
+│   │   │   │       └── polars-arrow v0.51.0 (*)
+│   │   │   ├── polars-core feature "dtype-i128"
+│   │   │   │   ├── polars-core v0.51.0 (*)
+│   │   │   │   └── polars-compute feature "dtype-i128"
+│   │   │   │       └── polars-compute v0.51.0 (*)
+│   │   │   ├── polars-compute feature "cast" (*)
+│   │   │   └── polars-compute feature "dtype-decimal"
+│   │   │       ├── polars-compute v0.51.0 (*)
+│   │   │       ├── polars-arrow feature "dtype-decimal" (*)
+│   │   │       └── polars-compute feature "dtype-i128" (*)
+│   │   ├── polars-io feature "dtype-decimal"
+│   │   │   ├── polars-io v0.51.0 (*)
+│   │   │   └── polars-core feature "dtype-decimal" (*)
+│   │   └── polars-ops feature "dtype-decimal"
+│   │       ├── polars-ops v0.51.0 (*)
+│   │       ├── polars-core feature "dtype-decimal" (*)
+│   │       └── polars-ops feature "dtype-i128"
+│   │           ├── polars-ops v0.51.0 (*)
+│   │           └── polars-core feature "dtype-i128" (*)
+│   ├── polars feature "dtype-duration"
+│   │   ├── polars v0.51.0 (*)
+│   │   ├── polars feature "polars-io" (*)
+│   │   ├── polars feature "polars-ops" (*)
+│   │   ├── polars-core feature "dtype-duration" (*)
+│   │   ├── polars-io feature "dtype-duration"
+│   │   │   ├── polars-io v0.51.0 (*)
+│   │   │   ├── polars-core feature "dtype-duration" (*)
+│   │   │   ├── polars-io feature "polars-time" (*)
+│   │   │   └── polars-time feature "dtype-duration"
+│   │   │       ├── polars-time v0.51.0 (*)
+│   │   │       ├── polars-core feature "dtype-duration" (*)
+│   │   │       └── polars-time feature "temporal" (*)
+│   │   └── polars-ops feature "dtype-duration"
+│   │       ├── polars-ops v0.51.0 (*)
+│   │       ├── polars-core feature "dtype-duration" (*)
+│   │       └── polars-core feature "temporal" (*)
+│   ├── polars feature "dtype-i128"
+│   │   ├── polars v0.51.0 (*)
+│   │   ├── polars feature "polars-io" (*)
+│   │   ├── polars feature "polars-ops" (*)
+│   │   ├── polars-core feature "dtype-i128" (*)
+│   │   ├── polars-io feature "dtype-i128"
+│   │   │   ├── polars-io v0.51.0 (*)
+│   │   │   └── polars-core feature "dtype-i128" (*)
+│   │   └── polars-ops feature "dtype-i128" (*)
+│   ├── polars feature "dtype-i16"
+│   │   ├── polars v0.51.0 (*)
+│   │   ├── polars feature "polars-io" (*)
+│   │   ├── polars feature "polars-ops" (*)
+│   │   ├── polars-core feature "dtype-i16"
+│   │   │   └── polars-core v0.51.0 (*)
+│   │   ├── polars-io feature "dtype-i16"
+│   │   │   ├── polars-io v0.51.0 (*)
+│   │   │   └── polars-core feature "dtype-i16" (*)
+│   │   └── polars-ops feature "dtype-i16"
+│   │       ├── polars-ops v0.51.0 (*)
+│   │       └── polars-core feature "dtype-i16" (*)
+│   ├── polars feature "dtype-i8"
+│   │   ├── polars v0.51.0 (*)
+│   │   ├── polars feature "polars-io" (*)
+│   │   ├── polars feature "polars-ops" (*)
+│   │   ├── polars-core feature "dtype-i8"
+│   │   │   └── polars-core v0.51.0 (*)
+│   │   ├── polars-io feature "dtype-i8"
+│   │   │   ├── polars-io v0.51.0 (*)
+│   │   │   └── polars-core feature "dtype-i8" (*)
+│   │   └── polars-ops feature "dtype-i8"
+│   │       ├── polars-ops v0.51.0 (*)
+│   │       └── polars-core feature "dtype-i8" (*)
+│   ├── polars feature "dtype-struct"
+│   │   ├── polars v0.51.0 (*)
+│   │   ├── polars feature "polars-io" (*)
+│   │   ├── polars feature "polars-ops" (*)
+│   │   ├── polars-core feature "dtype-struct"
+│   │   │   └── polars-core v0.51.0 (*)
+│   │   ├── polars-io feature "dtype-struct"
+│   │   │   ├── polars-io v0.51.0 (*)
+│   │   │   └── polars-core feature "dtype-struct" (*)
+│   │   └── polars-ops feature "dtype-struct"
+│   │       ├── polars-ops v0.51.0 (*)
+│   │       ├── polars-core feature "dtype-struct" (*)
+│   │       └── polars-core feature "temporal" (*)
+│   ├── polars feature "dtype-time"
+│   │   ├── polars v0.51.0 (*)
+│   │   ├── polars feature "polars-io" (*)
+│   │   ├── polars feature "polars-ops" (*)
+│   │   ├── polars-core feature "dtype-time" (*)
+│   │   ├── polars-io feature "dtype-time"
+│   │   │   ├── polars-io v0.51.0 (*)
+│   │   │   ├── polars-core feature "dtype-time" (*)
+│   │   │   ├── polars-core feature "temporal" (*)
+│   │   │   ├── polars-io feature "polars-time" (*)
+│   │   │   └── polars-time feature "dtype-time"
+│   │   │       ├── polars-time v0.51.0 (*)
+│   │   │       ├── polars-core feature "dtype-time" (*)
+│   │   │       └── polars-time feature "temporal" (*)
+│   │   └── polars-ops feature "dtype-time"
+│   │       ├── polars-ops v0.51.0 (*)
+│   │       ├── polars-core feature "dtype-time" (*)
+│   │       └── polars-core feature "temporal" (*)
+│   ├── polars feature "dtype-u16"
+│   │   ├── polars v0.51.0 (*)
+│   │   ├── polars feature "polars-io" (*)
+│   │   ├── polars feature "polars-ops" (*)
+│   │   ├── polars-core feature "dtype-u16"
+│   │   │   └── polars-core v0.51.0 (*)
+│   │   ├── polars-io feature "dtype-u16"
+│   │   │   ├── polars-io v0.51.0 (*)
+│   │   │   └── polars-core feature "dtype-u16" (*)
+│   │   └── polars-ops feature "dtype-u16"
+│   │       ├── polars-ops v0.51.0 (*)
+│   │       └── polars-core feature "dtype-u16" (*)
+│   └── polars feature "dtype-u8"
+│       ├── polars v0.51.0 (*)
+│       ├── polars feature "polars-io" (*)
+│       ├── polars feature "polars-ops" (*)
+│       ├── polars-core feature "dtype-u8"
+│       │   └── polars-core v0.51.0 (*)
+│       ├── polars-io feature "dtype-u8"
+│       │   ├── polars-io v0.51.0 (*)
+│       │   └── polars-core feature "dtype-u8" (*)
+│       └── polars-ops feature "dtype-u8"
+│           ├── polars-ops v0.51.0 (*)
+│           └── polars-core feature "dtype-u8" (*)
+├── pyo3 feature "abi3-py311"
+│   ├── pyo3 v0.23.5
+│   │   ├── cfg-if feature "default" (*)
+│   │   ├── libc feature "default" (*)
+│   │   ├── once_cell feature "default"
+│   │   │   ├── once_cell v1.21.4
+│   │   │   └── once_cell feature "std" (*)
+│   │   ├── indoc feature "default"
+│   │   │   └── indoc v2.0.7 (proc-macro)
+│   │   │       [build-dependencies]
+│   │   │       └── rustversion feature "default" (*)
+│   │   ├── memoffset feature "default"
+│   │   │   └── memoffset v0.9.1
+│   │   │       [build-dependencies]
+│   │   │       └── autocfg feature "default" (*)
+│   │   ├── pyo3-ffi feature "default"
+│   │   │   └── pyo3-ffi v0.23.5
+│   │   │       └── libc feature "default" (*)
+│   │   │       [build-dependencies]
+│   │   │       ├── pyo3-build-config feature "default"
+│   │   │       │   └── pyo3-build-config v0.23.5
+│   │   │       │       ├── once_cell feature "default" (*)
+│   │   │       │       └── target-lexicon feature "default"
+│   │   │       │           └── target-lexicon v0.12.16
+│   │   │       │       [build-dependencies]
+│   │   │       │       └── target-lexicon feature "default" (*)
+│   │   │       └── pyo3-build-config feature "resolve-config"
+│   │   │           └── pyo3-build-config v0.23.5 (*)
+│   │   ├── pyo3-macros feature "default"
+│   │   │   └── pyo3-macros v0.23.5 (proc-macro)
+│   │   │       ├── proc-macro2 v1.0.107 (*)
+│   │   │       ├── quote feature "default" (*)
+│   │   │       ├── syn feature "default" (*)
+│   │   │       ├── syn feature "extra-traits"
+│   │   │       │   └── syn v2.0.119 (*)
+│   │   │       ├── syn feature "full"
+│   │   │       │   └── syn v2.0.119 (*)
+│   │   │       └── pyo3-macros-backend feature "default"
+│   │   │           └── pyo3-macros-backend v0.23.5
+│   │   │               ├── proc-macro2 v1.0.107 (*)
+│   │   │               ├── quote v1.0.47 (*)
+│   │   │               ├── syn feature "clone-impls" (*)
+│   │   │               ├── syn feature "derive" (*)
+│   │   │               ├── syn feature "extra-traits" (*)
+│   │   │               ├── syn feature "full" (*)
+│   │   │               ├── syn feature "parsing" (*)
+│   │   │               ├── syn feature "printing" (*)
+│   │   │               ├── heck feature "default" (*)
+│   │   │               ├── pyo3-build-config feature "default" (*)
+│   │   │               └── pyo3-build-config feature "resolve-config" (*)
+│   │   │               [build-dependencies]
+│   │   │               └── pyo3-build-config feature "default" (*)
+│   │   └── unindent feature "default"
+│   │       └── unindent v0.2.4
+│   │   [build-dependencies]
+│   │   ├── pyo3-build-config feature "default" (*)
+│   │   └── pyo3-build-config feature "resolve-config" (*)
+│   ├── pyo3 feature "abi3-py312"
+│   │   ├── pyo3 v0.23.5 (*)
+│   │   ├── pyo3 feature "abi3"
+│   │   │   ├── pyo3 v0.23.5 (*)
+│   │   │   ├── pyo3-build-config feature "abi3"
+│   │   │   │   └── pyo3-build-config v0.23.5 (*)
+│   │   │   └── pyo3-ffi feature "abi3"
+│   │   │       ├── pyo3-ffi v0.23.5 (*)
+│   │   │       └── pyo3-build-config feature "abi3" (*)
+│   │   ├── pyo3-build-config feature "abi3-py312"
+│   │   │   ├── pyo3-build-config v0.23.5 (*)
+│   │   │   └── pyo3-build-config feature "abi3" (*)
+│   │   └── pyo3-ffi feature "abi3-py312"
+│   │       ├── pyo3-ffi v0.23.5 (*)
+│   │       ├── pyo3-build-config feature "abi3-py312" (*)
+│   │       └── pyo3-ffi feature "abi3" (*)
+│   ├── pyo3-build-config feature "abi3-py311"
+│   │   ├── pyo3-build-config v0.23.5 (*)
+│   │   └── pyo3-build-config feature "abi3-py312" (*)
+│   └── pyo3-ffi feature "abi3-py311"
+│       ├── pyo3-ffi v0.23.5 (*)
+│       ├── pyo3-build-config feature "abi3-py311" (*)
+│       └── pyo3-ffi feature "abi3-py312" (*)
+└── pyo3 feature "default"
+    ├── pyo3 v0.23.5 (*)
+    └── pyo3 feature "macros"
+        ├── pyo3 v0.23.5 (*)
+        ├── pyo3 feature "indoc"
+        │   └── pyo3 v0.23.5 (*)
+        ├── pyo3 feature "pyo3-macros"
+        │   └── pyo3 v0.23.5 (*)
+        └── pyo3 feature "unindent"
+            └── pyo3 v0.23.5 (*)

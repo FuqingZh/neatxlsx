@@ -1,0 +1,66 @@
+{
+  "timestamp_utc": "2026-02-12T10:08:17.766651+00:00",
+  "command": "scripts/benchmark_xlsx_writer.py --profile huge --repeat 2 --warmup 1 --backend rust --out-dir benchmarks/xlsx_writer/results",
+  "platform": "Linux-6.6.87.2-microsoft-standard-WSL2-x86_64-with-glibc2.39",
+  "python_version": "3.13.2",
+  "packages": {
+    "axiomkit": "local-src",
+    "polars": "1.38.1"
+  },
+  "rust_backend_binary": "/home/being/projects/axiomkit/target/release/lib_axiomkit_xlsx_rs.so",
+  "validation_policy": "enforce_release_backend + validate sheet1 dimension/rows/cols",
+  "repeat": 2,
+  "warmup": 1,
+  "profile": "huge",
+  "backend": "rust",
+  "scenarios": [
+    {
+      "backend": "rust",
+      "scenario": {
+        "name": "huge_tall_header_autofit",
+        "n_rows": 250000,
+        "n_numeric_cols": 10,
+        "n_text_cols": 4,
+        "if_autofit_columns": true,
+        "rule_autofit_columns": "header"
+      },
+      "n_cols": 15,
+      "repeats": 2,
+      "warmup_runs": 1,
+      "times_seconds": [
+        4.075102583999978,
+        4.075706446999902
+      ],
+      "mean_seconds": 4.07540451549994,
+      "median_seconds": 4.07540451549994,
+      "min_seconds": 4.075102583999978,
+      "max_seconds": 4.075706446999902,
+      "stdev_seconds": 0.0004269956221538247,
+      "output_size_bytes_mean": 21779875
+    },
+    {
+      "backend": "rust",
+      "scenario": {
+        "name": "huge_wide_autofit_all",
+        "n_rows": 50000,
+        "n_numeric_cols": 40,
+        "n_text_cols": 20,
+        "if_autofit_columns": true,
+        "rule_autofit_columns": "all"
+      },
+      "n_cols": 61,
+      "repeats": 2,
+      "warmup_runs": 1,
+      "times_seconds": [
+        3.6719682300004024,
+        3.622333529000116
+      ],
+      "mean_seconds": 3.647150879500259,
+      "median_seconds": 3.647150879500259,
+      "min_seconds": 3.622333529000116,
+      "max_seconds": 3.6719682300004024,
+      "stdev_seconds": 0.03509703365946926,
+      "output_size_bytes_mean": 18973002
+    }
+  ]
+}

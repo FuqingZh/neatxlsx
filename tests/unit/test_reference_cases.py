@@ -21,6 +21,7 @@ def test_reference_scenario_ids_are_unique_and_stable() -> None:
         "mixed-dtype",
         "multi-level-header",
         "multi-sheet-pipeline",
+        "autofit-sampling",
         "split-planning",
     )
     assert len(ids) == len(set(ids))
@@ -34,6 +35,7 @@ def test_reference_sources_have_deterministic_schema(scenario_id: str) -> None:
 
     assert first.scenario_id == second.scenario_id == scenario_id
     assert first.known_gaps == second.known_gaps
+    assert first.workbook_kwargs == second.workbook_kwargs
     assert first.split_planning == second.split_planning
     assert [(sheet.name, _schema(sheet.data)) for sheet in first.sheets] == [
         (sheet.name, _schema(sheet.data)) for sheet in second.sheets
@@ -41,7 +43,7 @@ def test_reference_sources_have_deterministic_schema(scenario_id: str) -> None:
 
 
 def test_reference_manifest_schema_is_versioned() -> None:
-    assert MANIFEST_SCHEMA_VERSION == 1
+    assert MANIFEST_SCHEMA_VERSION == 2
 
 
 def test_unknown_reference_scenario_fails_clearly() -> None:

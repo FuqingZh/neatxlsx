@@ -1,6 +1,179 @@
 {
+  "baseline": {
+    "bridge_abi": 5,
+    "bridge_contract": "neatxlsx.xlsx.writer.v5",
+    "package_version": "0.2.0",
+    "source_revision": "85c3519e7fd830c83dd0b3e52b00ff8db19c4ab3"
+  },
+  "inputs": {
+    "sheets": [
+      {
+        "data_kind": "DataFrame",
+        "kwargs": {
+          "freeze_columns": 1,
+          "integer_columns": "value"
+        },
+        "name": "Overview",
+        "schema": [
+          [
+            "metric",
+            "String"
+          ],
+          [
+            "value",
+            "Int64"
+          ]
+        ],
+        "sentinels": [
+          "A1",
+          "B2"
+        ]
+      },
+      {
+        "data_kind": "LazyFrame",
+        "kwargs": {
+          "autofit": {
+            "max_rows": 20000,
+            "max_width": 60,
+            "min_width": 8,
+            "mode": "body",
+            "padding": 2
+          },
+          "decimal_columns": "score"
+        },
+        "name": "Results",
+        "schema": [
+          [
+            "sample",
+            "String"
+          ],
+          [
+            "score",
+            "Float64"
+          ]
+        ],
+        "sentinels": [
+          "A1",
+          "B2"
+        ]
+      }
+    ],
+    "workbook_kwargs": {}
+  },
   "kind": "workbook",
   "known_gaps": [],
+  "ooxml": {
+    "styles": {
+      "cell_xfs": [
+        {
+          "borderId": "0",
+          "fillId": "0",
+          "fontId": "0",
+          "numFmtId": "0",
+          "xfId": "0"
+        },
+        {
+          "applyAlignment": "1",
+          "applyBorder": "1",
+          "applyFont": "1",
+          "borderId": "1",
+          "fillId": "0",
+          "fontId": "1",
+          "numFmtId": "0",
+          "xfId": "0"
+        },
+        {
+          "applyAlignment": "1",
+          "applyFont": "1",
+          "borderId": "0",
+          "fillId": "0",
+          "fontId": "2",
+          "numFmtId": "0",
+          "xfId": "0"
+        },
+        {
+          "applyAlignment": "1",
+          "applyFont": "1",
+          "applyNumberFormat": "1",
+          "borderId": "0",
+          "fillId": "0",
+          "fontId": "2",
+          "numFmtId": "164",
+          "xfId": "0"
+        },
+        {
+          "applyAlignment": "1",
+          "applyFont": "1",
+          "applyNumberFormat": "1",
+          "borderId": "0",
+          "fillId": "0",
+          "fontId": "2",
+          "numFmtId": "165",
+          "xfId": "0"
+        }
+      ],
+      "number_formats": [
+        {
+          "formatCode": "0",
+          "numFmtId": "164"
+        },
+        {
+          "formatCode": "0.0000",
+          "numFmtId": "165"
+        }
+      ]
+    },
+    "workbook_sheets": [
+      {
+        "name": "Overview",
+        "relationship_id": "rId1",
+        "target": "xl/worksheets/sheet1.xml"
+      },
+      {
+        "name": "Results",
+        "relationship_id": "rId2",
+        "target": "xl/worksheets/sheet2.xml"
+      }
+    ],
+    "worksheets": [
+      {
+        "columns": [
+          {
+            "customWidth": "1",
+            "max": "2",
+            "min": "1",
+            "width": "8.7109375"
+          }
+        ],
+        "dimension_ref": "A1:B3",
+        "formula_like_cells": [],
+        "merges": [],
+        "name": "Overview",
+        "target": "xl/worksheets/sheet1.xml"
+      },
+      {
+        "columns": [
+          {
+            "customWidth": "1",
+            "max": "1",
+            "min": "1",
+            "width": "8.7109375"
+          },
+          {
+            "customWidth": "1",
+            "max": "2",
+            "min": "2",
+            "width": "9.7109375"
+          }
+        ],
+        "dimension_ref": "A1:B4",
+        "formula_like_cells": [],
+        "merges": [],
+        "name": "Results",
+        "target": "xl/worksheets/sheet2.xml"
+      }
+    ]
+  },
   "reports": [
     {
       "requested_name": "Overview",
@@ -38,7 +211,7 @@
     }
   ],
   "scenario": "multi-sheet-pipeline",
-  "schema_version": 1,
+  "schema_version": 2,
   "sentinels": {
     "Overview": [
       {

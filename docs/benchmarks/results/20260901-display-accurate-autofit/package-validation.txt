@@ -1,0 +1,30 @@
+Local package validation, 2026-09-01
+
+Commands and results
+====================
+
+1. `maturin sdist --out dist` succeeded.
+2. A wheel built from `dist/neatxlsx-0.2.0.tar.gz` succeeded.
+3. `pdm run check` succeeded after the final source changes.
+4. `python scripts/validate_dist.py --dist-dir <local-dist> --expected-version 0.2.0 --expected-wheel-count 1 --require-sdist` succeeded.
+
+Retained identity evidence
+==========================
+
+- `neatxlsx-0.2.0.tar.gz`: 77,452 bytes;
+  SHA-256 `7c52ff4881c6c1c7a716897d96e8f69d194945993db0dbf69b6b93ea1a2f2060`.
+- `neatxlsx-0.2.0-cp311-abi3-manylinux_2_28_x86_64.whl`: 6,895,349 bytes;
+  SHA-256 `c768e334d7840bb176579edfb0064c21899bbdfbc4ce9923deb1deb40141b29e`.
+- The sdist contained 27 entries.
+
+Wheel hashes identify individual builds: a rebuild can change ZIP metadata
+without changing the source contract. The identity above is the artifact from
+the final local `pdm run check` gate.
+
+Scope
+=====
+
+This is local-only evidence. The five-platform release matrix was not run, and
+the sdist and wheel binaries are deliberately not checked into this evidence
+directory. The hashes identify the inspected artifacts; they do not make the
+excluded artifacts self-contained or reproduce portable release validation.

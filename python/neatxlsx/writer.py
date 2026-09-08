@@ -43,15 +43,7 @@ class _Backend(Protocol):
 
     def write_sheet_batches(
         self,
-        batches_scan: Any,
-        batches_write: Any,
-        sheet_name: str,
-        **kwargs: Any,
-    ) -> Any: ...
-
-    def write_sheet_batches_single_pass(
-        self,
-        batches_write: Any,
+        batches: Any,
         sheet_name: str,
         **kwargs: Any,
     ) -> Any: ...
@@ -381,19 +373,11 @@ class Workbook:
         }
         backend = cast(_Backend, self._backend)
         try:
-            if resolved_autofit.mode in {"none", "header"}:
-                backend.write_sheet_batches_single_pass(
-                    collect_batches(lazy, chunk_size=chunk_size),
-                    sheet_name,
-                    **kwargs,
-                )
-            else:
-                backend.write_sheet_batches(
-                    collect_batches(lazy, chunk_size=chunk_size),
-                    collect_batches(lazy, chunk_size=chunk_size),
-                    sheet_name,
-                    **kwargs,
-                )
+            backend.write_sheet_batches(
+                collect_batches(lazy, chunk_size=chunk_size),
+                sheet_name,
+                **kwargs,
+            )
         except Exception as exc:
             self.abort()
             raise WriteError(f"Could not write sheet {sheet_name!r}: {exc}") from exc
